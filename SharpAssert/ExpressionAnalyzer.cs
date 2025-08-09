@@ -22,10 +22,10 @@ internal class ExpressionAnalyzer : ExpressionVisitor
         }
 
         var expressionResult = GetValue(expression.Body);
-        
         if (expressionResult is true)
             return string.Empty;
-        return FormatAssertionFailure(originalExpr, file, line);
+            
+        return AssertionFormatter.FormatAssertionFailure(originalExpr, file, line);
     }
 
     string AnalyzeBinaryFailure(BinaryExpression binaryExpr, object? leftValue, object? rightValue, string originalExpr, string file, int line)
@@ -34,7 +34,7 @@ internal class ExpressionAnalyzer : ExpressionVisitor
         var leftDisplay = FormatValue(leftValue);
         var rightDisplay = FormatValue(rightValue);
         
-        var locationPart = string.IsNullOrEmpty(file) ? $"line {line}" : $"{file}:{line}";
+        var locationPart = AssertionFormatter.FormatLocation(file, line);
         
         return $"Assertion failed: {originalExpr}  at {locationPart}\n" +
                $"  Left:  {leftDisplay}\n" +
@@ -91,17 +91,16 @@ internal class ExpressionAnalyzer : ExpressionVisitor
     {
         if (evaluatedValues.TryGetValue(expression, out var cachedValue))
             return cachedValue;
-        var compiled = Expression.Lambda(expression).Compile();
-        var result = compiled.DynamicInvoke();
+            
+        var result = CompileAndEvaluate(expression);
         evaluatedValues[expression] = result;
         
         return result;
     }
-
-    static string FormatAssertionFailure(string expr, string file, int line)
+    
+    static object? CompileAndEvaluate(Expression expression)
     {
-        var expressionPart = string.IsNullOrEmpty(expr) ? "false" : expr;
-        var locationPart = string.IsNullOrEmpty(file) ? $"line {line}" : $"{file}:{line}";
-        return $"Assertion failed: {expressionPart}  at {locationPart}";
+        var compiled = Expression.Lambda(expression).Compile();
+        return compiled.DynamicInvoke();
     }
 }

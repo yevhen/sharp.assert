@@ -12,15 +12,8 @@ public static class Sharp
     {
         if (!condition)
         {
-            var message = FormatAssertionFailure(expr, file, line);
+            var message = AssertionFormatter.FormatAssertionFailure(expr, file, line);
             throw new SharpAssertionException(message);
         }
-    }
-
-    static string FormatAssertionFailure(string? expr, string? file, int line)
-    {
-        var expressionPart = string.IsNullOrEmpty(expr) ? "false" : expr;
-        var locationPart = string.IsNullOrEmpty(file) ? $"line {line}" : $"{file}:{line}";
-        return $"Assertion failed: {expressionPart}  at {locationPart}";
     }
 }

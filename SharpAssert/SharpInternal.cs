@@ -21,10 +21,10 @@ public static class SharpInternal
         var analyzer = new ExpressionAnalyzer();
         var failureMessage = analyzer.AnalyzeFailure(condition, expr, file, line);
         
-        if (!string.IsNullOrEmpty(failureMessage))
-        {
-            throw new SharpAssertionException(failureMessage);
-        }
+        if (string.IsNullOrEmpty(failureMessage))
+            return;
+            
+        throw new SharpAssertionException(failureMessage);
     }
 
 }
