@@ -467,3 +467,4 @@ Each main class should include this section:
 /// </list>
 /// </remarks>
 ```
+- NEVER create coverage reports on top level. Always specify subfolder under ./TestResults dir
