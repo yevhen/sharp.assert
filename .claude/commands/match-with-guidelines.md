@@ -1,0 +1,1 @@
+Good! Now spawn subagent to inspect ${ARGUMENTS}, think hard and update the code to match the guidelines in CLAUDE.md
