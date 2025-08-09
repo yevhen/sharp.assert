@@ -311,6 +311,7 @@ RULE: CRITICAL AVOID comments; DO WRITE self_documenting_code.
 RULE: DO NOT add XML doc comments for internal APIs.
 
 - ONLY document public APIs that are part of the user-facing surface.
+- NEVER add XML doc comments for test project files/classes as it's not a public API.
 - BECAUSE: {reduces_noise, focuses_documentation_effort_on_user_value}.
 
 RULE: DO NOT add brackets for simple one-line if statements.
@@ -347,6 +348,21 @@ var right = true;
 var message = "hello";
 ```
 - BECAUSE: {reduces_verbosity, improves_readability, lets_compiler_infer_obvious_types}.
+
+RULE: ALWAYS use `const` for variables that are never updated.
+
+```csharp
+// BAD
+var left = true;
+var right = false;
+Expression<Func<bool>> expr = () => left && right;
+
+// GOOD
+const bool left = true;
+const bool right = false;
+Expression<Func<bool>> expr = () => left && right;
+```
+- BECAUSE: {compile-time_safety, intent_clarity, potential_optimizations}.
 
 RULE: PREFER strongly-typed `enum`s or the "smart enum" pattern OVER raw strings or integers.
 
