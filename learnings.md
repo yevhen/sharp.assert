@@ -47,7 +47,7 @@
 - All comparison operators tested: equality, inequality, less/greater than variants
 - Null value handling works correctly, shows "null" in output
 - Complex expression single-evaluation verified with side-effect tracking
-- 8 total tests passing (4 foundation + 4 expression analysis)
+- 17 total tests passing (4 foundation + 4 expression analysis + 4 binary + 4 logical + 1 complex evaluation)
 
 ## Logical Operators Support (Increment 3)
 
@@ -74,3 +74,30 @@
 - 4 logical operator tests: AND failure, short-circuit AND, OR evaluation, NOT operator
 - Short-circuit test verifies ThrowException() is never called when left side of && is false
 - All 17 tests passing (4 foundation + 4 expression analysis + 4 binary + 4 logical + 1 complex evaluation)
+
+## MSBuild Rewriter Implementation (Increment 4)
+
+### Key Discoveries
+- Simple pattern matching sufficient for detecting Sharp.Assert calls without full semantic model resolution
+- MSBuild task graceful fallback is critical - rewriter errors must not break the build
+- Roslyn SyntaxFactory produces compact but functionally correct output (no spaces after `=>`)
+- File-scoped namespaces and ImplicitUsings require careful target framework compatibility
+
+### Technical Insights  
+- SharpAssertRewriter uses CSharpSyntaxRewriter for AST transformation
+- Simple identifier matching works: `node.Expression is IdentifierNameSyntax identifier && identifier.Identifier.ValueText == "Assert"`
+- Lambda expressions created via `SyntaxFactory.ParenthesizedLambdaExpression().WithParameterList().WithExpressionBody()`
+- Async detection via `node.DescendantNodes().OfType<AwaitExpressionSyntax>().Any()` prevents rewriting async cases
+
+### Implementation Structure
+- `/SharpAssert.Rewriter/SharpAssertRewriter.cs` - Core rewriter with Roslyn syntax transformation
+- `/SharpAssert.Rewriter/SharpLambdaRewriteTask.cs` - MSBuild task wrapper with error handling
+- `/SharpAssert.Rewriter/build/SharpAssert.Rewriter.targets` - MSBuild integration file
+- `/SharpAssert.Rewriter.Tests/RewriterFixture.cs` - Core rewriter functionality tests
+- `/SharpAssert.Rewriter.Tests/IntegrationFixture.cs` - End-to-end integration tests
+
+### MSBuild Integration
+- Target framework net9.0 for modern C# language features
+- `BeforeTargets="CoreCompile"` ensures rewriting happens before compilation
+- Graceful fallback copies original files to prevent build breakage
+- Output to `$(IntermediateOutputPath)SharpRewritten\**\*.sharp.g.cs` pattern

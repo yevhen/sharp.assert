@@ -1,0 +1,40 @@
+﻿<Project>
+
+  <PropertyGroup>
+    <EnableSharpLambdaRewrite Condition="'$(EnableSharpLambdaRewrite)' == ''">true</EnableSharpLambdaRewrite>
+    <SharpAssertEmitRewriteInfo Condition="'$(SharpAssertEmitRewriteInfo)' == ''">false</SharpAssertEmitRewriteInfo>
+  </PropertyGroup>
+
+  <UsingTask 
+    TaskName="SharpLambdaRewriteTask" 
+    AssemblyFile="$(MSBuildThisFileDirectory)../lib/net9.0/SharpAssert.Rewriter.dll" />
+
+  <Target Name="SharpLambdaRewrite" BeforeTargets="CoreCompile"
+          Condition="'$(EnableSharpLambdaRewrite)'=='true'">
+    
+    <ItemGroup>
+      <_SharpInput Include="@(Compile)" />
+    </ItemGroup>
+
+    <Message Text="SharpAssert: Rewriting Sharp.Assert calls to lambda form" Importance="normal" 
+             Condition="'$(SharpAssertEmitRewriteInfo)'=='true'" />
+    
+    <SharpLambdaRewriteTask
+        Sources="@(_SharpInput)"
+        ProjectDir="$(MSBuildProjectDirectory)"
+        IntermediateDir="$(IntermediateOutputPath)"
+        OutputDir="$(IntermediateOutputPath)SharpRewritten"
+        LangVersion="$(LangVersion)"
+        NullableContext="$(Nullable)" />
+
+    <ItemGroup>
+      <Compile Remove="@(Compile)" />
+      <Compile Include="$(IntermediateOutputPath)SharpRewritten\**\*.sharp.g.cs" />
+    </ItemGroup>
+    
+    <Message Text="SharpAssert: Replaced @(_SharpInput->Count()) source files with rewritten versions" Importance="normal"
+             Condition="'$(SharpAssertEmitRewriteInfo)'=='true'" />
+    
+  </Target>
+
+</Project>
