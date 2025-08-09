@@ -317,45 +317,259 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 
 ---
 
-## 8. Walking Skeleton → Iterative Plan
+## 8. Implementation Plan
 
-- **Iteration 0 — Walking Skeleton**
-    - Ship `Sharp.Assert(bool)` (fallback).
-    - MSBuild task that only rewrites to `SharpInternal.Assert(() => expr, …)` for sync cases (no `await`/`dynamic`).
-    - Runtime: basic visitor for expression trees:
-        - Support: binary compares, logical ops, method calls, member access.
-        - On failure: print `<expr>` + left/right for binaries.
+### **Increment 1: Foundation - Basic Assert with Exception**
+**Outcome**: Users can call `Sharp.Assert(bool)` and get meaningful failures
+**Tests** (SharpAssert.Tests/AssertionFixture.cs):
+- `Should_pass_when_condition_is_true()` - Assert(true) doesn't throw
+- `Should_throw_SharpAssertionException_when_false()` - Assert(false) throws with message
+- `Should_include_expression_text_in_error()` - Assert(1==2) shows "1==2" via CallerArgumentExpression
+- `Should_include_file_and_line_in_error()` - Error contains file path and line number
 
-- **Iteration 1 — Strings & Collections**
-    - Integrate DiffPlex for string diffs (inline).
-    - Detect `IEnumerable` vs `IEnumerable`; show first mismatch, missing/extra.
-    - Add preview (first/last N), truncation.
+**Implementation**:
+- Create `Sharp.cs` with public static `Assert(bool, CallerArgumentExpression, CallerFilePath, CallerLineNumber)`
+- Create `SharpAssertionException : Exception` with formatted message
+- Assert throws exception when condition is false with expression/file/line info
 
-- **Iteration 2 — Objects (deep diff)**
-    - Integrate Compare‑Net‑Objects; render path‑level diffs.
-    - Cap differences by `MaxDiffLines`.
+---
 
-- **Iteration 3 — Membership/LINQ**
-    - In expression‑tree visitor, detect `.Contains`, `.Any`, `.All`, `.SequenceEqual`.
-    - For `.Contains`/`.Any`/`.All`: enumerate once to `List<T>`; show counts, matching subsets.
-    - For `.SequenceEqual`: side‑by‑side unified diff (DiffPlex).
+### **Increment 2: Expression Tree Runtime - Binary Comparisons**
+**Outcome**: Runtime can analyze binary expressions and show operand values
+**Tests** (SharpAssert.Tests/ExpressionAnalysisFixture.cs):
+- `Should_show_left_and_right_values_for_equality()` - x==y shows both values
+- `Should_handle_all_comparison_operators()` - Test ==, !=, <, <=, >, >=
+- `Should_handle_null_operands()` - null == value shows "null" properly
+- `Should_evaluate_complex_expressions_once()` - Side effects happen only once
 
-- **Iteration 4 — Async support**
-    - Rewriter: detect `await`; for binary emit `AssertAsyncBinary(leftThunk, rightThunk, op, …)`; else `AssertAsync`.
-    - Runtime:
-        - `AssertAsyncBinary`: `await` left→right; render values/diffs.
-        - `AssertAsync`: minimal diagnostics (`expr` + `False`) initially.
+**Implementation**:
+- Create `SharpInternal.cs` with `Assert(Expression<Func<bool>>, string, string, int)`
+- Implement `ExpressionVisitor` that walks tree and caches evaluated sub-expressions
+- Format binary operators with left/right values in error message
+- Create `BinaryOp` enum
 
-- **Iteration 5 — Dynamic support**
-    - Rewriter: detect `dynamic`; for binary emit `AssertDynamicBinary(leftThunk, rightThunk, op, …)`; else `AssertDynamic`.
-    - Runtime:
-        - `AssertDynamicBinary`: evaluate thunks; `(dynamic)left OP (dynamic)right`; show values/diffs.
-        - `AssertDynamic`: minimal diagnostics (`expr` + `False`).
+---
 
-- **Iteration 6 — Polish & Config**
-    - Implement the `AsyncLocal<T>`-based `SharpConfig`.
-    - `Verify` integration (optional) for large diffs.
-    - Docs + samples for xUnit/NUnit/MSTest; CI (build, tests, pack).
+### **Increment 3: Logical Operators Support**
+**Outcome**: Logical operators (&&, ||, !) show operand truth values
+**Tests** (SharpAssert.Tests/LogicalOperatorFixture.cs):
+- `Should_show_which_part_of_AND_failed()` - true && false shows right was false  
+- `Should_short_circuit_AND_correctly()` - false && throw doesn't evaluate right
+- `Should_show_which_part_of_OR_succeeded()` - false || true shows evaluation
+- `Should_handle_NOT_operator()` - !true shows operand was true
+
+**Implementation**:
+- Extend ExpressionVisitor for AndAlso, OrElse, Not nodes
+- Preserve short-circuit semantics naturally via expression evaluation
+- Format logical operations clearly in error messages
+
+---
+
+### **Increment 4: MSBuild Rewriter - Sync Cases Only**
+**Outcome**: Build rewrites `Assert(expr)` to `SharpInternal.Assert(() => expr, ...)`
+**Tests** (SharpAssert.Rewriter.Tests/RewriterFixture.cs):
+- `Should_rewrite_simple_assertion_to_lambda()` - Assert(x==1) becomes lambda
+- `Should_preserve_complex_expressions()` - Nested calls preserved
+- `Should_skip_rewrite_if_async_present()` - Detects await, leaves original
+- `Should_handle_multiple_assertions_in_file()` - All assertions rewritten
+
+**Implementation**:
+- Create MSBuild task project SharpAssert.Rewriter
+- Use Roslyn to parse, analyze with SemanticModel, detect Sharp.Assert calls
+- Generate lambda wrapping for sync cases
+- Write to intermediate directory
+- Create .targets file for integration
+
+---
+
+### **Increment 5: String Comparison with Inline Diffs**
+**Outcome**: String equality failures show character-level differences
+**Tests** (SharpAssert.Tests/StringComparisonFixture.cs):
+- `Should_show_inline_diff_for_strings()` - "hello" vs "hallo" shows diff
+- `Should_handle_multiline_strings()` - Line-by-line comparison
+- `Should_truncate_very_long_strings()` - Limits output size
+- `Should_handle_null_strings()` - null vs "" handled gracefully
+
+**Implementation**:
+- Add DiffPlex NuGet package
+- Detect string comparisons in ExpressionVisitor
+- Create StringDiffer class using DiffPlex inline diff builder
+- Apply truncation limits from configuration
+
+---
+
+### **Increment 6: Collection Comparison - Basic**
+**Outcome**: Collection failures show first mismatch and missing/extra elements
+**Tests** (SharpAssert.Tests/CollectionComparisonFixture.cs):
+- `Should_show_first_mismatch_index()` - [1,2,3] vs [1,2,4] shows index 2
+- `Should_show_missing_elements()` - [1,2] vs [1,2,3] shows missing 3
+- `Should_show_extra_elements()` - [1,2,3] vs [1,2] shows extra 3
+- `Should_handle_empty_collections()` - [] vs [1] handled correctly
+
+**Implementation**:
+- Detect IEnumerable comparisons
+- Materialize to List<T> once to avoid re-enumeration
+- Calculate first difference, missing, extra
+- Format collection preview (first/last N elements)
+
+---
+
+### **Increment 7: Object Deep Comparison**
+**Outcome**: Object/record/struct failures show property-level differences
+**Tests** (SharpAssert.Tests/ObjectComparisonFixture.cs):
+- `Should_show_property_differences()` - Different property values listed
+- `Should_handle_nested_objects()` - Deep path shown (e.g., "Address.City")
+- `Should_handle_null_objects()` - null vs instance handled
+- `Should_respect_equality_overrides()` - Uses Equals if overridden
+
+**Implementation**:
+- Add Compare-Net-Objects NuGet package
+- Detect object equality comparisons
+- Use CompareLogic to get differences
+- Format property paths with old vs new values
+- Apply MaxDiffLines limit
+
+---
+
+### **Increment 8: LINQ Operations - Contains/Any/All**
+**Outcome**: LINQ operations provide specialized diagnostic messages
+**Tests** (SharpAssert.Tests/LinqOperationsFixture.cs):
+- `Should_show_collection_when_Contains_fails()` - Shows actual collection contents
+- `Should_show_matching_items_for_Any()` - Shows which items matched predicate
+- `Should_show_failing_items_for_All()` - Shows which items failed predicate
+- `Should_handle_empty_collections_in_LINQ()` - Empty.Any() shows "empty collection"
+
+**Implementation**:
+- Detect MethodCallExpression for Contains, Any, All
+- Materialize collection once, apply predicate
+- Show collection count, preview of elements
+- Format predicate expression if available
+
+---
+
+### **Increment 9: SequenceEqual Deep Diff**
+**Outcome**: SequenceEqual shows unified diff of sequences
+**Tests** (SharpAssert.Tests/SequenceEqualFixture.cs):
+- `Should_show_unified_diff()` - Side-by-side comparison
+- `Should_handle_different_lengths()` - Shows length mismatch
+- `Should_truncate_large_sequences()` - Limits output with "..."
+- `Should_work_with_custom_comparers()` - Honors IEqualityComparer parameter
+
+**Implementation**:
+- Detect SequenceEqual method call
+- Materialize both sequences to List<T>
+- Use DiffPlex for unified diff
+- Apply truncation for large outputs
+
+---
+
+### **Increment 10: Async Support - Basic AssertAsync**
+**Outcome**: Can assert on expressions containing await
+**Tests** (SharpAssert.Tests/AsyncAssertionFixture.cs):
+- `Should_handle_await_in_condition()` - Assert(await GetBool()) works
+- `Should_show_false_for_failed_async()` - Shows expression and False
+- `Should_preserve_async_context()` - Maintains SynchronizationContext
+- `Should_handle_exceptions_in_async()` - Async exceptions bubble correctly
+
+**Implementation**:
+- Create `SharpInternal.AssertAsync(Func<Task<bool>>, ...)`
+- Rewriter detects await keyword via SemanticModel
+- Emits AssertAsync for general await cases
+- Await result and provide basic diagnostics
+
+---
+
+### **Increment 11: Async Binary Comparisons**
+**Outcome**: Binary comparisons with await show both operand values
+**Tests** (SharpAssert.Tests/AsyncBinaryFixture.cs):
+- `Should_show_both_async_values()` - await Left() == await Right() shows values
+- `Should_handle_mixed_async_sync()` - await X() == 5 works correctly
+- `Should_evaluate_in_source_order()` - Left evaluated before right
+- `Should_apply_diffs_to_async_strings()` - String diff works with async
+
+**Implementation**:
+- Create `SharpInternal.AssertAsyncBinary(Func<Task<object?>>, Func<Task<object?>>, BinaryOp, ...)`
+- Rewriter detects binary with await, generates thunks
+- Wrap sync operands in Task.FromResult
+- Apply same diff logic as sync path
+
+---
+
+### **Increment 12: Dynamic Support**
+**Outcome**: Dynamic expressions work with value diagnostics for binaries
+**Tests** (SharpAssert.Tests/DynamicAssertionFixture.cs):
+- `Should_handle_dynamic_binary()` - dynamic == 5 shows values
+- `Should_handle_dynamic_method_calls()` - dynamic.Method() > 0 works
+- `Should_apply_dynamic_operator_semantics()` - Uses DLR for comparison
+- `Should_show_minimal_diagnostics_for_complex_dynamic()` - Falls back gracefully
+
+**Implementation**:
+- Create `SharpInternal.AssertDynamic` and `AssertDynamicBinary`
+- Rewriter detects dynamic via SemanticModel
+- Use dynamic binder for operator evaluation
+- Cast to object? in thunks for binary cases
+
+---
+
+### **Increment 13: Thread-Safe Configuration**
+**Outcome**: Tests can override configuration without affecting parallel tests
+**Tests** (SharpAssert.Tests/ConfigurationFixture.cs):
+- `Should_use_default_options()` - Default values applied
+- `Should_override_with_scoped_options()` - using block changes settings
+- `Should_restore_after_scope()` - Original settings restored
+- `Should_isolate_parallel_test_configs()` - Parallel tests don't interfere
+
+**Implementation**:
+- Create SharpOptions record with settings
+- Implement SharpConfig with AsyncLocal<SharpOptions>
+- WithOptions returns IDisposable for scoping
+- All formatters read from SharpConfig.Current
+
+---
+
+### **Increment 14: Rewriter Robustness & Fallback**
+**Outcome**: Complex/invalid expressions gracefully fall back to original Assert
+**Tests** (SharpAssert.Rewriter.Tests/FallbackFixture.cs):
+- `Should_leave_invalid_syntax_unchanged()` - Malformed code not rewritten
+- `Should_handle_compilation_errors_gracefully()` - Doesn't crash build
+- `Should_emit_diagnostic_logs_when_enabled()` - SharpAssertEmitRewriteInfo works
+- `Should_handle_exotic_expression_types()` - Patterns, switch expressions, etc.
+
+**Implementation**:
+- Wrap rewriter logic in try-catch
+- If analysis fails, leave original Assert call
+- Add diagnostic logging controlled by MSBuild property
+- Test with edge cases and invalid code
+
+---
+
+### **Increment 15: Integration & Polish**
+**Outcome**: Complete integration with test frameworks and external tools
+**Tests** (SharpAssert.Integration.Tests/*):
+- `Should_work_with_xunit()` - Full xUnit integration test
+- `Should_work_with_nunit()` - Full NUnit integration test  
+- `Should_attach_files_to_test_context()` - NUnit/MSTest file attachments
+- `Should_respect_all_config_options()` - Verify all settings work
+
+**Implementation**:
+- Create example projects for each test framework
+- Add Verify.* integration (optional)
+- Polish error message formatting
+- Create NuGet package with .targets file
+- Documentation and samples
+
+---
+
+### Verification Steps for Each Increment
+
+Each increment must:
+1. ✅ Have all tests written first and failing appropriately
+2. ✅ Implement minimal code to make tests pass
+3. ✅ Achieve 100% branch coverage for new code
+4. ✅ Run `dotnet build` successfully
+5. ✅ Pass all existing tests (no regressions)
+6. ✅ Update learnings.md with any discoveries
+7. ✅ Commit with descriptive message
 
 ---
 
