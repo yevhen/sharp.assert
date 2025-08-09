@@ -169,4 +169,3 @@ public class ExpressionAnalysisFixture : TestBase
         AssertExpressionThrows<SharpAssertionException>(expr, "ReferenceEquals(objA, objB)", "TestFile.cs", 401, "*");
     }
 }
-

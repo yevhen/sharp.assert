@@ -27,7 +27,7 @@ internal class ExpressionAnalyzer : ExpressionVisitor
 
                 return result ?
                     string.Empty :
-                    AnalyzeBinaryFailure(binaryExpr, leftValue, rightValue, originalExpr, file, line);
+                    AnalyzeBinaryFailure(leftValue, rightValue, originalExpr, file, line);
             }
             case UnaryExpression { NodeType: ExpressionType.Not } unaryExpr:
             {
@@ -61,7 +61,7 @@ internal class ExpressionAnalyzer : ExpressionVisitor
         }
         
         var rightValueOrElse = GetValue(binaryExpr.Right);
-        
+
         return FormatLogicalFailure(originalExpr, locationPart, leftValue, rightValueOrElse, "||: Both operands were false", false);
     }
 
@@ -87,9 +87,8 @@ internal class ExpressionAnalyzer : ExpressionVisitor
                $"  !: Operand was {FormatValue(operandValue)}";
     }
 
-    static string AnalyzeBinaryFailure(BinaryExpression binaryExpr, object? leftValue, object? rightValue, string originalExpr, string file, int line)
+    static string AnalyzeBinaryFailure(object? leftValue, object? rightValue, string originalExpr, string file, int line)
     {
-        var operatorSymbol = GetOperatorSymbol(binaryExpr.NodeType);
         var leftDisplay = FormatValue(leftValue);
         var rightDisplay = FormatValue(rightValue);
         
@@ -119,21 +118,6 @@ internal class ExpressionAnalyzer : ExpressionVisitor
         {
             return false;
         }
-    }
-
-    static string GetOperatorSymbol(ExpressionType nodeType)
-    {
-        return nodeType switch
-        {
-            ExpressionType.Equal => "==",
-            ExpressionType.NotEqual => "!=",
-            ExpressionType.LessThan => "<",
-            ExpressionType.LessThanOrEqual => "<=",
-            ExpressionType.GreaterThan => ">",
-            ExpressionType.GreaterThanOrEqual => ">=",
-            ExpressionType.Not => "!",
-            _ => nodeType.ToString()
-        };
     }
 
     static string FormatValue(object? value)

@@ -9,8 +9,6 @@ internal static class AssertionFormatter
         return $"Assertion failed: {expressionPart}  at {locationPart}";
     }
     
-    public static string FormatLocation(string? file, int line)
-    {
-        return string.IsNullOrEmpty(file) ? $"line {line}" : $"{file}:{line}";
-    }
+    public static string FormatLocation(string? file, int line) =>
+        string.IsNullOrEmpty(file) ? $"line {line}" : $"{file}:{line}";
 }
