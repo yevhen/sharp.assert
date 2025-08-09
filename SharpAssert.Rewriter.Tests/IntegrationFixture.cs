@@ -18,26 +18,25 @@ public class IntegrationFixture
                     var x = 1;
                     try 
                     {
-                        Assert(x == 2); // Should fail
-                        return false; // Shouldn't reach here
+                        Assert(x == 2);
+                        return false;
                     } 
                     catch (SharpAssertionException ex)
                     {
-                        return ex.Message.Contains("x == 2"); // Should contain expression
+                        return ex.Message.Contains("x == 2");
                     }
                 } 
             }
             """;
         
         var rewriter = new SharpAssertRewriter();
-        var rewrittenSource = rewriter.Rewrite(source, "Test.cs");
-        
-        // Verify the rewrite happened
+        var rewrittenSource = SharpAssertRewriter.Rewrite(source, "Test.cs");
+
         rewrittenSource.Should().Contain("global::SharpInternal.Assert");
         rewrittenSource.Should().Contain("()=>x == 2");
         rewrittenSource.Should().NotContain("Assert(x == 2)");
     }
-    
+
     [Test]
     public void Should_preserve_files_with_no_assertions()
     {
@@ -51,14 +50,13 @@ public class IntegrationFixture
                 } 
             }
             """;
-        
+
         var rewriter = new SharpAssertRewriter();
-        var result = rewriter.Rewrite(source, "Test.cs");
-        
-        // Should remain unchanged
+        var result = SharpAssertRewriter.Rewrite(source, "Test.cs");
+
         result.Should().Be(source);
     }
-    
+
     [Test]
     public void Should_handle_multiple_assertions_correctly()
     {
@@ -77,11 +75,10 @@ public class IntegrationFixture
                 } 
             }
             """;
-        
+
         var rewriter = new SharpAssertRewriter();
-        var result = rewriter.Rewrite(source, "Test.cs");
+        var result = SharpAssertRewriter.Rewrite(source, "Test.cs");
         
-        // Should rewrite all three assertions
         result.Should().Contain("global::SharpInternal.Assert(()=>x < y");
         result.Should().Contain("global::SharpInternal.Assert(()=>y > 0");
         result.Should().Contain("global::SharpInternal.Assert(()=>x + y == 3");

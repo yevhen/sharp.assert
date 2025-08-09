@@ -6,7 +6,7 @@ namespace SharpAssert.Rewriter.Tests;
 public class DebugRewriterFixture
 {
     [Test]
-    public void Debug_rewriter_analysis()
+    public void DebugRewriterAnalysis()
     {
         var source = """
             using static Sharp;
@@ -22,11 +22,10 @@ public class DebugRewriterFixture
             """;
         
         var rewriter = new SharpAssertRewriter();
-        var result = rewriter.Rewrite(source, "TestFile.cs");
+        var result = SharpAssertRewriter.Rewrite(source, "TestFile.cs");
         
-        // Just assert that the rewrite contains the expected parts
         result.Should().Contain("global::SharpInternal.Assert");
-        result.Should().Contain("()=>x == 1"); // No space after =>
+        result.Should().Contain("()=>x == 1");
         result.Should().Contain("\"x == 1\"");
     }
 }

@@ -37,12 +37,12 @@ public class RewriterFixture
             """;
         
         var rewriter = new SharpAssertRewriter();
-        var result = rewriter.Rewrite(source, "TestFile.cs");
-        
+        var result = SharpAssertRewriter.Rewrite(source, "TestFile.cs");
+
         result.Should().Be(expected);
     }
-    
-    [Test] 
+
+    [Test]
     public void Should_preserve_complex_expressions()
     {
         var source = """
@@ -57,7 +57,7 @@ public class RewriterFixture
                 } 
             }
             """;
-        
+
         var expected = """
             using static Sharp;
             
@@ -70,13 +70,13 @@ public class RewriterFixture
                 } 
             }
             """;
-        
+
         var rewriter = new SharpAssertRewriter();
-        var result = rewriter.Rewrite(source, "TestFile.cs");
-        
+        var result = SharpAssertRewriter.Rewrite(source, "TestFile.cs");
+
         result.Should().Be(expected);
     }
-    
+
     [Test]
     public void Should_skip_rewrite_if_async_present()
     {
@@ -93,13 +93,13 @@ public class RewriterFixture
                 Task<bool> GetBoolAsync() => Task.FromResult(true);
             }
             """;
-        
+
         var rewriter = new SharpAssertRewriter();
-        var result = rewriter.Rewrite(source, "TestFile.cs");
-        
-        result.Should().Be(source); // Should remain unchanged
+        var result = SharpAssertRewriter.Rewrite(source, "TestFile.cs");
+
+        result.Should().Be(source);
     }
-    
+
     [Test]
     public void Should_handle_multiple_assertions_in_file()
     {
@@ -117,7 +117,7 @@ public class RewriterFixture
                 } 
             }
             """;
-        
+
         var expected = """
             using static Sharp;
             
@@ -132,9 +132,9 @@ public class RewriterFixture
                 } 
             }
             """;
-        
+
         var rewriter = new SharpAssertRewriter();
-        var result = rewriter.Rewrite(source, "TestFile.cs");
+        var result = SharpAssertRewriter.Rewrite(source, "TestFile.cs");
         
         result.Should().Be(expected);
     }

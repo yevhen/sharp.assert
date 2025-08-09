@@ -1,5 +1,4 @@
 using Microsoft.Build.Framework;
-using Microsoft.Build.Utilities;
 
 namespace SharpAssert.Rewriter;
 
@@ -26,85 +25,88 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
         try
         {
             Log.LogMessage(MessageImportance.Normal, $"SharpAssert: Rewriting {Sources.Length} source files");
-            
-            // Ensure output directory exists
-            if (!Directory.Exists(OutputDir))
-                Directory.CreateDirectory(OutputDir);
-            
+
+            EnsureDirectoryExists(OutputDir);
+
             var rewriter = new SharpAssertRewriter();
             var processedCount = 0;
-            
+
             foreach (var sourceItem in Sources)
             {
                 var sourcePath = sourceItem.ItemSpec;
                 var sourceContent = File.ReadAllText(sourcePath);
-                
-                // Skip files that don't contain Assert calls (simple optimization)
-                if (!sourceContent.Contains("Assert("))
+
+                if (!ContainsAssertCalls(sourceContent))
                     continue;
-                    
-                var rewrittenContent = rewriter.Rewrite(sourceContent, sourcePath);
-                
-                // Only write file if it was actually changed
+
+                var rewrittenContent = SharpAssertRewriter.Rewrite(sourceContent, sourcePath);
+
                 if (rewrittenContent != sourceContent)
                 {
-                    var relativePath = Path.GetRelativePath(ProjectDir, sourcePath);
-                    var outputPath = Path.Combine(OutputDir, relativePath + ".sharp.g.cs");
-                    var outputDirPath = Path.GetDirectoryName(outputPath);
-                    
-                    if (!string.IsNullOrEmpty(outputDirPath) && !Directory.Exists(outputDirPath))
-                        Directory.CreateDirectory(outputDirPath);
-                    
-                    File.WriteAllText(outputPath, rewrittenContent);
+                    WriteProcessedFile(sourcePath, rewrittenContent);
                     processedCount++;
                 }
                 else
                 {
-                    // Copy unchanged file to maintain build structure
-                    var relativePath = Path.GetRelativePath(ProjectDir, sourcePath);
-                    var outputPath = Path.Combine(OutputDir, relativePath + ".sharp.g.cs");
-                    var outputDirPath = Path.GetDirectoryName(outputPath);
-                    
-                    if (!string.IsNullOrEmpty(outputDirPath) && !Directory.Exists(outputDirPath))
-                        Directory.CreateDirectory(outputDirPath);
-                    
-                    File.WriteAllText(outputPath, sourceContent);
+                    WriteUnchangedFile(sourcePath, sourceContent);
                 }
             }
-            
+
             Log.LogMessage(MessageImportance.Normal, $"SharpAssert: Processed {processedCount} files with rewrites");
             return true;
         }
         catch (Exception ex)
         {
             Log.LogError($"SharpAssert rewriter failed: {ex.Message}");
-            
-            // According to PRD: graceful fallback - don't fail the build
             Log.LogWarning("SharpAssert: Falling back to original Assert behavior due to rewriter error");
-            
-            // Copy original files to maintain build
-            foreach (var sourceItem in Sources)
+
+            FallbackToOriginalFiles();
+            return true;
+        }
+    }
+
+    static void EnsureDirectoryExists(string directory)
+    {
+        if (!Directory.Exists(directory))
+            Directory.CreateDirectory(directory);
+    }
+
+    static bool ContainsAssertCalls(string sourceContent) => sourceContent.Contains("Assert(");
+
+    void WriteProcessedFile(string sourcePath, string content)
+    {
+        var outputPath = GetOutputPath(sourcePath);
+        EnsureDirectoryExists(Path.GetDirectoryName(outputPath)!);
+        File.WriteAllText(outputPath, content);
+    }
+
+    void WriteUnchangedFile(string sourcePath, string content)
+    {
+        var outputPath = GetOutputPath(sourcePath);
+        EnsureDirectoryExists(Path.GetDirectoryName(outputPath)!);
+        File.WriteAllText(outputPath, content);
+    }
+
+    string GetOutputPath(string sourcePath)
+    {
+        var relativePath = Path.GetRelativePath(ProjectDir, sourcePath);
+        return Path.Combine(OutputDir, relativePath + ".sharp.g.cs");
+    }
+
+    void FallbackToOriginalFiles()
+    {
+        foreach (var sourceItem in Sources)
+        {
+            try
             {
-                try
-                {
-                    var sourcePath = sourceItem.ItemSpec;
-                    var sourceContent = File.ReadAllText(sourcePath);
-                    var relativePath = Path.GetRelativePath(ProjectDir, sourcePath);
-                    var outputPath = Path.Combine(OutputDir, relativePath + ".sharp.g.cs");
-                    var outputDirPath = Path.GetDirectoryName(outputPath);
-                    
-                    if (!string.IsNullOrEmpty(outputDirPath) && !Directory.Exists(outputDirPath))
-                        Directory.CreateDirectory(outputDirPath);
-                    
-                    File.WriteAllText(outputPath, sourceContent);
-                }
-                catch
-                {
-                    // Even fallback failed, but don't break the build
-                }
+                var sourcePath = sourceItem.ItemSpec;
+                var sourceContent = File.ReadAllText(sourcePath);
+                WriteUnchangedFile(sourcePath, sourceContent);
             }
-            
-            return true; // Return true to prevent build failure
+            catch
+            {
+                // ignored
+            }
         }
     }
 }

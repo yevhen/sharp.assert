@@ -26,5 +26,4 @@ public static class SharpInternal
             
         throw new SharpAssertionException(failureMessage);
     }
-
 }

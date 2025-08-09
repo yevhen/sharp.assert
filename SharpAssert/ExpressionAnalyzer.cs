@@ -4,7 +4,6 @@ namespace SharpAssert;
 
 internal class ExpressionAnalyzer : ExpressionVisitor
 {
-    
     public string AnalyzeFailure(Expression<Func<bool>> expression, string originalExpr, string file, int line)
     {
         switch (expression.Body)
