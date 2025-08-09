@@ -83,6 +83,9 @@ Stack emojis when requested, don't replace.
 ## Test Quality Principles
 
 - We are intolerant of slow tests and tests with timeouts. If a test hangs, it should be deeply investigated and fixed.
+- NEVER use Arrange/Act/Assert comments in tests. Instead, separate test sections with empty lines.
+- AVOID testing multiple independent behaviors in one test. Split complex tests into focused, single-behavior tests.
+- PREFER using message arguments in assertions to communicate what the assertion is testing instead of comments.
 
 ## Mutual Support and Proactivity
 
@@ -302,7 +305,33 @@ RULE: AVOID over-defensive_programming internally.
 RULE: CRITICAL AVOID comments; DO WRITE self_documenting_code.
 
 - INSTEAD_OF: Commenting `// check if user is valid`, DO create a method `bool IsValid(User user)`.
+- NEVER add comments that simply reiterate what is obvious from the code.
 - BECAUSE: {comments_rot, encourages_clearer_code}.
+
+RULE: DO NOT add XML doc comments for internal APIs.
+
+- ONLY document public APIs that are part of the user-facing surface.
+- BECAUSE: {reduces_noise, focuses_documentation_effort_on_user_value}.
+
+RULE: DO NOT add brackets for simple one-line if statements.
+
+```csharp
+// BAD
+if (result)
+{
+    return string.Empty;
+}
+
+// GOOD
+if (result)
+    return string.Empty;
+```
+- BECAUSE: {reduces_visual_noise, improves_readability}.
+
+RULE: DO NOT add default `private` modifier.
+
+- The `private` modifier is implicit for class members.
+- BECAUSE: {reduces_verbosity, cleaner_code}.
 
 RULE: PREFER strongly-typed `enum`s or the "smart enum" pattern OVER raw strings or integers.
 
@@ -382,6 +411,7 @@ async\method: Suffix with `Async` =\> `GetDataAsync()`
 - **IMPORTANT**: Document threading and concurrency behavior
 - Provide realistic, copy-pasteable examples
 - **CRITICAL**: Explain the "why" not just the "what"
+- **CRITICAL**: Always write XML doc comments from the user's perspective, not implementation details
 - Cover common pitfalls and best practices
 
 - ## Performance Documentation Template
