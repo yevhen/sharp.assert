@@ -333,6 +333,21 @@ RULE: DO NOT add default `private` modifier.
 - The `private` modifier is implicit for class members.
 - BECAUSE: {reduces_verbosity, cleaner_code}.
 
+RULE: PREFER using `var` instead of specifying exact type for variable declarations.
+
+```csharp
+// BAD
+bool left = false;
+bool right = true;
+string message = "hello";
+
+// GOOD  
+var left = false;
+var right = true;
+var message = "hello";
+```
+- BECAUSE: {reduces_verbosity, improves_readability, lets_compiler_infer_obvious_types}.
+
 RULE: PREFER strongly-typed `enum`s or the "smart enum" pattern OVER raw strings or integers.
 
 - BECAUSE: {compile-time_type_safety, improved_readability, IDE_intellisense}.
