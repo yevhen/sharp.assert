@@ -11,7 +11,6 @@ internal class ExpressionAnalyzer : ExpressionVisitor
     {
         if (expression.Body is BinaryExpression binaryExpr)
         {
-            // Handle logical operators (AndAlso, OrElse) with short-circuit semantics
             if (binaryExpr.NodeType == ExpressionType.AndAlso || binaryExpr.NodeType == ExpressionType.OrElse)
             {
                 var logicalResult = GetValue(binaryExpr);
@@ -21,7 +20,6 @@ internal class ExpressionAnalyzer : ExpressionVisitor
                 return AnalyzeLogicalBinaryFailure(binaryExpr, originalExpr, file, line);
             }
             
-            // Handle comparison operators
             var leftValue = GetValue(binaryExpr.Left);
             var rightValue = GetValue(binaryExpr.Right);
             var result = EvaluateBinaryOperation(binaryExpr.NodeType, leftValue, rightValue);
@@ -32,7 +30,6 @@ internal class ExpressionAnalyzer : ExpressionVisitor
             return AnalyzeBinaryFailure(binaryExpr, leftValue, rightValue, originalExpr, file, line);
         }
         
-        // Handle unary Not operator
         if (expression.Body is UnaryExpression unaryExpr && unaryExpr.NodeType == ExpressionType.Not)
         {
             var notResult = GetValue(unaryExpr);
@@ -54,7 +51,6 @@ internal class ExpressionAnalyzer : ExpressionVisitor
         var locationPart = AssertionFormatter.FormatLocation(file, line);
         var operatorSymbol = GetOperatorSymbol(binaryExpr.NodeType);
         
-        // Evaluate with respect to short-circuit semantics
         var leftValue = GetValue(binaryExpr.Left);
         var leftBool = (bool)leftValue!;
         
@@ -62,14 +58,12 @@ internal class ExpressionAnalyzer : ExpressionVisitor
         {
             if (!leftBool)
             {
-                // Short-circuit: left is false, so right is not evaluated
                 return $"Assertion failed: {originalExpr}  at {locationPart}\n" +
                        $"  Left:  {FormatValue(leftValue)} (short-circuit)\n" +
                        $"  &&: Left operand was false";
             }
             else
             {
-                // Left is true, evaluate right
                 var rightValue = GetValue(binaryExpr.Right);
                 return $"Assertion failed: {originalExpr}  at {locationPart}\n" +
                        $"  Left:  {FormatValue(leftValue)}\n" +
@@ -81,14 +75,12 @@ internal class ExpressionAnalyzer : ExpressionVisitor
         {
             if (leftBool)
             {
-                // This should not happen in a failure case for OR, but handle it
                 return $"Assertion failed: {originalExpr}  at {locationPart}\n" +
                        $"  Left:  {FormatValue(leftValue)}\n" +
                        $"  ||: Left operand was true (this should not fail)";
             }
             else
             {
-                // Left is false, evaluate right
                 var rightValue = GetValue(binaryExpr.Right);
                 return $"Assertion failed: {originalExpr}  at {locationPart}\n" +
                        $"  Left:  {FormatValue(leftValue)}\n" +
