@@ -167,6 +167,9 @@ public enum LogicalOp { And, Or }
 - Integrate `Verify.*`: when string/object diffs are large, write `.received`/`.verified` files and open configured diff tool (VS Code, Beyond Compare, etc.).
 - For NUnit/MSTest: attach files via `TestContext.AddTestAttachment` / `AddResultFile`.
 
+### 3.7 Performance Considerations
+- The rich diagnostic tools (object diffing, collection comparison) are only invoked on assertion failure. While this is efficient for passing tests, be aware that complex object diffs on large structures can introduce a performance cost *at the moment of failure*. This is generally an acceptable trade-off for the detailed feedback provided.
+
 ---
 
 ## 4. MSBuild Source Rewrite Task
@@ -201,6 +204,8 @@ public enum LogicalOp { And, Or }
 
 ### 4.2 Rewriter algorithm (deterministic)
 
+**Core Principle:** The rewriter must be robust. If it fails to analyze an assertion for any reason, it **must** silently leave the original `Sharp.Assert` call untouched. This provides a graceful fallback to the default `[CallerArgumentExpression]` behavior, preventing build failures from complex or unexpected user code.
+
 For each `InvocationExpression` resolving to `Sharp.Assert(bool)`:
 1.  **Analyze the argument with `SemanticModel`:**
     - Contains `await`? → `HasAwait = true`
@@ -208,19 +213,28 @@ For each `InvocationExpression` resolving to `Sharp.Assert(bool)`:
     - Top‑level binary operator? (`Eq`/`Ne`/`Lt`/`Le`/`Gt`/`Ge`) → `BinaryOp?`
 2.  **Rewrite decision matrix**
 
-| Case                 | Rewrite to                                                                                             | Notes                                                      |
-| -------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| No `await`, no `dynamic` | `SharpInternal.Assert(() => <expr>, expr, file, line)`                                                 | Main sync path (expression tree)                           |
-| `await` + binary       | `SharpInternal.AssertAsyncBinary(async () => <left>, async () => <right>, op, expr, file, line)`         | Left/right are awaitable subexpressions; ensure order      |
-| `await` + not binary   | `SharpInternal.AssertAsync(async () => <expr>, expr, file, line)`                                      | Limited diagnostics                                        |
-| `dynamic` + binary     | `SharpInternal.AssertDynamicBinary(() => (object?)<left>, () => (object?)<right>, op, expr, file, line)` | Better diagnostics with values                             |
-| `dynamic` + not binary | `SharpInternal.AssertDynamic(() => <expr>, expr, file, line)`                                          | Minimal diagnostics                                        |
-| Both `await` & `dynamic` | Prefer async track; if binary → `AssertAsyncBinary` using thunks that include dynamic parts.           |                                                            |
+| Case                 | Rewrite to                                                                                             | Notes                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| No `await`, no `dynamic` | `SharpInternal.Assert(() => <expr>, expr, file, line)`                                                 | Main sync path (expression tree)                                                                   |
+| `await` + binary       | `SharpInternal.AssertAsyncBinary(async () => <left>, async () => <right>, op, expr, file, line)`         | Left/right are awaitable. If one side is sync, it's wrapped in `Task.FromResult()` to match the signature. |
+| `await` + not binary   | `SharpInternal.AssertAsync(async () => <expr>, expr, file, line)`                                      | Limited diagnostics                                                                                |
+| `dynamic` + binary     | `SharpInternal.AssertDynamicBinary(() => (object?)<left>, () => (object?)<right>, op, expr, file, line)` | Better diagnostics with values                                                                     |
+| `dynamic` + not binary | `SharpInternal.AssertDynamic(() => <expr>, expr, file, line)`                                          | Minimal diagnostics                                                                                |
+| Both `await` & `dynamic` | Prefer async track; if binary → `AssertAsyncBinary` using thunks that include dynamic parts.           |                                                                                                    |
 
 3.  **Emit fully‑qualified `global::SharpInternal.*` calls.**
     (No `#line` needed — we aren’t expanding large blocks. Debugging stays natural.)
 
 **Note:** You can include the raw `expr` string using `[CallerArgumentExpression]` from the original `Sharp.Assert`, or the rewriter can embed it literally. Prefer embedding the literal for clarity.
+
+### 4.3 Debugging the Rewriter
+To facilitate debugging, the rewrite task will support a diagnostic MSBuild property:
+```xml
+<PropertyGroup>
+  <SharpAssertEmitRewriteInfo>true</SharpAssertEmitRewriteInfo>
+</PropertyGroup>
+```
+When enabled, the rewriter will output detailed logs of its analysis and decisions. This is crucial for troubleshooting unexpected rewrite behavior.
 
 ---
 
@@ -234,7 +248,9 @@ For each `InvocationExpression` resolving to `Sharp.Assert(bool)`:
 
 ---
 
-## 6. Configuration
+## 6. Configuration (Thread-Safe)
+
+Configuration is handled via an `AsyncLocal<T>`-based context, ensuring that settings are safely applied even when tests run in parallel. A global default is available, but can be overridden for a specific scope using a `using` block.
 
 ```csharp
 public sealed class SharpOptions
@@ -250,12 +266,34 @@ public sealed class SharpOptions
 
 public static class SharpConfig
 {
-    public static SharpOptions Global { get; set; } = new();
+    private static readonly AsyncLocal<SharpOptions?> _options = new();
+
+    public static SharpOptions Current => _options.Value ??= new SharpOptions();
+
+    public static IDisposable WithOptions(SharpOptions options)
+    {
+        var original = _options.Value;
+        _options.Value = options;
+        return new ScopedOptions(() => _options.Value = original);
+    }
+
+    private sealed class ScopedOptions : IDisposable { /* ... */ }
 }
 
 public enum CollectionEqualityMode { Strict, Equivalent }
 ```
-(Per‑call overrides can be added later, e.g., via a scoped `SharpScope.With(options)`.)
+
+**Example Usage:**
+```csharp
+// This assertion uses the default/global options
+Assert(myString == "expected");
+
+// Temporarily override settings for a specific block of tests
+using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
+{
+    Assert(myString == "a different string"); // This assertion will use side-by-side diffs
+}
+```
 
 ---
 
@@ -315,7 +353,7 @@ public enum CollectionEqualityMode { Strict, Equivalent }
         - `AssertDynamic`: minimal diagnostics (`expr` + `False`).
 
 - **Iteration 6 — Polish & Config**
-    - Global options; side‑by‑side string diffs; collection `Equivalent` mode via FA.
+    - Implement the `AsyncLocal<T>`-based `SharpConfig`.
     - `Verify` integration (optional) for large diffs.
     - Docs + samples for xUnit/NUnit/MSTest; CI (build, tests, pack).
 
@@ -331,26 +369,29 @@ public enum CollectionEqualityMode { Strict, Equivalent }
     - `AssertDynamicBinary` for common ops; collection/object/string values printed correctly.
 - **Rewriter tests:**
     - Source → rewritten source (golden files) for each mapping row; ensure no `await` or `dynamic` leaks into `Expression<Func<bool>>`.
+    - Test the graceful fallback mechanism where the rewriter leaves invalid code alone.
 - **Integration:**
     - Real test project with `EnableSharpLambdaRewrite=true`; run & verify messages.
     - Large collections/strings ensure truncation works.
+    - Test configuration scoping with `SharpConfig.WithOptions`.
 
 ---
 
 ## 10. Mapping Table (rewrite rules)
 
-| Case                 | User Code                      | Emits                                                                                             |
-| -------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------- |
-| Sync, normal         | `Assert(a + 2 == b * 3)`       | `SharpInternal.Assert(() => a + 2 == b * 3, "a + 2 == b * 3", file, line)`                        |
-| Sync, logical        | `Assert(isAuth && hasPerms)`   | `SharpInternal.Assert(() => isAuth && hasPerms, "...", file, line)`                                |
-| `.Contains`          | `Assert(users.Contains(admin))`| `SharpInternal.Assert(() => users.Contains(admin), "...", file, line)`                            |
-| `.Any` / `.All`      | `Assert(items.Any(p))`         | `SharpInternal.Assert(() => items.Any(p), "...", file, line)`                                     |
-| `.SequenceEqual`     | `Assert(a.SequenceEqual(b))`   | `SharpInternal.Assert(() => a.SequenceEqual(b), "...", file, line)`                               |
-| Async binary         | `Assert(await L() == await R())`| `SharpInternal.AssertAsyncBinary(async () => await L(), async () => await R(), Eq, "...", file, line)` |
-| Async general        | `Assert(await CheckAsync(x))`  | `SharpInternal.AssertAsync(async () => await CheckAsync(x), "...", file, line)`                   |
-| Dynamic binary       | `Assert(xDyn == y)`            | `SharpInternal.AssertDynamicBinary(() => (object?)xDyn, () => (object?)y, Eq, "...", file, line)`  |
-| Dynamic general      | `Assert(xDyn.Call() > 0)`      | `SharpInternal.AssertDynamic(() => xDyn.Call() > 0, "...", file, line)`                           |
-| Both `await` & `dynamic` | `Assert(await xDyn.F() == y)`  | Prefer async binary thunks that return `object?`                                                  |
+| Case                 | User Code                           | Emits                                                                                             |
+| -------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Sync, normal         | `Assert(a + 2 == b * 3)`            | `SharpInternal.Assert(() => a + 2 == b * 3, "a + 2 == b * 3", file, line)`                        |
+| Sync, logical        | `Assert(isAuth && hasPerms)`        | `SharpInternal.Assert(() => isAuth && hasPerms, "...", file, line)`                                |
+| `.Contains`          | `Assert(users.Contains(admin))`     | `SharpInternal.Assert(() => users.Contains(admin), "...", file, line)`                            |
+| `.Any` / `.All`      | `Assert(items.Any(p))`              | `SharpInternal.Assert(() => items.Any(p), "...", file, line)`                                     |
+| `.SequenceEqual`     | `Assert(a.SequenceEqual(b))`        | `SharpInternal.Assert(() => a.SequenceEqual(b), "...", file, line)`                               |
+| Async binary         | `Assert(await L() == await R())`    | `SharpInternal.AssertAsyncBinary(async () => await L(), async () => await R(), Eq, "...", file, line)` |
+| Mixed async/sync     | `Assert(await L() == "constant")`   | `SharpInternal.AssertAsyncBinary(async () => await L(), () => Task.FromResult("constant"), ...)`   |
+| Async general        | `Assert(await CheckAsync(x))`       | `SharpInternal.AssertAsync(async () => await CheckAsync(x), "...", file, line)`                   |
+| Dynamic binary       | `Assert(xDyn == y)`                 | `SharpInternal.AssertDynamicBinary(() => (object?)xDyn, () => (object?)y, Eq, "...", file, line)`  |
+| Dynamic general      | `Assert(xDyn.Call() > 0)`           | `SharpInternal.AssertDynamic(() => xDyn.Call() > 0, "...", file, line)`                           |
+| Both `await` & `dynamic` | `Assert(await xDyn.F() == y)`       | Prefer async binary thunks that return `object?`                                                  |
 
 ---
 
@@ -363,10 +404,12 @@ public enum CollectionEqualityMode { Strict, Equivalent }
 
 ## 12. Acceptance Criteria
 - Devs write only `Sharp.Assert(bool)`; rewriter does the rest.
+- **Robustness:** The build does not fail due to rewriter errors; it gracefully falls back to simpler diagnostics.
 - Sync cases yield PowerAssert‑grade messages: left/right, logical operand values, membership/LINQ insights, `SequenceEqual` diff, string/collection/object diffs.
 - Async/dynamic covered with targeted thunks; at minimum, clear failure text; for binaries — proper value diffs.
 - No double evaluation; order preserved.
 - Easy to read messages, truncated sensibly; optional external diff viewer.
+- Configuration is thread-safe and easy to use.
 
 ---
 
