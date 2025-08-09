@@ -10,8 +10,8 @@ public class ExpressionAnalysisFixture
     [Test]
     public void Should_show_left_and_right_values_for_equality()
     {
-        int x = 42;
-        int y = 24;
+        var x = 42;
+        var y = 24;
         Expression<Func<bool>> expr = () => x == y;
 
         var action = () => SharpInternal.Assert(expr, "x == y", "TestFile.cs", 123);
@@ -22,8 +22,8 @@ public class ExpressionAnalysisFixture
     [Test]
     public void Should_handle_equality_operator()
     {
-        int x = 5;
-        int y = 10;
+        var x = 5;
+        var y = 10;
         Expression<Func<bool>> expr = () => x == y;
 
         var action = () => SharpInternal.Assert(expr, "x == y", "TestFile.cs", 1);
@@ -34,8 +34,8 @@ public class ExpressionAnalysisFixture
     [Test]
     public void Should_handle_inequality_operator()
     {
-        int a = 5;
-        int b = 5;
+        var a = 5;
+        var b = 5;
         Expression<Func<bool>> expr = () => a != b;
 
         var action = () => SharpInternal.Assert(expr, "a != b", "TestFile.cs", 2);
@@ -46,8 +46,8 @@ public class ExpressionAnalysisFixture
     [Test]
     public void Should_handle_less_than_operator()
     {
-        int c = 10;
-        int d = 5;
+        var c = 10;
+        var d = 5;
         Expression<Func<bool>> expr = () => c < d;
 
         var action = () => SharpInternal.Assert(expr, "c < d", "TestFile.cs", 3);
@@ -58,8 +58,8 @@ public class ExpressionAnalysisFixture
     [Test]
     public void Should_handle_less_than_or_equal_operator()
     {
-        int e = 10;
-        int f = 5;
+        var e = 10;
+        var f = 5;
         Expression<Func<bool>> expr = () => e <= f;
 
         var action = () => SharpInternal.Assert(expr, "e <= f", "TestFile.cs", 4);
@@ -70,8 +70,8 @@ public class ExpressionAnalysisFixture
     [Test]
     public void Should_handle_greater_than_operator()
     {
-        int g = 5;
-        int h = 10;
+        var g = 5;
+        var h = 10;
         Expression<Func<bool>> expr = () => g > h;
 
         var action = () => SharpInternal.Assert(expr, "g > h", "TestFile.cs", 5);
@@ -82,8 +82,8 @@ public class ExpressionAnalysisFixture
     [Test]
     public void Should_handle_greater_than_or_equal_operator()
     {
-        int i = 5;
-        int j = 10;
+        var i = 5;
+        var j = 10;
         Expression<Func<bool>> expr = () => i >= j;
 
         var action = () => SharpInternal.Assert(expr, "i >= j", "TestFile.cs", 6);
@@ -95,7 +95,7 @@ public class ExpressionAnalysisFixture
     public void Should_handle_null_operands()
     {
         string? nullString = null;
-        string value = "test";
+        var value = "test";
         Expression<Func<bool>> expr = () => nullString == value;
 
         var action = () => SharpInternal.Assert(expr, "nullString == value", "TestFile.cs", 100);

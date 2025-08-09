@@ -10,8 +10,8 @@ public class LogicalOperatorFixture
     [Test]
     public void Should_show_which_part_of_AND_failed()
     {
-        bool left = true;
-        bool right = false;
+        var left = true;
+        var right = false;
         Expression<Func<bool>> expr = () => left && right;
 
         var action = () => SharpInternal.Assert(expr, "left && right", "TestFile.cs", 10);
@@ -22,7 +22,7 @@ public class LogicalOperatorFixture
     [Test]
     public void Should_short_circuit_AND_correctly()
     {
-        bool left = false;
+        var left = false;
         Expression<Func<bool>> expr = () => left && ThrowException();
 
         var action = () => SharpInternal.Assert(expr, "left && ThrowException()", "TestFile.cs", 20);
@@ -33,8 +33,8 @@ public class LogicalOperatorFixture
     [Test]
     public void Should_show_which_part_of_OR_failed()
     {
-        bool left = false;
-        bool right = false;
+        var left = false;
+        var right = false;
         Expression<Func<bool>> expr = () => left || right;
 
         var action = () => SharpInternal.Assert(expr, "left || right", "TestFile.cs", 30);
@@ -45,8 +45,8 @@ public class LogicalOperatorFixture
     [Test]
     public void Should_pass_when_OR_succeeds()
     {
-        bool left = false;
-        bool right = true;
+        var left = false;
+        var right = true;
         Expression<Func<bool>> expr = () => left || right;
 
         SharpInternal.Assert(expr, "left || right", "TestFile.cs", 35);
@@ -55,7 +55,7 @@ public class LogicalOperatorFixture
     [Test]
     public void Should_handle_NOT_operator()
     {
-        bool operand = true;
+        var operand = true;
         Expression<Func<bool>> expr = () => !operand;
 
         var action = () => SharpInternal.Assert(expr, "!operand", "TestFile.cs", 40);
