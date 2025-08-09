@@ -13,6 +13,7 @@ This file provides guidance to the agent when working with code in this reposito
 - ALWAYS read `@learnings.md` to not trap into the same issues again.
 - ALWAYS build, analyze, and test before committing and reporting success.
 - ALWAYS rebuild the entire solution with `dotnet build` before running quality checks or tests on the sources.
+- **CRITICAL**: NO defensive/speculative/overengineered code. Every line of code must be reachable and testable via public API. No code "just in case". If a performance optimization cannot be tested via public API, don't add it (no premature optimization). This includes: unnecessary null checks, defensive try-catch blocks, caching mechanisms without proven need, redundant validation, or any code paths that cannot be triggered through normal usage.
 
 ## Common Development Commands
 
