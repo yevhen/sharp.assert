@@ -99,6 +99,7 @@ public class ExpressionAnalysisFixture : TestBase
     {
         callCount = 0;
 
+        // ReSharper disable once EqualExpressionComparison
         Expression<Func<bool>> expr = () => GetValueAndIncrement() == GetValueAndIncrement();
 
         AssertExpressionThrows<SharpAssertionException>(expr, "GetValueAndIncrement() == GetValueAndIncrement()", "TestFile.cs", 200, "*");
@@ -164,6 +165,8 @@ public class ExpressionAnalysisFixture : TestBase
     {
         var objA = new NonComparableClass { Name = "A" };
         var objB = new DifferentNonComparableClass { Value = 10 };
+
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
         Expression<Func<bool>> expr = () => ReferenceEquals(objA, objB);
 
         AssertExpressionThrows<SharpAssertionException>(expr, "ReferenceEquals(objA, objB)", "TestFile.cs", 401, "*");
