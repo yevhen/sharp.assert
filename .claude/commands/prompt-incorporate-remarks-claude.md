@@ -1,0 +1,1 @@
+I have few remarks. Read @prompt.md, then think and incorporate them in respective sections in CLAUDE.md then !a 
