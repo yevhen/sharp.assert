@@ -394,7 +394,9 @@ async\method: Suffix with `Async` =\> `GetDataAsync()`
 
 ### Rules:
 
-- Figure out the best matching category section or create a new one if needed.
+- The `learnings.md` file is organized by topic (e.g., "Project & Solution Structure", "MSBuild Source Rewriter").
+- Add new learnings as bullet points to the most relevant existing topic section.
+- If no relevant topic exists, create a new `## Topic Name` section.
 - Keep entries extremely concise - one line per insight.
 - Only log unique, non-obvious information.
 - Focus on future value for similar tasks.

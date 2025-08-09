@@ -1,103 +1,61 @@
 # SharpAssert Development Learnings
 
-## Foundation Implementation (Increment 1)
+This document is organized by topic to consolidate key learnings about the project's architecture, implementation, and testing.
 
-### Key Discoveries
-- CallerArgumentExpression, CallerFilePath, and CallerLineNumber work seamlessly in .NET 9.0 without additional configuration
-- FluentAssertions integrates perfectly with NUnit 4.2.2 for readable test assertions
-- The namespace structure requires careful attention - main library uses `SharpAssert` namespace, public API is in global scope
-- Test project should have same RootNamespace as main project but be in separate physical namespace
+## Project & Solution Structure
 
-### Technical Insights
-- Exception formatting follows pytest-style: "Assertion failed: {expr} at {file}:{line}"
-- Private helper methods improve readability for message formatting
-- Using statements can reference both namespaces (SharpAssert for exceptions) and static classes (Sharp for API)
+- **Namespaces:** The main library code resides in the `SharpAssert` namespace, but the public `Sharp.Assert` API is exposed in the global scope for ease of use. The custom `SharpAssertionException` lives within the `SharpAssert` namespace.
+- **Test Project:** The test project (`SharpAssert.Tests`) should share the same `RootNamespace` as the main project (`SharpAssert`) but exist in its own separate physical namespace to mirror the structure of the code under test.
+- **File Organization:**
+    - `/SharpAssert/Sharp.cs`: Public API entry point.
+    - `/SharpAssert/SharpAssertionException.cs`: Custom exception.
+    - `/SharpAssert/SharpInternal.cs`: Internal API for rewriter targets.
+    - `/SharpAssert/ExpressionAnalyzer.cs`: Core expression tree visitor.
+    - `/SharpAssert.Tests/`: Contains all test fixtures.
+- **Build Configuration:**
+    - The project targets `net9.0` to leverage modern C# language features.
+    - Careful attention is needed for compatibility with features like file-scoped namespaces and implicit usings when working with the rewriter.
 
-### Project Structure
-- `/SharpAssert/Sharp.cs` - Public API entry point (global scope)
-- `/SharpAssert/SharpAssertionException.cs` - Custom exception (SharpAssert namespace)
-- `/SharpAssert.Tests/AssertionFixture.cs` - Test fixture following NUnit conventions
+## Runtime: Expression Tree Analysis
 
-### Build & Test Setup
-- FluentAssertions 6.12.1 provides excellent assertion syntax
-- Project reference works cleanly between test and main project
-- All 4 required tests pass: basic passing, exception throwing, expression text, file/line info
+- **Single Evaluation Principle:** A core requirement is to evaluate each operand and sub-expression only once. This is achieved by using a visitor pattern (`ExpressionAnalyzer`) combined with a `ConcurrentDictionary` to cache the results of evaluated sub-expressions.
+- **Expression Tree Limitations:** Expression trees cannot contain local functions. All logic must be implemented as instance or static methods.
+- **Binary Comparisons (`==`, `!=`, `>`, etc.):**
+    - These are analyzed to extract the final values of the left and right operands for inclusion in the failure message.
+    - A `BinaryOp` enum is used to represent all C# comparison operators.
+- **Logical Operators (`&&`, `||`, `!`):**
+    - These require special handling separate from binary comparisons.
+    - `&&` maps to `ExpressionType.AndAlso`, `||` to `ExpressionType.OrElse`, and `!` to `ExpressionType.Not`.
+    - **Short-Circuiting:** The natural short-circuiting behavior of `&&` and `||` is preserved by evaluating the entire expression first and only analyzing the sub-expressions if the assertion fails. This avoids artificially enforcing evaluation rules.
+    - The `!` operator is a `UnaryExpression` and requires its own handling path.
 
-## Expression Tree Runtime (Increment 2)
+## Runtime: Diagnostics & Formatting
 
-### Key Discoveries
-- Expression trees cannot contain local functions - must use instance or static methods
-- ConcurrentDictionary provides thread-safe caching for expression evaluation results
-- Single evaluation requirement achieved by evaluating operands once and caching results
-- Custom binary operation evaluation prevents double-evaluation of the entire expression
+- **Standard Failure Message:** The exception format is inspired by pytest: `Assertion failed: {expr} at {file}:{line}`.
+- **Binary Comparison Message:** For failed binary comparisons, the message is augmented with the evaluated operands: `
+  Left: {value}
+  Right: {value}`.
+- **Logical Operator Message:** For failed logical operations, the message shows the truthiness of the operands to provide context (e.g., "Left operand was false" for a short-circuited `&&`).
+- **Readability:** Private helper methods are used extensively to keep the formatting logic clean and maintainable.
 
-### Technical Insights
-- ExpressionAnalyzer uses visitor pattern with caching to ensure each sub-expression evaluates exactly once
-- Binary comparison analysis extracts left/right operand values and formats them clearly
-- Error message format: "Assertion failed: {expr} at {file}:{line}\n  Left: {value}\n  Right: {value}"
-- BinaryOp enum supports all C# comparison operators: ==, !=, <, <=, >, >=
+## MSBuild Source Rewriter
 
-### Implementation Structure
-- `/SharpAssert/SharpInternal.cs` - Internal API for expression tree analysis
-- `/SharpAssert/ExpressionAnalyzer.cs` - Core expression tree visitor and analyzer
-- `/SharpAssert/BinaryOp.cs` - Enumeration of binary comparison operators
-- `/SharpAssert.Tests/ExpressionAnalysisFixture.cs` - Comprehensive test coverage
+- **Core Technology:** The rewriter is implemented using Roslyn's `CSharpSyntaxRewriter` to perform AST transformation.
+- **Invocation Detection:** Simple and fast identifier matching (`identifier.Identifier.ValueText == "Assert"`) is sufficient to find `Sharp.Assert` calls, avoiding the need for a full semantic model resolution in many cases.
+- **Lambda Creation:** `SyntaxFactory.ParenthesizedLambdaExpression()` is used to wrap the user's expression into a lambda (`() => ...`). The factory produces compact but functionally correct code.
+- **Async Prevention:** The rewriter detects `await` expressions (`.DescendantNodes().OfType<AwaitExpressionSyntax>().Any()`) and skips rewriting them to avoid generating invalid expression trees.
+- **MSBuild Integration:**
+    - The rewrite task is injected `BeforeTargets="CoreCompile"` to ensure it runs before the compiler.
+    - The output is written to a standard pattern: `$(IntermediateOutputPath)SharpRewritten\**\*.sharp.g.cs`.
+- **Graceful Fallback:** This is a critical principle. The MSBuild task is designed to fail gracefully. If the rewriter encounters an error, it copies the original source file, ensuring that a rewriter bug **does not break the user's build**.
 
-### Testing Insights
-- All comparison operators tested: equality, inequality, less/greater than variants
-- Null value handling works correctly, shows "null" in output
-- Complex expression single-evaluation verified with side-effect tracking
-- 17 total tests passing (4 foundation + 4 expression analysis + 4 binary + 4 logical + 1 complex evaluation)
+## API Design & Dependencies
 
-## Logical Operators Support (Increment 3)
+- **Public API:** The user-facing API is minimal, relying on `[CallerArgumentExpression]`, `[CallerFilePath]`, and `[CallerLineNumber]` to capture the assertion context automatically. These attributes work seamlessly in .NET 9.0.
+- **Dependencies:** `FluentAssertions` is used within the test suite (`SharpAssert.Tests`) for creating readable and maintainable test assertions.
 
-### Key Discoveries
-- Logical operators (&&, ||, !) require special handling separate from binary comparison operators
-- Short-circuit evaluation must be preserved naturally via expression evaluation - not artificially enforced
-- AndAlso and OrElse in expression trees respect short-circuit semantics when evaluated through GetValue()
-- Must check if logical expression actually fails before calling failure analysis methods
-- NOT operator is UnaryExpression, not BinaryExpression - requires separate handling path
+## Testing Strategy
 
-### Technical Insights  
-- Expression type mapping: && → ExpressionType.AndAlso, || → ExpressionType.OrElse, ! → ExpressionType.Not
-- Short-circuit behavior is preserved by evaluating the full expression and only analyzing failure when it actually fails
-- Error messages show operand truth values: "Left: True/False" for && and ||, "Operand: True/False" for !
-- Logical failure analysis provides context: "Left operand was false" for short-circuited &&, "Both operands were false" for ||
-
-### Implementation Structure
-- Extended ExpressionAnalyzer.AnalyzeFailure() with logical operator detection
-- Added AnalyzeLogicalBinaryFailure() method for && and || operations
-- Added AnalyzeNotFailure() method for ! operations  
-- Updated GetOperatorSymbol() to include logical operators
-
-### Testing Insights
-- 4 logical operator tests: AND failure, short-circuit AND, OR evaluation, NOT operator
-- Short-circuit test verifies ThrowException() is never called when left side of && is false
-- All 17 tests passing (4 foundation + 4 expression analysis + 4 binary + 4 logical + 1 complex evaluation)
-
-## MSBuild Rewriter Implementation (Increment 4)
-
-### Key Discoveries
-- Simple pattern matching sufficient for detecting Sharp.Assert calls without full semantic model resolution
-- MSBuild task graceful fallback is critical - rewriter errors must not break the build
-- Roslyn SyntaxFactory produces compact but functionally correct output (no spaces after `=>`)
-- File-scoped namespaces and ImplicitUsings require careful target framework compatibility
-
-### Technical Insights  
-- SharpAssertRewriter uses CSharpSyntaxRewriter for AST transformation
-- Simple identifier matching works: `node.Expression is IdentifierNameSyntax identifier && identifier.Identifier.ValueText == "Assert"`
-- Lambda expressions created via `SyntaxFactory.ParenthesizedLambdaExpression().WithParameterList().WithExpressionBody()`
-- Async detection via `node.DescendantNodes().OfType<AwaitExpressionSyntax>().Any()` prevents rewriting async cases
-
-### Implementation Structure
-- `/SharpAssert.Rewriter/SharpAssertRewriter.cs` - Core rewriter with Roslyn syntax transformation
-- `/SharpAssert.Rewriter/SharpLambdaRewriteTask.cs` - MSBuild task wrapper with error handling
-- `/SharpAssert.Rewriter/build/SharpAssert.Rewriter.targets` - MSBuild integration file
-- `/SharpAssert.Rewriter.Tests/RewriterFixture.cs` - Core rewriter functionality tests
-- `/SharpAssert.Rewriter.Tests/IntegrationFixture.cs` - End-to-end integration tests
-
-### MSBuild Integration
-- Target framework net9.0 for modern C# language features
-- `BeforeTargets="CoreCompile"` ensures rewriting happens before compilation
-- Graceful fallback copies original files to prevent build breakage
-- Output to `$(IntermediateOutputPath)SharpRewritten\**\*.sharp.g.cs` pattern
+- **Unit Tests:** The core rewriter functionality is tested using "golden file" tests, comparing the output of the rewriter against a known-good rewritten source file.
+- **Integration Tests:** End-to-end tests are run on a sample project where `EnableSharpLambdaRewrite` is set to `true`, verifying that the entire process (rewrite -> compile -> run -> fail) works as expected.
+- **Fixtures:** Test fixtures are organized by functionality (e.g., `AssertionFixture`, `ExpressionAnalysisFixture`, `RewriterFixture`).
