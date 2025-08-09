@@ -46,7 +46,6 @@ internal class ExpressionAnalyzer : ExpressionVisitor
 
     string AnalyzeLogicalBinaryFailure(BinaryExpression binaryExpr, string originalExpr, string file, int line)
     {
-        var operatorSymbol = GetOperatorSymbol(binaryExpr.NodeType);
         var locationPart = AssertionFormatter.FormatLocation(file, line);
         
         var leftValue = GetValue(binaryExpr.Left);
@@ -61,11 +60,8 @@ internal class ExpressionAnalyzer : ExpressionVisitor
             return FormatLogicalFailure(originalExpr, locationPart, leftValue, rightValue, "&&: Right operand was false", false);
         }
         
-        // OrElse
-        if (leftBool)
-            return FormatLogicalFailure(originalExpr, locationPart, leftValue, null, "||: Left operand was true (this should not fail)", false);
-        
         var rightValueOrElse = GetValue(binaryExpr.Right);
+        
         return FormatLogicalFailure(originalExpr, locationPart, leftValue, rightValueOrElse, "||: Both operands were false", false);
     }
 
@@ -135,8 +131,6 @@ internal class ExpressionAnalyzer : ExpressionVisitor
             ExpressionType.LessThanOrEqual => "<=",
             ExpressionType.GreaterThan => ">",
             ExpressionType.GreaterThanOrEqual => ">=",
-            ExpressionType.AndAlso => "&&",
-            ExpressionType.OrElse => "||",
             ExpressionType.Not => "!",
             _ => nodeType.ToString()
         };

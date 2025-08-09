@@ -1,11 +1,9 @@
-using FluentAssertions;
-using SharpAssert;
 using System.Linq.Expressions;
 
-namespace SharpAssert.Tests;
+namespace SharpAssert;
 
 [TestFixture]
-public class LogicalOperatorFixture
+public class LogicalOperatorFixture : TestBase
 {
     [Test]
     public void Should_show_which_part_of_AND_failed()
@@ -14,9 +12,7 @@ public class LogicalOperatorFixture
         var right = false;
         Expression<Func<bool>> expr = () => left && right;
 
-        var action = () => SharpInternal.Assert(expr, "left && right", "TestFile.cs", 10);
-        action.Should().Throw<SharpAssertionException>()
-              .WithMessage("*&&*true*false*");
+        AssertExpressionThrows<SharpAssertionException>(expr, "left && right", "TestFile.cs", 10, "*&&*true*false*");
     }
 
     [Test]
@@ -25,9 +21,7 @@ public class LogicalOperatorFixture
         var left = false;
         Expression<Func<bool>> expr = () => left && ThrowException();
 
-        var action = () => SharpInternal.Assert(expr, "left && ThrowException()", "TestFile.cs", 20);
-        action.Should().Throw<SharpAssertionException>()
-              .WithMessage("*&&*false*");
+        AssertExpressionThrows<SharpAssertionException>(expr, "left && ThrowException()", "TestFile.cs", 20, "*&&*false*");
     }
 
     [Test]
@@ -37,9 +31,7 @@ public class LogicalOperatorFixture
         var right = false;
         Expression<Func<bool>> expr = () => left || right;
 
-        var action = () => SharpInternal.Assert(expr, "left || right", "TestFile.cs", 30);
-        action.Should().Throw<SharpAssertionException>()
-              .WithMessage("*||*false*false*");
+        AssertExpressionThrows<SharpAssertionException>(expr, "left || right", "TestFile.cs", 30, "*||*false*false*");
     }
 
     [Test]
@@ -58,13 +50,8 @@ public class LogicalOperatorFixture
         var operand = true;
         Expression<Func<bool>> expr = () => !operand;
 
-        var action = () => SharpInternal.Assert(expr, "!operand", "TestFile.cs", 40);
-        action.Should().Throw<SharpAssertionException>()
-              .WithMessage("*!*true*");
+        AssertExpressionThrows<SharpAssertionException>(expr, "!operand", "TestFile.cs", 40, "*!*true*");
     }
 
-    private static bool ThrowException()
-    {
-        throw new InvalidOperationException("This should not be called due to short-circuit evaluation");
-    }
+    static bool ThrowException() => throw new InvalidOperationException("This should not be called due to short-circuit evaluation");
 }

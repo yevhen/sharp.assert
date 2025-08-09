@@ -1,11 +1,10 @@
 using FluentAssertions;
-using SharpAssert;
 using static Sharp;
 
-namespace SharpAssert.Tests;
+namespace SharpAssert;
 
 [TestFixture]
-public class AssertionFixture
+public class AssertionFixture : TestBase
 {
     [Test]
     public void Should_pass_when_condition_is_true()
