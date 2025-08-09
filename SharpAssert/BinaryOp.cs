@@ -1,6 +1,6 @@
 namespace SharpAssert;
 
-/// <summary>Binary comparison operators for expression analysis.</summary>
+/// <summary>Comparison operators supported in assertions.</summary>
 public enum BinaryOp
 {
     /// <summary>Equality (==)</summary>

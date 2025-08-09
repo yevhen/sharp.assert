@@ -3,7 +3,7 @@ using SharpAssert;
 
 public static class Sharp
 {
-    /// <summary>Entry point users call in tests. Rewriter replaces this call.</summary>
+    /// <summary>Validates that a condition is true, throwing an exception with detailed error information if false.</summary>
     public static void Assert(
         bool condition,
         [CallerArgumentExpression("condition")] string? expr = null,
@@ -17,7 +17,7 @@ public static class Sharp
         }
     }
 
-    private static string FormatAssertionFailure(string? expr, string? file, int line)
+    static string FormatAssertionFailure(string? expr, string? file, int line)
     {
         var expressionPart = string.IsNullOrEmpty(expr) ? "false" : expr;
         var locationPart = string.IsNullOrEmpty(file) ? $"line {line}" : $"{file}:{line}";

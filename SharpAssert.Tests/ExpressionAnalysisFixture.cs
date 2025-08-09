@@ -10,105 +10,117 @@ public class ExpressionAnalysisFixture
     [Test]
     public void Should_show_left_and_right_values_for_equality()
     {
-        // Arrange
         int x = 42;
         int y = 24;
         Expression<Func<bool>> expr = () => x == y;
 
-        // Act & Assert
         var action = () => SharpInternal.Assert(expr, "x == y", "TestFile.cs", 123);
         action.Should().Throw<SharpAssertionException>()
-              .WithMessage("*42*24*"); // Should show both operand values
+              .WithMessage("*42*24*");
     }
 
     [Test]
-    public void Should_handle_all_comparison_operators()
+    public void Should_handle_equality_operator()
     {
-        // Test ==
         int x = 5;
         int y = 10;
-        Expression<Func<bool>> exprEq = () => x == y;
-        var actionEq = () => SharpInternal.Assert(exprEq, "x == y", "TestFile.cs", 1);
-        actionEq.Should().Throw<SharpAssertionException>()
-                .WithMessage("*5*10*");
+        Expression<Func<bool>> expr = () => x == y;
 
-        // Test !=  
+        var action = () => SharpInternal.Assert(expr, "x == y", "TestFile.cs", 1);
+        action.Should().Throw<SharpAssertionException>()
+              .WithMessage("*5*10*");
+    }
+
+    [Test]
+    public void Should_handle_inequality_operator()
+    {
         int a = 5;
         int b = 5;
-        Expression<Func<bool>> exprNe = () => a != b;
-        var actionNe = () => SharpInternal.Assert(exprNe, "a != b", "TestFile.cs", 2);
-        actionNe.Should().Throw<SharpAssertionException>()
-                .WithMessage("*5*5*");
+        Expression<Func<bool>> expr = () => a != b;
 
-        // Test <
+        var action = () => SharpInternal.Assert(expr, "a != b", "TestFile.cs", 2);
+        action.Should().Throw<SharpAssertionException>()
+              .WithMessage("*5*5*");
+    }
+
+    [Test]
+    public void Should_handle_less_than_operator()
+    {
         int c = 10;
         int d = 5;
-        Expression<Func<bool>> exprLt = () => c < d;
-        var actionLt = () => SharpInternal.Assert(exprLt, "c < d", "TestFile.cs", 3);
-        actionLt.Should().Throw<SharpAssertionException>()
-                .WithMessage("*10*5*");
+        Expression<Func<bool>> expr = () => c < d;
 
-        // Test <=
+        var action = () => SharpInternal.Assert(expr, "c < d", "TestFile.cs", 3);
+        action.Should().Throw<SharpAssertionException>()
+              .WithMessage("*10*5*");
+    }
+
+    [Test]
+    public void Should_handle_less_than_or_equal_operator()
+    {
         int e = 10;
         int f = 5;
-        Expression<Func<bool>> exprLe = () => e <= f;
-        var actionLe = () => SharpInternal.Assert(exprLe, "e <= f", "TestFile.cs", 4);
-        actionLe.Should().Throw<SharpAssertionException>()
-                .WithMessage("*10*5*");
+        Expression<Func<bool>> expr = () => e <= f;
 
-        // Test >
+        var action = () => SharpInternal.Assert(expr, "e <= f", "TestFile.cs", 4);
+        action.Should().Throw<SharpAssertionException>()
+              .WithMessage("*10*5*");
+    }
+
+    [Test]
+    public void Should_handle_greater_than_operator()
+    {
         int g = 5;
         int h = 10;
-        Expression<Func<bool>> exprGt = () => g > h;
-        var actionGt = () => SharpInternal.Assert(exprGt, "g > h", "TestFile.cs", 5);
-        actionGt.Should().Throw<SharpAssertionException>()
-                .WithMessage("*5*10*");
+        Expression<Func<bool>> expr = () => g > h;
 
-        // Test >=
+        var action = () => SharpInternal.Assert(expr, "g > h", "TestFile.cs", 5);
+        action.Should().Throw<SharpAssertionException>()
+              .WithMessage("*5*10*");
+    }
+
+    [Test]
+    public void Should_handle_greater_than_or_equal_operator()
+    {
         int i = 5;
         int j = 10;
-        Expression<Func<bool>> exprGe = () => i >= j;
-        var actionGe = () => SharpInternal.Assert(exprGe, "i >= j", "TestFile.cs", 6);
-        actionGe.Should().Throw<SharpAssertionException>()
-                .WithMessage("*5*10*");
+        Expression<Func<bool>> expr = () => i >= j;
+
+        var action = () => SharpInternal.Assert(expr, "i >= j", "TestFile.cs", 6);
+        action.Should().Throw<SharpAssertionException>()
+              .WithMessage("*5*10*");
     }
 
     [Test]
     public void Should_handle_null_operands()
     {
-        // Arrange
         string? nullString = null;
         string value = "test";
         Expression<Func<bool>> expr = () => nullString == value;
 
-        // Act & Assert
         var action = () => SharpInternal.Assert(expr, "nullString == value", "TestFile.cs", 100);
         action.Should().Throw<SharpAssertionException>()
-              .WithMessage("*null*test*"); // Should show "null" for null values
+              .WithMessage("*null*test*");
     }
 
-    private int _callCount = 0;
+    int callCount = 0;
     
-    private int GetValueAndIncrement()
+    int GetValueAndIncrement()
     {
-        _callCount++;
-        return _callCount * 10;
+        callCount++;
+        return callCount * 10;
     }
 
     [Test]
     public void Should_evaluate_complex_expressions_once()
     {
-        // Arrange - reset call count
-        _callCount = 0;
+        callCount = 0;
 
-        // Create expression that calls the method twice in different sides
         Expression<Func<bool>> expr = () => GetValueAndIncrement() == GetValueAndIncrement();
 
-        // Act & Assert - this should fail because 10 != 20, but each side should only be evaluated once
         var action = () => SharpInternal.Assert(expr, "GetValueAndIncrement() == GetValueAndIncrement()", "TestFile.cs", 200);
         action.Should().Throw<SharpAssertionException>();
         
-        // The key test: each method should have been called exactly once during evaluation
-        _callCount.Should().Be(2, "each operand should be evaluated exactly once");
+        callCount.Should().Be(2, "each operand should be evaluated exactly once");
     }
 }

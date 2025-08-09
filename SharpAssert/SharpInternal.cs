@@ -2,17 +2,16 @@ using System.Linq.Expressions;
 
 namespace SharpAssert;
 
-/// <summary>Internal APIs that the rewriter targets - not for direct user consumption.</summary>
+/// <summary>Advanced assertion methods with detailed error reporting.</summary>
 public static class SharpInternal
 {
     /// <summary>
-    /// Internal assertion method for expression tree analysis.
-    /// Used by the rewriter for sync cases without await or dynamic.
+    /// Validates a boolean expression and provides detailed failure information.
     /// </summary>
-    /// <param name="condition">Expression tree to analyze</param>
-    /// <param name="expr">Original expression text</param>
-    /// <param name="file">Source file path</param>
-    /// <param name="line">Source line number</param>
+    /// <param name="condition">Boolean expression to validate</param>
+    /// <param name="expr">Text representation of the expression</param>
+    /// <param name="file">Source file where assertion occurred</param>
+    /// <param name="line">Line number where assertion occurred</param>
     public static void Assert(
         Expression<Func<bool>> condition,
         string expr,
