@@ -11,6 +11,17 @@ internal class ExpressionAnalyzer : ExpressionVisitor
     {
         if (expression.Body is BinaryExpression binaryExpr)
         {
+            // Handle logical operators (AndAlso, OrElse) with short-circuit semantics
+            if (binaryExpr.NodeType == ExpressionType.AndAlso || binaryExpr.NodeType == ExpressionType.OrElse)
+            {
+                var logicalResult = GetValue(binaryExpr);
+                if (logicalResult is true)
+                    return string.Empty;
+                    
+                return AnalyzeLogicalBinaryFailure(binaryExpr, originalExpr, file, line);
+            }
+            
+            // Handle comparison operators
             var leftValue = GetValue(binaryExpr.Left);
             var rightValue = GetValue(binaryExpr.Right);
             var result = EvaluateBinaryOperation(binaryExpr.NodeType, leftValue, rightValue);
@@ -20,12 +31,81 @@ internal class ExpressionAnalyzer : ExpressionVisitor
             
             return AnalyzeBinaryFailure(binaryExpr, leftValue, rightValue, originalExpr, file, line);
         }
+        
+        // Handle unary Not operator
+        if (expression.Body is UnaryExpression unaryExpr && unaryExpr.NodeType == ExpressionType.Not)
+        {
+            var notResult = GetValue(unaryExpr);
+            if (notResult is true)
+                return string.Empty;
+                
+            return AnalyzeNotFailure(unaryExpr, originalExpr, file, line);
+        }
 
         var expressionResult = GetValue(expression.Body);
         if (expressionResult is true)
             return string.Empty;
             
         return AssertionFormatter.FormatAssertionFailure(originalExpr, file, line);
+    }
+
+    string AnalyzeLogicalBinaryFailure(BinaryExpression binaryExpr, string originalExpr, string file, int line)
+    {
+        var locationPart = AssertionFormatter.FormatLocation(file, line);
+        var operatorSymbol = GetOperatorSymbol(binaryExpr.NodeType);
+        
+        // Evaluate with respect to short-circuit semantics
+        var leftValue = GetValue(binaryExpr.Left);
+        var leftBool = (bool)leftValue!;
+        
+        if (binaryExpr.NodeType == ExpressionType.AndAlso)
+        {
+            if (!leftBool)
+            {
+                // Short-circuit: left is false, so right is not evaluated
+                return $"Assertion failed: {originalExpr}  at {locationPart}\n" +
+                       $"  Left:  {FormatValue(leftValue)} (short-circuit)\n" +
+                       $"  &&: Left operand was false";
+            }
+            else
+            {
+                // Left is true, evaluate right
+                var rightValue = GetValue(binaryExpr.Right);
+                return $"Assertion failed: {originalExpr}  at {locationPart}\n" +
+                       $"  Left:  {FormatValue(leftValue)}\n" +
+                       $"  Right: {FormatValue(rightValue)}\n" +
+                       $"  &&: Right operand was false";
+            }
+        }
+        else // OrElse
+        {
+            if (leftBool)
+            {
+                // This should not happen in a failure case for OR, but handle it
+                return $"Assertion failed: {originalExpr}  at {locationPart}\n" +
+                       $"  Left:  {FormatValue(leftValue)}\n" +
+                       $"  ||: Left operand was true (this should not fail)";
+            }
+            else
+            {
+                // Left is false, evaluate right
+                var rightValue = GetValue(binaryExpr.Right);
+                return $"Assertion failed: {originalExpr}  at {locationPart}\n" +
+                       $"  Left:  {FormatValue(leftValue)}\n" +
+                       $"  Right: {FormatValue(rightValue)}\n" +
+                       $"  ||: Both operands were false";
+            }
+        }
+    }
+
+    string AnalyzeNotFailure(UnaryExpression unaryExpr, string originalExpr, string file, int line)
+    {
+        var operandValue = GetValue(unaryExpr.Operand);
+        var locationPart = AssertionFormatter.FormatLocation(file, line);
+        
+        return $"Assertion failed: {originalExpr}  at {locationPart}\n" +
+               $"  Operand: {FormatValue(operandValue)}\n" +
+               $"  !: Operand was {FormatValue(operandValue)}";
     }
 
     string AnalyzeBinaryFailure(BinaryExpression binaryExpr, object? leftValue, object? rightValue, string originalExpr, string file, int line)
@@ -72,6 +152,9 @@ internal class ExpressionAnalyzer : ExpressionVisitor
             ExpressionType.LessThanOrEqual => "<=",
             ExpressionType.GreaterThan => ">",
             ExpressionType.GreaterThanOrEqual => ">=",
+            ExpressionType.AndAlso => "&&",
+            ExpressionType.OrElse => "||",
+            ExpressionType.Not => "!",
             _ => nodeType.ToString()
         };
     }

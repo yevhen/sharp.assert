@@ -48,3 +48,29 @@
 - Null value handling works correctly, shows "null" in output
 - Complex expression single-evaluation verified with side-effect tracking
 - 8 total tests passing (4 foundation + 4 expression analysis)
+
+## Logical Operators Support (Increment 3)
+
+### Key Discoveries
+- Logical operators (&&, ||, !) require special handling separate from binary comparison operators
+- Short-circuit evaluation must be preserved naturally via expression evaluation - not artificially enforced
+- AndAlso and OrElse in expression trees respect short-circuit semantics when evaluated through GetValue()
+- Must check if logical expression actually fails before calling failure analysis methods
+- NOT operator is UnaryExpression, not BinaryExpression - requires separate handling path
+
+### Technical Insights  
+- Expression type mapping: && → ExpressionType.AndAlso, || → ExpressionType.OrElse, ! → ExpressionType.Not
+- Short-circuit behavior is preserved by evaluating the full expression and only analyzing failure when it actually fails
+- Error messages show operand truth values: "Left: True/False" for && and ||, "Operand: True/False" for !
+- Logical failure analysis provides context: "Left operand was false" for short-circuited &&, "Both operands were false" for ||
+
+### Implementation Structure
+- Extended ExpressionAnalyzer.AnalyzeFailure() with logical operator detection
+- Added AnalyzeLogicalBinaryFailure() method for && and || operations
+- Added AnalyzeNotFailure() method for ! operations  
+- Updated GetOperatorSymbol() to include logical operators
+
+### Testing Insights
+- 4 logical operator tests: AND failure, short-circuit AND, OR evaluation, NOT operator
+- Short-circuit test verifies ThrowException() is never called when left side of && is false
+- All 17 tests passing (4 foundation + 4 expression analysis + 4 binary + 4 logical + 1 complex evaluation)
