@@ -349,21 +349,6 @@ var message = "hello";
 ```
 - BECAUSE: {reduces_verbosity, improves_readability, lets_compiler_infer_obvious_types}.
 
-RULE: ALWAYS use `const` for variables that are never updated.
-
-```csharp
-// BAD
-var left = true;
-var right = false;
-Expression<Func<bool>> expr = () => left && right;
-
-// GOOD
-const bool left = true;
-const bool right = false;
-Expression<Func<bool>> expr = () => left && right;
-```
-- BECAUSE: {compile-time_safety, intent_clarity, potential_optimizations}.
-
 RULE: PREFER strongly-typed `enum`s or the "smart enum" pattern OVER raw strings or integers.
 
 - BECAUSE: {compile-time_type_safety, improved_readability, IDE_intellisense}.
