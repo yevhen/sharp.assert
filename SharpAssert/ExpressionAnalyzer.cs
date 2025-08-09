@@ -1,11 +1,9 @@
 using System.Linq.Expressions;
-using System.Collections.Concurrent;
 
 namespace SharpAssert;
 
 internal class ExpressionAnalyzer : ExpressionVisitor
 {
-    readonly ConcurrentDictionary<Expression, object?> evaluatedValues = new();
     
     public string AnalyzeFailure(Expression<Func<bool>> expression, string originalExpr, string file, int line)
     {
@@ -23,18 +21,11 @@ internal class ExpressionAnalyzer : ExpressionVisitor
 
                 var leftValue = GetValue(binaryExpr.Left);
                 var rightValue = GetValue(binaryExpr.Right);
-                var result = EvaluateBinaryOperation(binaryExpr.NodeType, leftValue, rightValue);
-
-                return result ?
-                    string.Empty :
-                    AnalyzeBinaryFailure(leftValue, rightValue, originalExpr, file, line);
+                return AnalyzeBinaryFailure(leftValue, rightValue, originalExpr, file, line);
             }
             case UnaryExpression { NodeType: ExpressionType.Not } unaryExpr:
             {
-                var notResult = GetValue(unaryExpr);
-                return notResult is true
-                    ? string.Empty :
-                    AnalyzeNotFailure(unaryExpr, originalExpr, file, line);
+                return AnalyzeNotFailure(unaryExpr, originalExpr, file, line);
             }
         }
 
@@ -99,26 +90,6 @@ internal class ExpressionAnalyzer : ExpressionVisitor
                $"  Right: {rightDisplay}";
     }
 
-    static bool EvaluateBinaryOperation(ExpressionType nodeType, object? left, object? right)
-    {
-        try
-        {
-            return nodeType switch
-            {
-                ExpressionType.Equal => Equals(left, right),
-                ExpressionType.NotEqual => !Equals(left, right),
-                ExpressionType.LessThan => Comparer<object>.Default.Compare(left, right) < 0,
-                ExpressionType.LessThanOrEqual => Comparer<object>.Default.Compare(left, right) <= 0,
-                ExpressionType.GreaterThan => Comparer<object>.Default.Compare(left, right) > 0,
-                ExpressionType.GreaterThanOrEqual => Comparer<object>.Default.Compare(left, right) >= 0,
-                _ => false
-            };
-        }
-        catch
-        {
-            return false;
-        }
-    }
 
     static string FormatValue(object? value)
     {
@@ -126,21 +97,11 @@ internal class ExpressionAnalyzer : ExpressionVisitor
         {
             null => "null",
             string s => $"\"{s}\"",
-            char c => $"'{c}'",
-            _ => value.ToString() ?? "null"
+            _ => value.ToString()!
         };
     }
 
-    object? GetValue(Expression expression)
-    {
-        if (evaluatedValues.TryGetValue(expression, out var cachedValue))
-            return cachedValue;
-            
-        var result = CompileAndEvaluate(expression);
-        evaluatedValues[expression] = result;
-        
-        return result;
-    }
+    object? GetValue(Expression expression) => CompileAndEvaluate(expression);
     
     static object? CompileAndEvaluate(Expression expression)
     {
