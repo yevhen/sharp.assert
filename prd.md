@@ -334,19 +334,19 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 
 ---
 
-### **Increment 2: Expression Tree Runtime - Binary Comparisons**
+### **Increment 2: Expression Tree Runtime - Binary Comparisons** ✅ COMPLETED
 **Outcome**: Runtime can analyze binary expressions and show operand values
 **Tests** (SharpAssert.Tests/ExpressionAnalysisFixture.cs):
-- `Should_show_left_and_right_values_for_equality()` - x==y shows both values
-- `Should_handle_all_comparison_operators()` - Test ==, !=, <, <=, >, >=
-- `Should_handle_null_operands()` - null == value shows "null" properly
-- `Should_evaluate_complex_expressions_once()` - Side effects happen only once
+- ✅ `Should_show_left_and_right_values_for_equality()` - x==y shows both values
+- ✅ `Should_handle_all_comparison_operators()` - Test ==, !=, <, <=, >, >=
+- ✅ `Should_handle_null_operands()` - null == value shows "null" properly
+- ✅ `Should_evaluate_complex_expressions_once()` - Side effects happen only once
 
 **Implementation**:
-- Create `SharpInternal.cs` with `Assert(Expression<Func<bool>>, string, string, int)`
-- Implement `ExpressionVisitor` that walks tree and caches evaluated sub-expressions
-- Format binary operators with left/right values in error message
-- Create `BinaryOp` enum
+- ✅ Create `SharpInternal.cs` with `Assert(Expression<Func<bool>>, string, string, int)`
+- ✅ Implement `ExpressionVisitor` that walks tree and caches evaluated sub-expressions
+- ✅ Format binary operators with left/right values in error message
+- ✅ Create `BinaryOp` enum
 
 ---
 
