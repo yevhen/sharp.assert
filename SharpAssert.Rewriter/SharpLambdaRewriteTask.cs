@@ -28,6 +28,10 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
     
     public string NullableContext { get; set; } = "enable";
     
+    public bool UsePowerAssert { get; set; } = false;
+    
+    public bool UsePowerAssertForUnsupported { get; set; } = true;
+    
     [Output]
     public ITaskItem[] GeneratedFiles { get; set; } = [];
     
@@ -192,7 +196,7 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
         var absoluteSourcePath = Path.GetFullPath(sourcePath);
         LogDiagnostics($"Using absolute path for rewriter: {absoluteSourcePath}");
 
-        var rewrittenContent = SharpAssertRewriter.Rewrite(sourceContent, absoluteSourcePath);
+        var rewrittenContent = SharpAssertRewriter.Rewrite(sourceContent, absoluteSourcePath, UsePowerAssert, UsePowerAssertForUnsupported);
         if (rewrittenContent != sourceContent)
             return ProcessRewrittenContent(sourcePath, relativePath, rewrittenContent);
             

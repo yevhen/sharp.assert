@@ -112,24 +112,9 @@ We use TDD to write code.
 - **Optimize for readability first** - Write code that reveals intent clearly; optimize for performance later if needed.
 - **Example pattern**: Instead of `var lineCount = fileNode.GetLocation().GetLineSpan().EndLinePosition.Line - fileNode.GetLocation().GetLineSpan().StartLinePosition.Line + 1;`, use `GetLineCount(fileNode)` to hide the complexity.
 
-**Example of good refactoring:**
-
-```csharp
-// Bad: Manual object creation from another
-return new UserDto {
-  Name = user.Name,
-  Email = user.Email,
-  Phone = user.Phone
-};
-
-// Good: Using a record with a 'with' expression for modification
-return user with { Name = "New Name" };
-```
-
 ## Testing Guidelines
 
 **Test what matters, skip what doesn't**
-**IMPORTANT**: Read `@docs/testing.md` for detailed testing guidelines.
 
 Tests use **NUnit 3.14** and should be named `*Fixture.cs`. All tests are located in a dedicated test project (e.g., `SharpAssert.Tests`) which mirrors the source project's namespaces.
 

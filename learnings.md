@@ -84,3 +84,22 @@ This document is organized by topic to consolidate key learnings about the proje
   - Maintain backward compatibility - existing tests expect files without Assert calls to be skipped entirely
   - Provide detailed file mapping diagnostics for troubleshooting rewriter issues
 - **Fixtures:** Test fixtures are organized by functionality (e.g., `AssertionFixture`, `ExpressionAnalysisFixture`, `RewriterFixture`, `SharpLambdaRewriteTaskFixture`).
+
+## PowerAssert Integration (Phase 2)
+
+- **MSBuild Property Integration:** Successfully extended MSBuild integration to support PowerAssert flags:
+  - Added `SharpAssertUsePowerAssert` and `SharpAssertUsePowerAssertForUnsupported` properties with correct defaults
+  - Extended `SharpLambdaRewriteTask` with matching boolean properties
+  - Updated targets file to pass properties from project to task
+- **7-Parameter Signature:** Extended `SharpInternal.Assert()` from 5 to 7 parameters:
+  - Added `bool usePowerAssert = false` and `bool usePowerAssertForUnsupported = true` parameters
+  - Modified rewriter to generate 7-argument calls with proper boolean literals
+  - All existing 5-parameter calls remain compatible via default parameters
+- **NuGet Package Timing Issues:** Discovered that `dotnet pack` with Release configuration is critical for package integrity:
+  - Debug builds during development don't reflect in published packages
+  - Must rebuild in Release mode before republishing packages
+  - Package testing requires clean/restore cycle to pick up latest versions
+- **Generated Code Verification:** Confirmed rewriter generates proper 7-argument calls:
+  - Format: `SharpInternal.Assert(()=>expr,"expr","/path/file.cs",line,null,false,true)`
+  - Default values correctly passed: usePowerAssert=false, usePowerAssertForUnsupported=true
+  - Integration tested via SharpAssert.PackageTest project

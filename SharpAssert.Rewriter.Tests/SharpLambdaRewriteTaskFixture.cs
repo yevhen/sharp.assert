@@ -277,6 +277,91 @@ public class SharpLambdaRewriteTaskFixture
         mockEngine.Messages.Should().Contain(msg => msg.Contains("SharpAssert: Processed 1 files with rewrites"));
     }
 
+    [Test]
+    public void Should_accept_power_assert_properties()
+    {
+        var sourceFile = CreateSourceFile("PowerAssertTest.cs", """
+            using static Sharp;
+            class PowerAssertTest { void Method() { Assert(true); } }
+            """);
+        
+        var task = CreateTask(sourceFile);
+        task.UsePowerAssert = true;
+        task.UsePowerAssertForUnsupported = false;
+        
+        var result = task.Execute();
+        
+        result.Should().BeTrue();
+        task.UsePowerAssert.Should().BeTrue();
+        task.UsePowerAssertForUnsupported.Should().BeFalse();
+    }
+
+    [Test]
+    public void Should_use_default_power_assert_values()
+    {
+        var sourceFile = CreateSourceFile("DefaultPowerAssert.cs", """
+            using static Sharp;
+            class DefaultPowerAssert { void Method() { Assert(true); } }
+            """);
+        
+        var task = CreateTask(sourceFile);
+        
+        var result = task.Execute();
+        
+        result.Should().BeTrue();
+        task.UsePowerAssert.Should().BeFalse();
+        task.UsePowerAssertForUnsupported.Should().BeTrue();
+    }
+
+    [Test]
+    public void Should_generate_seven_arguments_when_power_assert_enabled()
+    {
+        var sourceFile = CreateSourceFile("SevenArgsTest.cs", """
+            using static Sharp;
+            class SevenArgsTest { void Method() { Assert(x == 1); } }
+            """);
+        
+        var task = CreateTask(sourceFile);
+        task.UsePowerAssert = true;
+        task.UsePowerAssertForUnsupported = false;
+        
+        var result = task.Execute();
+        
+        result.Should().BeTrue();
+        
+        var outputFile = GetExpectedOutputPath(sourceFile);
+        var content = File.ReadAllText(outputFile);
+        
+        // Should contain 7 arguments: lambda, expression, file, line, message, usePowerAssert=true, usePowerAssertForUnsupported=false
+        content.Should().Contain("global::SharpAssert.SharpInternal.Assert(()=>");
+        content.Should().Contain("\"x == 1\"");
+        content.Should().Contain(",null,true,false)");
+    }
+
+    [Test]
+    public void Should_generate_seven_arguments_with_default_power_assert_values()
+    {
+        var sourceFile = CreateSourceFile("DefaultSevenArgsTest.cs", """
+            using static Sharp;
+            class DefaultSevenArgsTest { void Method() { Assert(x == 1); } }
+            """);
+        
+        var task = CreateTask(sourceFile);
+        // Use defaults: UsePowerAssert = false, UsePowerAssertForUnsupported = true
+        
+        var result = task.Execute();
+        
+        result.Should().BeTrue();
+        
+        var outputFile = GetExpectedOutputPath(sourceFile);
+        var content = File.ReadAllText(outputFile);
+        
+        // Should contain 7 arguments with default values: usePowerAssert=false, usePowerAssertForUnsupported=true
+        content.Should().Contain("global::SharpAssert.SharpInternal.Assert(()=>");
+        content.Should().Contain("\"x == 1\"");
+        content.Should().Contain(",null,false,true)");
+    }
+
     static string CreateTempDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), "SharpAssertTest_" + Guid.NewGuid().ToString("N"));

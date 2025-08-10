@@ -9,13 +9,13 @@ public static class SharpAssertRewriter
     const string NewLine = "\n";
     const int FirstLineNumber = 1;
 
-    public static string Rewrite(string source, string fileName)
+    public static string Rewrite(string source, string fileName, bool usePowerAssert = false, bool usePowerAssertForUnsupported = true)
     {
         var syntaxTree = CSharpSyntaxTree.ParseText(source, path: fileName);
         var semanticModel = CreateSemanticModel(syntaxTree);
         var absoluteFileName = GetAbsolutePath(fileName);
         
-        var rewriter = new SharpAssertSyntaxRewriter(semanticModel, absoluteFileName, fileName);
+        var rewriter = new SharpAssertSyntaxRewriter(semanticModel, absoluteFileName, fileName, usePowerAssert, usePowerAssertForUnsupported);
         var rewrittenRoot = rewriter.Visit(syntaxTree.GetRoot());
 
         if (!rewriter.HasRewrites)
@@ -64,7 +64,7 @@ public static class SharpAssertRewriter
         filePath.Replace("\\", "\\\\").Replace("\"", "\\\"");
 }
 
-internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFileName, string fileName) : CSharpSyntaxRewriter
+internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFileName, string fileName, bool usePowerAssert, bool usePowerAssertForUnsupported) : CSharpSyntaxRewriter
 {
     const string SharpInternalNamespace = "global::SharpAssert.SharpInternal";
     const string AssertMethodName = "Assert";
@@ -139,7 +139,9 @@ internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string abs
             CreateStringLiteralArgument(data.ExpressionText),
             CreateStringLiteralArgument(fileName),
             CreateNumericLiteralArgument(data.LineNumber),
-            CreateMessageArgument(data.MessageExpression)
+            CreateMessageArgument(data.MessageExpression),
+            CreateBooleanLiteralArgument(usePowerAssert),
+            CreateBooleanLiteralArgument(usePowerAssertForUnsupported)
         ]);
 
     static ArgumentSyntax CreateStringLiteralArgument(string value) =>
@@ -159,6 +161,12 @@ internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string abs
             messageExpression ?? SyntaxFactory.LiteralExpression(
                 SyntaxKind.NullLiteralExpression,
                 SyntaxFactory.Token(SyntaxKind.NullKeyword)));
+
+    static ArgumentSyntax CreateBooleanLiteralArgument(bool value) =>
+        SyntaxFactory.Argument(
+            SyntaxFactory.LiteralExpression(
+                value ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression,
+                SyntaxFactory.Token(value ? SyntaxKind.TrueKeyword : SyntaxKind.FalseKeyword)));
 
     InvocationExpressionSyntax AddLineDirectives(InvocationExpressionSyntax invocation, InvocationExpressionSyntax originalNode, int lineNumber) =>
         invocation
