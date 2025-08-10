@@ -42,13 +42,29 @@ echo -e "${YELLOW}🧹 Cleaning packages directory...${NC}"
 rm -rf "$ROOT_DIR/packages"
 mkdir -p "$ROOT_DIR/packages"
 
+# Clear cached SharpAssert packages from global NuGet cache to force fresh install
+echo -e "${YELLOW}🗑️ Clearing SharpAssert packages from NuGet cache...${NC}"
+GLOBAL_PACKAGES=$(dotnet nuget locals global-packages --list | cut -d' ' -f2)
+if [ -d "$GLOBAL_PACKAGES/sharpassert" ]; then
+    rm -rf "$GLOBAL_PACKAGES/sharpassert"
+    echo -e "${GREEN}✅ Cleared SharpAssert from cache${NC}"
+fi
+if [ -d "$GLOBAL_PACKAGES/sharpassert.rewriter" ]; then
+    rm -rf "$GLOBAL_PACKAGES/sharpassert.rewriter"
+    echo -e "${GREEN}✅ Cleared SharpAssert.Rewriter from cache${NC}"
+fi
+
 # Build and pack with local suffix
-echo -e "${YELLOW}📦 Building SharpAssert with local suffix...${NC}"
+echo -e "${YELLOW}📦 Building SharpAssert and SharpAssert.Rewriter with local suffix...${NC}"
 cd "$ROOT_DIR"
 
-# Build with local version suffix for development
+# Build both projects with local version suffix for development
 dotnet build SharpAssert/SharpAssert.csproj --configuration Release -p:VersionSuffix=local
+dotnet build SharpAssert.Rewriter/SharpAssert.Rewriter.csproj --configuration Release -p:VersionSuffix=local
+
+# Pack both projects
 dotnet pack SharpAssert/SharpAssert.csproj --configuration Release --output ./packages --no-build -p:VersionSuffix=local
+dotnet pack SharpAssert.Rewriter/SharpAssert.Rewriter.csproj --configuration Release --output ./packages --no-build -p:VersionSuffix=local
 
 # Get the actual package version (including suffix)
 PACKAGE_FILE=$(find ./packages -name "SharpAssert.*.nupkg" -type f | head -n1)
@@ -67,18 +83,21 @@ echo -e "${BLUE}📋 Package version: $FULL_VERSION${NC}"
 cd "$SCRIPT_DIR"
 echo -e "${YELLOW}🔧 Updating PackageTest to use version $FULL_VERSION...${NC}"
 
-# Update the SharpAssert package version in the project file
+# Update both SharpAssert and SharpAssert.Rewriter package versions in the project file
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
     sed -i '' "s/<PackageReference Include=\"SharpAssert\" Version=\"[^\"]*\"/<PackageReference Include=\"SharpAssert\" Version=\"$FULL_VERSION\"/" SharpAssert.PackageTest.csproj
+    sed -i '' "s/<PackageReference Include=\"SharpAssert.Rewriter\" Version=\"[^\"]*\"/<PackageReference Include=\"SharpAssert.Rewriter\" Version=\"$FULL_VERSION\"/" SharpAssert.PackageTest.csproj
 else
     # Linux
     sed -i "s/<PackageReference Include=\"SharpAssert\" Version=\"[^\"]*\"/<PackageReference Include=\"SharpAssert\" Version=\"$FULL_VERSION\"/" SharpAssert.PackageTest.csproj
+    sed -i "s/<PackageReference Include=\"SharpAssert.Rewriter\" Version=\"[^\"]*\"/<PackageReference Include=\"SharpAssert.Rewriter\" Version=\"$FULL_VERSION\"/" SharpAssert.PackageTest.csproj
 fi
 
 # Clean, restore, build and test
-echo -e "${YELLOW}🧹 Cleaning test project...${NC}"
+echo -e "${YELLOW}🧹 Cleaning test project completely...${NC}"
 dotnet clean --verbosity quiet
+rm -rf obj bin  # Force complete clean to ensure fresh rewriter execution
 
 echo -e "${YELLOW}📦 Restoring packages from local source...${NC}"
 dotnet restore --source "$ROOT_DIR/packages" --source https://api.nuget.org/v3/index.json
