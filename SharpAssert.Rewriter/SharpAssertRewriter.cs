@@ -19,13 +19,16 @@ public class SharpAssertRewriter
         var semanticModel = compilation.GetSemanticModel(syntaxTree);
         var root = syntaxTree.GetRoot();
 
-        var rewriter = new SharpAssertSyntaxRewriter(semanticModel, fileName);
+        // Ensure we use absolute path for #line directives
+        var absoluteFileName = Path.IsPathRooted(fileName) ? fileName : Path.GetFullPath(fileName);
+        
+        var rewriter = new SharpAssertSyntaxRewriter(semanticModel, absoluteFileName);
         var rewrittenRoot = rewriter.Visit(root);
 
         // Only add #line directive if there were actual rewrites
         if (rewriter.HasRewrites)
         {
-            var lineDirective = CreateLineDirective(1, fileName);
+            var lineDirective = CreateLineDirective(1, absoluteFileName);
             var rewrittenWithLineDirective = rewrittenRoot.WithLeadingTrivia(
                 SyntaxFactory.TriviaList(
                     lineDirective,

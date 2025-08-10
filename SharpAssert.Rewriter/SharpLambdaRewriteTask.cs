@@ -160,7 +160,10 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
                 return new ProcessingResult(ProcessingStatus.Skipped, string.Empty);
             }
 
-            var rewrittenContent = SharpAssertRewriter.Rewrite(sourceContent, sourcePath);
+            // Ensure we pass absolute path for #line directives
+            var absoluteSourcePath = Path.GetFullPath(sourcePath);
+            LogDiagnostics($"Using absolute path for rewriter: {absoluteSourcePath}");
+            var rewrittenContent = SharpAssertRewriter.Rewrite(sourceContent, absoluteSourcePath);
             if (rewrittenContent != sourceContent)
             {
                 LogDiagnostics($"Rewrote Assert calls: {Path.GetRelativePath(ProjectDir, sourcePath)}");
