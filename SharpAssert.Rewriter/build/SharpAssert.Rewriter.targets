@@ -10,7 +10,7 @@
     AssemblyFile="$(MSBuildThisFileDirectory)../tools/net9.0/SharpAssert.Rewriter.dll" />
 
   <Target Name="SharpLambdaRewrite" BeforeTargets="CoreCompile"
-          Condition="'$(EnableSharpLambdaRewrite)'=='true'">
+          Condition="'$(EnableSharpLambdaRewrite)'=='true' and '$(DesignTimeBuild)' != 'true' and '$(BuildingForLiveUnitTesting)' != 'true'">
     
     <ItemGroup>
       <_SharpInput Include="@(Compile)" />
@@ -30,11 +30,23 @@
         NullableContext="$(Nullable)" />
 
     <ItemGroup>
+      <!-- Track rewritten files for potential cleanup -->
+      <_SharpRewrittenFiles Include="$(IntermediateOutputPath)SharpRewritten\**\*.sharp.g.cs" />
+      <!-- Only during actual build: swap original files with rewritten versions -->
       <Compile Remove="@(_SharpSourceFiles)" />
-      <Compile Include="$(IntermediateOutputPath)SharpRewritten\**\*.sharp.g.cs" />
+      <Compile Include="@(_SharpRewrittenFiles)" />
     </ItemGroup>
     
-    <Message Text="SharpAssert: Replaced @(_SharpInput->Count()) source files with rewritten versions" Importance="normal"
+    <Message Text="SharpAssert: Replaced @(_SharpSourceFiles->Count()) source files with rewritten versions (actual build)" Importance="normal"
+             Condition="'$(SharpAssertEmitRewriteInfo)'=='true'" />
+    
+  </Target>
+
+  <!-- Diagnostic target for design-time builds -->
+  <Target Name="SharpLambdaRewriteSkipped" BeforeTargets="CoreCompile"
+          Condition="'$(EnableSharpLambdaRewrite)'=='true' and ('$(DesignTimeBuild)' == 'true' or '$(BuildingForLiveUnitTesting)' == 'true')">
+    
+    <Message Text="SharpAssert: Skipping rewriter during design-time build (preserving IDE experience)" Importance="normal"
              Condition="'$(SharpAssertEmitRewriteInfo)'=='true'" />
     
   </Target>
