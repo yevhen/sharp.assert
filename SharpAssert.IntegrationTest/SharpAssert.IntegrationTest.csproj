@@ -10,8 +10,6 @@
         <OutputType>Library</OutputType>
         <EnableSharpLambdaRewrite>true</EnableSharpLambdaRewrite>
         <SharpAssertEmitRewriteInfo>true</SharpAssertEmitRewriteInfo>
-        <RestorePackagesPath>packages/</RestorePackagesPath>
-        <RestoreAdditionalProjectSources>../SharpAssert.Rewriter/bin/Release/;../SharpAssert/bin/Release/</RestoreAdditionalProjectSources>
     </PropertyGroup>
 
     <ItemGroup>
@@ -22,9 +20,9 @@
         <PackageReference Include="NUnit.Analyzers" Version="4.4.0"/>
         <PackageReference Include="NUnit3TestAdapter" Version="4.6.0"/>
         
-        <!-- Using NuGet packages for complete integration testing -->
-        <PackageReference Include="SharpAssert" Version="1.0.0" />
-        <PackageReference Include="SharpAssert.Rewriter" Version="1.0.0" />
+        <!-- Using local project references for integration testing -->
+        <ProjectReference Include="..\SharpAssert\SharpAssert.csproj" />
+        <ProjectReference Include="..\SharpAssert.Rewriter\SharpAssert.Rewriter.csproj" />
     </ItemGroup>
 
     <ItemGroup>
