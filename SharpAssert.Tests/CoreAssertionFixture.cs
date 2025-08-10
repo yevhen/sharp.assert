@@ -4,7 +4,7 @@ using static Sharp;
 namespace SharpAssert;
 
 [TestFixture]
-public class AssertionFixture : TestBase
+public class CoreAssertionFixture : TestBase
 {
     [Test]
     public void Should_pass_when_condition_is_true()

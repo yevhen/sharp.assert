@@ -75,5 +75,49 @@ public class LogicalOperatorFixture : TestBase
         AssertExpressionThrows<SharpAssertionException>(expr, "!operand", "TestFile.cs", 40, "*!*true*");
     }
 
+    [Test]
+    public void Should_pass_when_left_operand_of_OR_is_true()
+    {
+        var leftTrue = true;
+        var rightFalse = false;
+        
+        Expression<Func<bool>> expr = () => leftTrue || rightFalse;
+
+        AssertExpressionDoesNotThrow(expr, "leftTrue || rightFalse", "TestFile.cs", 600);
+    }
+
+    [Test]
+    public void Should_pass_when_right_operand_of_OR_is_true()
+    {
+        var leftFalse = false;
+        var rightTrue = true;
+        
+        Expression<Func<bool>> expr = () => leftFalse || rightTrue;
+
+        AssertExpressionDoesNotThrow(expr, "leftFalse || rightTrue", "TestFile.cs", 602);
+    }
+
+    [Test]
+    public void Should_fail_when_left_operand_of_AND_is_false()
+    {
+        var leftFalse = false;
+        var rightTrue = true;
+        
+        Expression<Func<bool>> expr = () => leftFalse && rightTrue;
+
+        AssertExpressionThrows<SharpAssertionException>(expr, "leftFalse && rightTrue", "TestFile.cs", 604, "*&&*false*");
+    }
+
+    [Test]
+    public void Should_fail_when_right_operand_of_AND_is_false()
+    {
+        var leftTrue = true;
+        var rightFalse = false;
+        
+        Expression<Func<bool>> expr = () => leftTrue && rightFalse;
+
+        AssertExpressionThrows<SharpAssertionException>(expr, "leftTrue && rightFalse", "TestFile.cs", 605, "*&&*true*false*");
+    }
+
     static bool ThrowException() => throw new InvalidOperationException("This should not be called due to short-circuit evaluation");
 }
