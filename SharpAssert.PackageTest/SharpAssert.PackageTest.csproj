@@ -23,7 +23,7 @@
         <PackageReference Include="NUnit3TestAdapter" Version="4.6.0"/>
         
         <!-- Package reference updated by run-package-test.sh script -->
-        <PackageReference Include="SharpAssert" Version="1.0.0" />
+        <PackageReference Include="SharpAssert" Version="1.0.0-local" />
     </ItemGroup>
 
     <ItemGroup>

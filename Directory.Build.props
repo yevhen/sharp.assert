@@ -1,0 +1,27 @@
+<Project>
+
+    <PropertyGroup>
+        <Version>1.0.0</Version>
+        
+        <!-- Version suffix for local development builds -->
+        <VersionSuffix Condition="'$(VersionSuffix)' == '' AND '$(CI)' != 'true'">local</VersionSuffix>
+        
+        <!-- Full package version including suffix -->
+        <PackageVersion>$(Version)</PackageVersion>
+        <PackageVersion Condition="'$(VersionSuffix)' != ''">$(Version)-$(VersionSuffix)</PackageVersion>
+        
+        <!-- Assembly versioning -->
+        <AssemblyVersion>$(Version)</AssemblyVersion>
+        <FileVersion>$(Version)</FileVersion>
+        
+        <!-- Repository information -->
+        <RepositoryUrl>https://github.com/yevhen/SharpAssert</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        
+        <!-- Common package metadata -->
+        <Authors>Yevhen Bobrov</Authors>
+        <Copyright>Copyright © $([System.DateTime]::Now.Year)</Copyright>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    </PropertyGroup>
+    
+</Project>

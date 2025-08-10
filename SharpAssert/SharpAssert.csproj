@@ -1,9 +1,35 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
+        <LangVersion>12.0</LangVersion>
+        <Features>InterceptorsPreview</Features>
+        <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);SharpAssert.Generated</InterceptorsPreviewNamespaces>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        
+        <!-- Package metadata -->
+        <PackageId>SharpAssert</PackageId>
+        <Title>SharpAssert</Title>
+        <Description>Pytest-style assertions library for .NET with C# 12 interceptors for enhanced error messages</Description>
+        <PackageTags>testing;assertions;interceptors;pytest</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\SharpAssert.Generators\SharpAssert.Generators.csproj" 
+                          OutputItemType="Analyzer" 
+                          ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Package the generator as analyzer -->
+        <None Include="..\SharpAssert.Generators\bin\$(Configuration)\netstandard2.0\SharpAssert.Generators.dll" 
+              Pack="true" 
+              PackagePath="analyzers\dotnet\cs" />
+              
+        <!-- Include README in package -->
+        <None Include="..\README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
 
 </Project>
