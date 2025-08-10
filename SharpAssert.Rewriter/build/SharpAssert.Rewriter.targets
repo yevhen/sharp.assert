@@ -7,13 +7,15 @@
 
   <UsingTask 
     TaskName="SharpLambdaRewriteTask" 
-    AssemblyFile="$(MSBuildThisFileDirectory)../lib/net9.0/SharpAssert.Rewriter.dll" />
+    AssemblyFile="$(MSBuildThisFileDirectory)../tools/net9.0/SharpAssert.Rewriter.dll" />
 
   <Target Name="SharpLambdaRewrite" BeforeTargets="CoreCompile"
           Condition="'$(EnableSharpLambdaRewrite)'=='true'">
     
     <ItemGroup>
       <_SharpInput Include="@(Compile)" />
+      <_SharpNonSourceFiles Include="@(Compile)" Condition="$([System.String]::Copy('%(Identity)').Contains('Microsoft.NET.Test.Sdk.Program.cs')) or $([System.String]::Copy('%(Identity)').EndsWith('.AssemblyInfo.cs')) or $([System.String]::Copy('%(Identity)').EndsWith('.AssemblyAttributes.cs')) or $([System.String]::Copy('%(Identity)').EndsWith('.GlobalUsings.g.cs'))" />
+      <_SharpSourceFiles Include="@(Compile)" Exclude="@(_SharpNonSourceFiles)" />
     </ItemGroup>
 
     <Message Text="SharpAssert: Rewriting Sharp.Assert calls to lambda form" Importance="normal" 
@@ -28,7 +30,7 @@
         NullableContext="$(Nullable)" />
 
     <ItemGroup>
-      <Compile Remove="@(Compile)" />
+      <Compile Remove="@(_SharpSourceFiles)" />
       <Compile Include="$(IntermediateOutputPath)SharpRewritten\**\*.sharp.g.cs" />
     </ItemGroup>
     

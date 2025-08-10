@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +17,11 @@
 
   <ItemGroup>
     <None Include="build\SharpAssert.Rewriter.targets" Pack="true" PackagePath="build\" />
+  </ItemGroup>
+  
+  <!-- Include all built assemblies in the tools directory -->
+  <ItemGroup>
+    <Content Include="bin\$(Configuration)\$(TargetFramework)\*.dll" Pack="true" PackagePath="tools\$(TargetFramework)\" />
   </ItemGroup>
 
 </Project>
