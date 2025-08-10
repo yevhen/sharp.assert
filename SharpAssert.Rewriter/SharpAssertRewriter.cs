@@ -64,10 +64,7 @@ internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string abs
 
     public override SyntaxNode? VisitInvocationExpression(InvocationExpressionSyntax node)
     {
-        if (!IsSharpAssertCall(node))
-            return base.VisitInvocationExpression(node);
-
-        if (ContainsAwait(node))
+        if (!IsSharpAssertCall(node) || ContainsAwait(node))
             return base.VisitInvocationExpression(node);
 
         HasRewrites = true;
