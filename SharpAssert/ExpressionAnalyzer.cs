@@ -1,4 +1,6 @@
+using System.Collections;
 using System.Linq.Expressions;
+using static System.Linq.Expressions.ExpressionType;
 
 namespace SharpAssert;
 
@@ -10,21 +12,25 @@ internal class ExpressionAnalyzer : ExpressionVisitor
         {
             case BinaryExpression binaryExpr:
             {
-                if (binaryExpr.NodeType is ExpressionType.AndAlso or ExpressionType.OrElse)
+                if (binaryExpr.NodeType is AndAlso or OrElse)
                 {
-                    var logicalResult = GetValue(binaryExpr);
-                    return logicalResult is true ?
-                        string.Empty :
-                        AnalyzeLogicalBinaryFailure(binaryExpr, originalExpr, file, line);
+                    return GetValue(binaryExpr) is true
+                        ? string.Empty
+                        : AnalyzeLogicalBinaryFailure(binaryExpr, originalExpr, file, line);
                 }
 
                 var leftValue = GetValue(binaryExpr.Left);
                 var rightValue = GetValue(binaryExpr.Right);
-                return AnalyzeBinaryFailure(leftValue, rightValue, originalExpr, file, line);
+
+                return EvaluateBinaryExpression(binaryExpr.NodeType, leftValue, rightValue)
+                    ? string.Empty
+                    : AnalyzeBinaryFailure(leftValue, rightValue, originalExpr, file, line);
             }
-            case UnaryExpression { NodeType: ExpressionType.Not } unaryExpr:
+            case UnaryExpression { NodeType: Not } unaryExpr:
             {
-                return AnalyzeNotFailure(unaryExpr, originalExpr, file, line);
+                return GetValue(unaryExpr) is true
+                    ? string.Empty
+                    : AnalyzeNotFailure(unaryExpr, originalExpr, file, line);
             }
         }
 
@@ -41,7 +47,7 @@ internal class ExpressionAnalyzer : ExpressionVisitor
         var leftValue = GetValue(binaryExpr.Left);
         var leftBool = (bool)leftValue!;
         
-        if (binaryExpr.NodeType == ExpressionType.AndAlso)
+        if (binaryExpr.NodeType == AndAlso)
         {
             if (!leftBool)
                 return FormatLogicalFailure(originalExpr, locationPart, leftValue, null, "&&: Left operand was false", true);
@@ -100,11 +106,22 @@ internal class ExpressionAnalyzer : ExpressionVisitor
         };
     }
 
-    object? GetValue(Expression expression) => CompileAndEvaluate(expression);
+    static object? GetValue(Expression expression) => CompileAndEvaluate(expression);
     
     static object? CompileAndEvaluate(Expression expression)
     {
         var compiled = Expression.Lambda(expression).Compile();
         return compiled.DynamicInvoke();
     }
+    
+    static bool EvaluateBinaryExpression(ExpressionType nodeType, object? leftValue, object? rightValue) => nodeType switch
+    {
+        Equal => Equals(leftValue, rightValue),
+        NotEqual => !Equals(leftValue, rightValue),
+        LessThan => Comparer.Default.Compare(leftValue, rightValue) < 0,
+        LessThanOrEqual => Comparer.Default.Compare(leftValue, rightValue) <= 0,
+        GreaterThan => Comparer.Default.Compare(leftValue, rightValue) > 0,
+        GreaterThanOrEqual => Comparer.Default.Compare(leftValue, rightValue) >= 0,
+        _ => false
+    };
 }

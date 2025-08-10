@@ -7,6 +7,75 @@ namespace SharpAssert;
 public class ExpressionAnalysisFixture : TestBase
 {
     [Test]
+    public void Should_not_throw_when_binary_expression_is_true()
+    {
+        var x = 5;
+        var y = 10;
+        
+        Expression<Func<bool>> expr1 = () => x == 5;
+        Expression<Func<bool>> expr2 = () => x < y;
+        Expression<Func<bool>> expr3 = () => x != y;
+        Expression<Func<bool>> expr4 = () => y > x;
+        Expression<Func<bool>> expr5 = () => x <= 5;
+        Expression<Func<bool>> expr6 = () => y >= 10;
+        
+        var action1 = () => SharpInternal.Assert(expr1, "x == 5", "test.cs", 1);
+        var action2 = () => SharpInternal.Assert(expr2, "x < y", "test.cs", 2);
+        var action3 = () => SharpInternal.Assert(expr3, "x != y", "test.cs", 3);
+        var action4 = () => SharpInternal.Assert(expr4, "y > x", "test.cs", 4);
+        var action5 = () => SharpInternal.Assert(expr5, "x <= 5", "test.cs", 5);
+        var action6 = () => SharpInternal.Assert(expr6, "y >= 10", "test.cs", 6);
+        
+        action1.Should().NotThrow("x == 5 is true");
+        action2.Should().NotThrow("x < y is true");
+        action3.Should().NotThrow("x != y is true");
+        action4.Should().NotThrow("y > x is true");
+        action5.Should().NotThrow("x <= 5 is true");
+        action6.Should().NotThrow("y >= 10 is true");
+    }
+    
+    [Test]
+    public void Should_not_throw_when_string_comparison_is_true()
+    {
+        var str1 = "test";
+        var str2 = "test";
+        
+        Expression<Func<bool>> expr = () => str1 == str2;
+        
+        var action = () => SharpInternal.Assert(expr, "str1 == str2", "test.cs", 1);
+        action.Should().NotThrow("string comparison should pass when strings are equal");
+    }
+    
+    [Test]
+    public void Should_not_throw_when_comparison_operators_are_true()
+    {
+        var small = 5;
+        var large = 10;
+        var same = 5;
+        
+        Expression<Func<bool>> expr1 = () => small < large;
+        Expression<Func<bool>> expr2 = () => large > small;
+        Expression<Func<bool>> expr3 = () => small <= same;
+        Expression<Func<bool>> expr4 = () => same >= small;
+        Expression<Func<bool>> expr5 = () => small != large;
+        Expression<Func<bool>> expr6 = () => same == small;
+        
+        var action1 = () => SharpInternal.Assert(expr1, "small < large", "test.cs", 1);
+        var action2 = () => SharpInternal.Assert(expr2, "large > small", "test.cs", 2);
+        var action3 = () => SharpInternal.Assert(expr3, "small <= same", "test.cs", 3);
+        var action4 = () => SharpInternal.Assert(expr4, "same >= small", "test.cs", 4);
+        var action5 = () => SharpInternal.Assert(expr5, "small != large", "test.cs", 5);
+        var action6 = () => SharpInternal.Assert(expr6, "same == small", "test.cs", 6);
+        
+        action1.Should().NotThrow("5 < 10 is true");
+        action2.Should().NotThrow("10 > 5 is true");
+        action3.Should().NotThrow("5 <= 5 is true");
+        action4.Should().NotThrow("5 >= 5 is true");
+        action5.Should().NotThrow("5 != 10 is true");
+        action6.Should().NotThrow("5 == 5 is true");
+    }
+    
+    [Test]
     public void Should_show_left_and_right_values_for_equality()
     {
         var left = 42;

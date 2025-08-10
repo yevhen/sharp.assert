@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using FluentAssertions;
 
 namespace SharpAssert;
 
@@ -42,6 +43,27 @@ public class LogicalOperatorFixture : TestBase
         Expression<Func<bool>> expr = () => left || right;
 
         SharpInternal.Assert(expr, "left || right", "TestFile.cs", 35);
+    }
+
+    [Test]
+    public void Should_pass_when_AND_succeeds()
+    {
+        var left = true;
+        var right = true;
+        Expression<Func<bool>> expr = () => left && right;
+
+        var action = () => SharpInternal.Assert(expr, "left && right", "TestFile.cs", 45);
+        action.Should().NotThrow("both operands are true");
+    }
+
+    [Test]
+    public void Should_pass_when_NOT_succeeds()
+    {
+        var operand = false;
+        Expression<Func<bool>> expr = () => !operand;
+
+        var action = () => SharpInternal.Assert(expr, "!operand", "TestFile.cs", 50);
+        action.Should().NotThrow("NOT false should be true");
     }
 
     [Test]
