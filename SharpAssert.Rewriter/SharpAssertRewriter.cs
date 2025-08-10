@@ -6,46 +6,53 @@ namespace SharpAssert.Rewriter;
 
 public static class SharpAssertRewriter
 {
+    const string NewLine = "\n";
+    const int FirstLineNumber = 1;
+
     public static string Rewrite(string source, string fileName)
     {
         var syntaxTree = CSharpSyntaxTree.ParseText(source, path: fileName);
+        var semanticModel = CreateSemanticModel(syntaxTree);
+        var absoluteFileName = GetAbsolutePath(fileName);
+        
+        var rewriter = new SharpAssertSyntaxRewriter(semanticModel, absoluteFileName, fileName);
+        var rewrittenRoot = rewriter.Visit(syntaxTree.GetRoot());
 
-        var references = CreateCompilationReferences();
+        if (!rewriter.HasRewrites)
+            return rewrittenRoot.ToFullString();
+
+        return AddFileLineDirective(rewrittenRoot, absoluteFileName);
+    }
+
+    static SemanticModel CreateSemanticModel(SyntaxTree syntaxTree)
+    {
+        var references = new MetadataReference[]
+        {
+            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
+        };
 
         var compilation = CSharpCompilation.Create("RewriterAnalysis")
             .AddReferences(references)
             .AddSyntaxTrees(syntaxTree);
 
-        var semanticModel = compilation.GetSemanticModel(syntaxTree);
-        var root = syntaxTree.GetRoot();
-
-        // Ensure we use absolute path for #line directives
-        var absoluteFileName = Path.IsPathRooted(fileName) ? fileName : Path.GetFullPath(fileName);
-        
-        var rewriter = new SharpAssertSyntaxRewriter(semanticModel, absoluteFileName, fileName);
-        var rewrittenRoot = rewriter.Visit(root);
-
-        // Only add #line directive if there were actual rewrites
-        if (rewriter.HasRewrites)
-        {
-            var lineDirective = CreateLineDirective(1, absoluteFileName);
-            var rewrittenWithLineDirective = rewrittenRoot.WithLeadingTrivia(
-                SyntaxFactory.TriviaList(
-                    lineDirective,
-                    SyntaxFactory.EndOfLine("\n")));
-
-            return rewrittenWithLineDirective.ToFullString();
-        }
-
-        return rewrittenRoot.ToFullString();
+        return compilation.GetSemanticModel(syntaxTree);
     }
 
-    static MetadataReference[] CreateCompilationReferences() =>
-    [
-        MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-        MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-        MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
-    ];
+    static string GetAbsolutePath(string fileName) =>
+        Path.IsPathRooted(fileName) ? fileName : Path.GetFullPath(fileName);
+
+    static string AddFileLineDirective(SyntaxNode rewrittenRoot, string absoluteFileName)
+    {
+        var lineDirective = CreateLineDirective(FirstLineNumber, absoluteFileName);
+        var rewrittenWithLineDirective = rewrittenRoot.WithLeadingTrivia(
+            SyntaxFactory.TriviaList(
+                lineDirective,
+                SyntaxFactory.EndOfLine(NewLine)));
+
+        return rewrittenWithLineDirective.ToFullString();
+    }
 
     public static SyntaxTrivia CreateLineDirective(int lineNumber, string filePath) =>
         SyntaxFactory.PreprocessingMessage($"#line {lineNumber} \"{EscapeFilePath(filePath)}\"");
@@ -54,12 +61,16 @@ public static class SharpAssertRewriter
         SyntaxFactory.PreprocessingMessage("#line default");
 
     public static string EscapeFilePath(string filePath) =>
-        // Escape backslashes and quotes in file paths for #line directives
         filePath.Replace("\\", "\\\\").Replace("\"", "\\\"");
 }
 
 internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFileName, string fileName) : CSharpSyntaxRewriter
 {
+    const string SharpInternalNamespace = "global::SharpAssert.SharpInternal";
+    const string AssertMethodName = "Assert";
+    const string NewLine = "\n";
+    const int LineNumberOffset = 1;
+
     public bool HasRewrites { get; private set; }
 
     public override SyntaxNode? VisitInvocationExpression(InvocationExpressionSyntax node)
@@ -71,18 +82,14 @@ internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string abs
         return RewriteToLambda(node);
     }
 
-    static bool IsSharpAssertCall(InvocationExpressionSyntax node)
-    {
-        return node.Expression is IdentifierNameSyntax identifier &&
-               identifier.Identifier.ValueText == "Assert";
-    }
+    static bool IsSharpAssertCall(InvocationExpressionSyntax node) =>
+        node.Expression is IdentifierNameSyntax identifier &&
+        identifier.Identifier.ValueText == AssertMethodName;
 
-    static bool ContainsAwait(InvocationExpressionSyntax node)
-    {
-        return node.DescendantNodes()
+    static bool ContainsAwait(InvocationExpressionSyntax node) =>
+        node.DescendantNodes()
             .OfType<AwaitExpressionSyntax>()
             .Any();
-    }
 
     InvocationExpressionSyntax RewriteToLambda(InvocationExpressionSyntax node)
     {
@@ -94,66 +101,81 @@ internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string abs
 
     RewriteData ExtractRewriteData(InvocationExpressionSyntax node)
     {
-        const int lineNumberOffset = 1;
-
         var conditionArgument = node.ArgumentList.Arguments[0];
         var expression = conditionArgument.Expression;
         var expressionText = expression.ToString();
-        var lineNumber = semanticModel.SyntaxTree.GetLineSpan(node.Span).StartLinePosition.Line + lineNumberOffset;
+        var lineNumber = semanticModel.SyntaxTree.GetLineSpan(node.Span).StartLinePosition.Line + LineNumberOffset;
         
-        ExpressionSyntax? messageExpression = null;
-        if (node.ArgumentList.Arguments.Count > 1)
-            messageExpression = node.ArgumentList.Arguments[1].Expression;
+        var messageExpression = node.ArgumentList.Arguments.Count > 1
+            ? node.ArgumentList.Arguments[1].Expression
+            : null;
         
         return new RewriteData(expression, expressionText, lineNumber, messageExpression);
     }
 
-    static ParenthesizedLambdaExpressionSyntax CreateLambdaExpression(ExpressionSyntax expression)
-    {
-        return SyntaxFactory.ParenthesizedLambdaExpression()
+    static ParenthesizedLambdaExpressionSyntax CreateLambdaExpression(ExpressionSyntax expression) =>
+        SyntaxFactory.ParenthesizedLambdaExpression()
             .WithParameterList(SyntaxFactory.ParameterList())
             .WithExpressionBody(expression);
-    }
 
     InvocationExpressionSyntax CreateSharpInternalInvocation(ParenthesizedLambdaExpressionSyntax lambdaExpression, RewriteData data)
     {
-        return SyntaxFactory.InvocationExpression(
-            SyntaxFactory.MemberAccessExpression(
-                SyntaxKind.SimpleMemberAccessExpression,
-                SyntaxFactory.IdentifierName("global::SharpAssert.SharpInternal"),
-                SyntaxFactory.IdentifierName("Assert")))
-            .WithArgumentList(SyntaxFactory.ArgumentList(
-                SyntaxFactory.SeparatedList([
-                    SyntaxFactory.Argument(lambdaExpression),
-                    SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(
-                        SyntaxKind.StringLiteralExpression, 
-                        SyntaxFactory.Literal(data.ExpressionText))),
-                    SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(
-                        SyntaxKind.StringLiteralExpression,
-                        SyntaxFactory.Literal(fileName))),
-                    SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(
-                        SyntaxKind.NumericLiteralExpression,
-                        SyntaxFactory.Literal(data.LineNumber))),
-                    SyntaxFactory.Argument(data.MessageExpression ?? SyntaxFactory.LiteralExpression(
-                        SyntaxKind.NullLiteralExpression,
-                        SyntaxFactory.Token(SyntaxKind.NullKeyword)))
-                ])));
+        var targetMethod = CreateTargetMethodAccess();
+        var arguments = CreateInvocationArguments(lambdaExpression, data);
+        
+        return SyntaxFactory.InvocationExpression(targetMethod)
+            .WithArgumentList(SyntaxFactory.ArgumentList(arguments));
     }
 
-    InvocationExpressionSyntax AddLineDirectives(InvocationExpressionSyntax invocation, InvocationExpressionSyntax originalNode, int lineNumber)
-    {
-        return invocation
-            .WithLeadingTrivia(
-                originalNode.GetLeadingTrivia()
-                    .Add(SharpAssertRewriter.CreateLineDirective(lineNumber, absoluteFileName))
-                    .Add(SyntaxFactory.EndOfLine("\n")))
-            .WithTrailingTrivia(
-                SyntaxFactory.TriviaList(
-                    SyntaxFactory.EndOfLine("\n"),
-                    SharpAssertRewriter.CreateDefaultLineDirective(),
-                    SyntaxFactory.EndOfLine("\n"))
-                .AddRange(originalNode.GetTrailingTrivia()));
-    }
+    static MemberAccessExpressionSyntax CreateTargetMethodAccess() =>
+        SyntaxFactory.MemberAccessExpression(
+            SyntaxKind.SimpleMemberAccessExpression,
+            SyntaxFactory.IdentifierName(SharpInternalNamespace),
+            SyntaxFactory.IdentifierName(AssertMethodName));
+
+    SeparatedSyntaxList<ArgumentSyntax> CreateInvocationArguments(ParenthesizedLambdaExpressionSyntax lambdaExpression, RewriteData data) =>
+        SyntaxFactory.SeparatedList([
+            SyntaxFactory.Argument(lambdaExpression),
+            CreateStringLiteralArgument(data.ExpressionText),
+            CreateStringLiteralArgument(fileName),
+            CreateNumericLiteralArgument(data.LineNumber),
+            CreateMessageArgument(data.MessageExpression)
+        ]);
+
+    static ArgumentSyntax CreateStringLiteralArgument(string value) =>
+        SyntaxFactory.Argument(
+            SyntaxFactory.LiteralExpression(
+                SyntaxKind.StringLiteralExpression,
+                SyntaxFactory.Literal(value)));
+
+    static ArgumentSyntax CreateNumericLiteralArgument(int value) =>
+        SyntaxFactory.Argument(
+            SyntaxFactory.LiteralExpression(
+                SyntaxKind.NumericLiteralExpression,
+                SyntaxFactory.Literal(value)));
+
+    static ArgumentSyntax CreateMessageArgument(ExpressionSyntax? messageExpression) =>
+        SyntaxFactory.Argument(
+            messageExpression ?? SyntaxFactory.LiteralExpression(
+                SyntaxKind.NullLiteralExpression,
+                SyntaxFactory.Token(SyntaxKind.NullKeyword)));
+
+    InvocationExpressionSyntax AddLineDirectives(InvocationExpressionSyntax invocation, InvocationExpressionSyntax originalNode, int lineNumber) =>
+        invocation
+            .WithLeadingTrivia(CreateLeadingTrivia(originalNode, lineNumber))
+            .WithTrailingTrivia(CreateTrailingTrivia(originalNode));
+
+    SyntaxTriviaList CreateLeadingTrivia(InvocationExpressionSyntax originalNode, int lineNumber) =>
+        originalNode.GetLeadingTrivia()
+            .Add(SharpAssertRewriter.CreateLineDirective(lineNumber, absoluteFileName))
+            .Add(SyntaxFactory.EndOfLine(NewLine));
+
+    SyntaxTriviaList CreateTrailingTrivia(InvocationExpressionSyntax originalNode) =>
+        SyntaxFactory.TriviaList(
+            SyntaxFactory.EndOfLine(NewLine),
+            SharpAssertRewriter.CreateDefaultLineDirective(),
+            SyntaxFactory.EndOfLine(NewLine))
+        .AddRange(originalNode.GetTrailingTrivia());
 
     record RewriteData(ExpressionSyntax Expression, string ExpressionText, int LineNumber, ExpressionSyntax? MessageExpression);
 }
