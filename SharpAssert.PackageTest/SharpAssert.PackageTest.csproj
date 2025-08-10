@@ -16,9 +16,9 @@
         <PackageReference Include="NUnit.Analyzers" Version="4.4.0" />
         <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
         
-        <!-- Package reference updated by run-package-test.sh script -->
-        <PackageReference Include="SharpAssert" Version="1.0.0-local" />
-        <PackageReference Include="SharpAssert.Rewriter" Version="1.0.0-local" />
+        <!-- Stable wildcard references to local development packages -->
+        <PackageReference Include="SharpAssert" Version="1.0.0-dev*" />
+        <PackageReference Include="SharpAssert.Rewriter" Version="1.0.0-dev*" />
     </ItemGroup>
 
     <ItemGroup>
