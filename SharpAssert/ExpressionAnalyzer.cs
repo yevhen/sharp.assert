@@ -6,7 +6,7 @@ namespace SharpAssert;
 
 internal class ExpressionAnalyzer : ExpressionVisitor
 {
-    public string AnalyzeFailure(Expression<Func<bool>> expression, string originalExpr, string file, int line)
+    public string AnalyzeFailure(Expression<Func<bool>> expression, AssertionContext context)
     {
         switch (expression.Body)
         {
@@ -16,7 +16,7 @@ internal class ExpressionAnalyzer : ExpressionVisitor
                 {
                     return GetValue(binaryExpr) is true
                         ? string.Empty
-                        : AnalyzeLogicalBinaryFailure(binaryExpr, originalExpr, file, line);
+                        : AnalyzeLogicalBinaryFailure(binaryExpr, context);
                 }
 
                 var leftValue = GetValue(binaryExpr.Left);
@@ -24,25 +24,25 @@ internal class ExpressionAnalyzer : ExpressionVisitor
 
                 return EvaluateBinaryExpression(binaryExpr.NodeType, leftValue, rightValue)
                     ? string.Empty
-                    : AnalyzeBinaryFailure(leftValue, rightValue, originalExpr, file, line);
+                    : AnalyzeBinaryFailure(leftValue, rightValue, context);
             }
             case UnaryExpression { NodeType: Not } unaryExpr:
             {
                 return GetValue(unaryExpr) is true
                     ? string.Empty
-                    : AnalyzeNotFailure(unaryExpr, originalExpr, file, line);
+                    : AnalyzeNotFailure(unaryExpr, context);
             }
         }
 
         var expressionResult = GetValue(expression.Body);
         return expressionResult is true
             ? string.Empty :
-            AssertionFormatter.FormatAssertionFailure(originalExpr, file, line);
+            AssertionFormatter.FormatAssertionFailure(context);
     }
 
-    string AnalyzeLogicalBinaryFailure(BinaryExpression binaryExpr, string originalExpr, string file, int line)
+    string AnalyzeLogicalBinaryFailure(BinaryExpression binaryExpr, AssertionContext context)
     {
-        var locationPart = AssertionFormatter.FormatLocation(file, line);
+        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
         
         var leftValue = GetValue(binaryExpr.Left);
         var leftBool = (bool)leftValue!;
@@ -50,21 +50,24 @@ internal class ExpressionAnalyzer : ExpressionVisitor
         if (binaryExpr.NodeType == AndAlso)
         {
             if (!leftBool)
-                return FormatLogicalFailure(originalExpr, locationPart, leftValue, null, "&&: Left operand was false", true);
+                return FormatLogicalFailure(context, locationPart, leftValue, null, "&&: Left operand was false", true);
             
             var rightValue = GetValue(binaryExpr.Right);
-            return FormatLogicalFailure(originalExpr, locationPart, leftValue, rightValue, "&&: Right operand was false", false);
+            return FormatLogicalFailure(context, locationPart, leftValue, rightValue, "&&: Right operand was false", false);
         }
         
         var rightValueOrElse = GetValue(binaryExpr.Right);
 
-        return FormatLogicalFailure(originalExpr, locationPart, leftValue, rightValueOrElse, "||: Both operands were false", false);
+        return FormatLogicalFailure(context, locationPart, leftValue, rightValueOrElse, "||: Both operands were false", false);
     }
 
-    static string FormatLogicalFailure(string originalExpr, string locationPart, object? leftValue, object? rightValue, string explanation, bool isShortCircuit)
+    static string FormatLogicalFailure(AssertionContext context, string locationPart, object? leftValue, object? rightValue, string explanation, bool isShortCircuit)
     {
-        var result = $"Assertion failed: {originalExpr}  at {locationPart}\n" +
-                     $"  Left:  {FormatValue(leftValue)}{(isShortCircuit ? " (short-circuit)" : "")}";
+        var baseMessage = context.Message is not null 
+            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
+            : $"Assertion failed: {context.Expression}  at {locationPart}\n";
+            
+        var result = baseMessage + $"  Left:  {FormatValue(leftValue)}{(isShortCircuit ? " (short-circuit)" : "")}";
         
         if (rightValue != null)
             result += $"\n  Right: {FormatValue(rightValue)}";
@@ -73,25 +76,31 @@ internal class ExpressionAnalyzer : ExpressionVisitor
         return result;
     }
 
-    string AnalyzeNotFailure(UnaryExpression unaryExpr, string originalExpr, string file, int line)
+    string AnalyzeNotFailure(UnaryExpression unaryExpr, AssertionContext context)
     {
         var operandValue = GetValue(unaryExpr.Operand);
-        var locationPart = AssertionFormatter.FormatLocation(file, line);
+        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
         
-        return $"Assertion failed: {originalExpr}  at {locationPart}\n" +
-               $"  Operand: {FormatValue(operandValue)}\n" +
+        var baseMessage = context.Message is not null 
+            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
+            : $"Assertion failed: {context.Expression}  at {locationPart}\n";
+        
+        return baseMessage + $"  Operand: {FormatValue(operandValue)}\n" +
                $"  !: Operand was {FormatValue(operandValue)}";
     }
 
-    static string AnalyzeBinaryFailure(object? leftValue, object? rightValue, string originalExpr, string file, int line)
+    static string AnalyzeBinaryFailure(object? leftValue, object? rightValue, AssertionContext context)
     {
         var leftDisplay = FormatValue(leftValue);
         var rightDisplay = FormatValue(rightValue);
         
-        var locationPart = AssertionFormatter.FormatLocation(file, line);
+        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
         
-        return $"Assertion failed: {originalExpr}  at {locationPart}\n" +
-               $"  Left:  {leftDisplay}\n" +
+        var baseMessage = context.Message is not null 
+            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
+            : $"Assertion failed: {context.Expression}  at {locationPart}\n";
+        
+        return baseMessage + $"  Left:  {leftDisplay}\n" +
                $"  Right: {rightDisplay}";
     }
 

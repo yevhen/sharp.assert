@@ -36,4 +36,43 @@ public class CoreAssertionFixture : TestBase
         action.Should().Throw<SharpAssertionException>()
               .WithMessage("*AssertionFixture.cs:*");
     }
+
+    [Test]
+    public void Should_pass_when_condition_is_true_with_message()
+    {
+        var action = () => Assert(true, "This should pass");
+        action.Should().NotThrow();
+    }
+
+    [Test]
+    public void Should_include_custom_message_in_error()
+    {
+        var action = () => Assert(false, "Custom error message");
+        action.Should().Throw<SharpAssertionException>()
+              .WithMessage("Custom error message*");
+    }
+
+    [Test]
+    public void Should_include_both_message_and_expression_in_error()
+    {
+        var action = () => Assert(1 == 2, "Values should be equal");
+        action.Should().Throw<SharpAssertionException>()
+              .WithMessage("Values should be equal*1 == 2*");
+    }
+
+    [Test]
+    public void Should_reject_empty_message()
+    {
+        var action = () => Assert(true, "");
+        action.Should().Throw<ArgumentException>()
+              .WithMessage("*Message must be either null or non-empty*");
+    }
+
+    [Test]
+    public void Should_reject_whitespace_message()
+    {
+        var action = () => Assert(true, "   ");
+        action.Should().Throw<ArgumentException>()
+              .WithMessage("*Message must be either null or non-empty*");
+    }
 }

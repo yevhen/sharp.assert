@@ -2,12 +2,16 @@ namespace SharpAssert;
 
 internal static class AssertionFormatter
 {
-    public static string FormatAssertionFailure(string? expr, string? file, int line)
+    public static string FormatAssertionFailure(AssertionContext context)
     {
-        var locationPart = FormatLocation(file, line);
-        return $"Assertion failed: {expr}  at {locationPart}";
+        var locationPart = FormatLocation(context.File, context.Line);
+        
+        if (context.Message is not null)
+            return $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}";
+        
+        return $"Assertion failed: {context.Expression}  at {locationPart}";
     }
     
-    public static string FormatLocation(string? file, int line) =>
+    public static string FormatLocation(string file, int line) =>
         $"{file}:{line}";
 }

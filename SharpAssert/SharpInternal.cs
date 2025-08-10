@@ -12,14 +12,20 @@ public static class SharpInternal
     /// <param name="expr">Text representation of the expression</param>
     /// <param name="file">Source file where assertion occurred</param>
     /// <param name="line">Line number where assertion occurred</param>
+    /// <param name="message">Optional custom error message</param>
     public static void Assert(
         Expression<Func<bool>> condition,
         string expr,
         string file,
-        int line)
+        int line,
+        string? message = null)
     {
+        if (message is not null && string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Message must be either null or non-empty", nameof(message));
+
         var analyzer = new ExpressionAnalyzer();
-        var failureMessage = analyzer.AnalyzeFailure(condition, expr, file, line);
+        var context = new AssertionContext(expr, file, line, message);
+        var failureMessage = analyzer.AnalyzeFailure(condition, context);
         
         if (string.IsNullOrEmpty(failureMessage))
             return;
