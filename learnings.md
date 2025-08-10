@@ -58,4 +58,9 @@ This document is organized by topic to consolidate key learnings about the proje
 
 - **Unit Tests:** The core rewriter functionality is tested using "golden file" tests, comparing the output of the rewriter against a known-good rewritten source file.
 - **Integration Tests:** End-to-end tests are run on a sample project where `EnableSharpLambdaRewrite` is set to `true`, verifying that the entire process (rewrite -> compile -> run -> fail) works as expected.
-- **Fixtures:** Test fixtures are organized by functionality (e.g., `AssertionFixture`, `ExpressionAnalysisFixture`, `RewriterFixture`).
+- **MSBuild Task Testing:** Direct unit testing of SharpLambdaRewriteTask provides fast, comprehensive coverage without MSBuild complexity. Key insights:
+  - MSBuild tasks require a `BuildEngine` to log messages - use MockBuildEngine in tests
+  - Test the task directly by setting properties and calling Execute() 
+  - Verify file processing, error handling, and configuration properties
+  - Use temp directories for isolated file operations in tests
+- **Fixtures:** Test fixtures are organized by functionality (e.g., `AssertionFixture`, `ExpressionAnalysisFixture`, `RewriterFixture`, `SharpLambdaRewriteTaskFixture`).
