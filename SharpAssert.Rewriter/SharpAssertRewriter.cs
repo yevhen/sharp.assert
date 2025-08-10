@@ -70,7 +70,7 @@ internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel) : CSharpSy
         var newInvocation = SyntaxFactory.InvocationExpression(
             SyntaxFactory.MemberAccessExpression(
                 SyntaxKind.SimpleMemberAccessExpression,
-                SyntaxFactory.IdentifierName("global::SharpInternal"),
+                SyntaxFactory.IdentifierName("global::SharpAssert.SharpInternal"),
                 SyntaxFactory.IdentifierName("Assert")))
             .WithArgumentList(SyntaxFactory.ArgumentList(
                 SyntaxFactory.SeparatedList([

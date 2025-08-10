@@ -1,6 +1,7 @@
 bin/
 obj/
 /packages/
+/SharpAssert.IntegrationTest/packages
 riderModule.iml
 /_ReSharper.Caches/
 coverage.cobertura.xml

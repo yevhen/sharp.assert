@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.Rewriter.Tests"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.Rewriter", "SharpAssert.Rewriter\SharpAssert.Rewriter.csproj", "{C9949AD0-684A-415A-A4FB-626EF50E2242}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.IntegrationTest", "SharpAssert.IntegrationTest\SharpAssert.IntegrationTest.csproj", "{283622A9-1931-4814-A18D-06053DB1ED8C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,6 +68,18 @@ Global
 		{C9949AD0-684A-415A-A4FB-626EF50E2242}.Release|x64.Build.0 = Release|Any CPU
 		{C9949AD0-684A-415A-A4FB-626EF50E2242}.Release|x86.ActiveCfg = Release|Any CPU
 		{C9949AD0-684A-415A-A4FB-626EF50E2242}.Release|x86.Build.0 = Release|Any CPU
+		{283622A9-1931-4814-A18D-06053DB1ED8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{283622A9-1931-4814-A18D-06053DB1ED8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{283622A9-1931-4814-A18D-06053DB1ED8C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{283622A9-1931-4814-A18D-06053DB1ED8C}.Debug|x64.Build.0 = Debug|Any CPU
+		{283622A9-1931-4814-A18D-06053DB1ED8C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{283622A9-1931-4814-A18D-06053DB1ED8C}.Debug|x86.Build.0 = Debug|Any CPU
+		{283622A9-1931-4814-A18D-06053DB1ED8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{283622A9-1931-4814-A18D-06053DB1ED8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{283622A9-1931-4814-A18D-06053DB1ED8C}.Release|x64.ActiveCfg = Release|Any CPU
+		{283622A9-1931-4814-A18D-06053DB1ED8C}.Release|x64.Build.0 = Release|Any CPU
+		{283622A9-1931-4814-A18D-06053DB1ED8C}.Release|x86.ActiveCfg = Release|Any CPU
+		{283622A9-1931-4814-A18D-06053DB1ED8C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
