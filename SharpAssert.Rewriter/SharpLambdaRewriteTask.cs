@@ -28,7 +28,6 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
 
             EnsureDirectoryExists(OutputDir);
 
-            var rewriter = new SharpAssertRewriter();
             var processedCount = 0;
 
             foreach (var sourceItem in Sources)
@@ -40,7 +39,6 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
                     continue;
 
                 var rewrittenContent = SharpAssertRewriter.Rewrite(sourceContent, sourcePath);
-
                 if (rewrittenContent != sourceContent)
                 {
                     WriteProcessedFile(sourcePath, rewrittenContent);
