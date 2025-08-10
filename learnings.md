@@ -15,6 +15,10 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Build Configuration:**
     - The project targets `net9.0` to leverage modern C# language features.
     - Careful attention is needed for compatibility with features like file-scoped namespaces and implicit usings when working with the rewriter.
+- **Integration Testing:**
+    - SharpAssert.IntegrationTest should use ProjectReference instead of PackageReference for true integration testing
+    - This ensures changes to local code are immediately reflected without requiring package publishing
+    - Remove RestorePackagesPath and RestoreAdditionalProjectSources when using ProjectReference
 
 ## Runtime: Expression Tree Analysis
 
