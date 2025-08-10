@@ -9,6 +9,7 @@ public class SharpLambdaRewriteTaskFixture
 {
     const string DefaultLangVersion = "latest";
     const string DefaultNullableContext = "enable";
+    const string ExpectedRewrittenAssert = "global::SharpInternal.Assert(()=>";
     
     string tempDir;
     
@@ -151,7 +152,7 @@ public class SharpLambdaRewriteTaskFixture
         File.Exists(expectedOutputFile).Should().BeTrue("output path should preserve directory structure");
         
         var content = File.ReadAllText(expectedOutputFile);
-        content.Should().Contain("global::SharpInternal.Assert(()=>");
+        content.Should().Contain(ExpectedRewrittenAssert);
     }
 
     [Test]
@@ -182,8 +183,9 @@ public class SharpLambdaRewriteTaskFixture
         File.Exists(outputFile).Should().BeTrue("file with async Assert should still be processed");
         
         var content = File.ReadAllText(outputFile);
-        content.Should().NotContain("global::SharpInternal.Assert(()=>");
-        content.Should().Contain("Assert(await GetBoolAsync())"); // Original Assert should remain
+        content.Should().NotContain(ExpectedRewrittenAssert);
+        content.Should().Contain("Assert(await GetBoolAsync())",
+            "Original Assert should remain");
     }
 
     [Test]
@@ -206,7 +208,8 @@ public class SharpLambdaRewriteTaskFixture
         File.Exists(outputFile).Should().BeTrue("fallback should create output file with original content");
         
         var content = File.ReadAllText(outputFile);
-        content.Should().Contain("this is not valid C# code at all!!!"); // Original content preserved in fallback
+        content.Should().Contain("this is not valid C# code at all!!!",
+            "Original content preserved in fallback");
     }
 
     [Test]
@@ -273,8 +276,8 @@ public class SharpLambdaRewriteTaskFixture
         mockEngine.Messages.Should().Contain(msg => msg.Contains("SharpAssert: Rewriting 1 source files"));
         mockEngine.Messages.Should().Contain(msg => msg.Contains("SharpAssert: Processed 1 files with rewrites"));
     }
-    
-    string CreateTempDirectory()
+
+    static string CreateTempDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), "SharpAssertTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(path);
@@ -288,23 +291,17 @@ public class SharpLambdaRewriteTaskFixture
         return filePath;
     }
     
-    ITaskItem CreateTaskItem(string itemSpec)
+    ITaskItem CreateTaskItem(string itemSpec) => new TaskItem(itemSpec);
+
+    SharpLambdaRewriteTask CreateTask(params string[] sourceFiles) => new()
     {
-        return new TaskItem(itemSpec);
-    }
-    
-    SharpLambdaRewriteTask CreateTask(params string[] sourceFiles)
-    {
-        return new SharpLambdaRewriteTask 
-        {
-            Sources = sourceFiles.Select(CreateTaskItem).ToArray(),
-            ProjectDir = tempDir,
-            IntermediateDir = Path.Combine(tempDir, "obj"),
-            OutputDir = Path.Combine(tempDir, "output"),
-            BuildEngine = new MockBuildEngine()
-        };
-    }
-    
+        Sources = sourceFiles.Select(CreateTaskItem).ToArray(),
+        ProjectDir = tempDir,
+        IntermediateDir = Path.Combine(tempDir, "obj"),
+        OutputDir = Path.Combine(tempDir, "output"),
+        BuildEngine = new MockBuildEngine()
+    };
+
     SharpLambdaRewriteTask CreateTaskWithMockEngine(params string[] sourceFiles)
     {
         var mockEngine = new MockBuildEngine();
@@ -323,7 +320,7 @@ public class SharpLambdaRewriteTaskFixture
     {
         File.Exists(outputFile).Should().BeTrue();
         var content = File.ReadAllText(outputFile);
-        content.Should().Contain("global::SharpInternal.Assert(()=>");
+        content.Should().Contain(ExpectedRewrittenAssert);
         
         if (expectedContent != null)
             content.Should().Contain(expectedContent);
@@ -332,9 +329,9 @@ public class SharpLambdaRewriteTaskFixture
 
 public class MockBuildEngine : IBuildEngine
 {
-    public List<string> Messages { get; } = new List<string>();
-    public List<string> Errors { get; } = new List<string>();
-    public List<string> Warnings { get; } = new List<string>();
+    public List<string> Messages { get; } = [];
+    public List<string> Errors { get; } = [];
+    public List<string> Warnings { get; } = [];
 
     public bool ContinueOnError => false;
     public int LineNumberOfTaskNode => 0;
