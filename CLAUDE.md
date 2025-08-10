@@ -1,13 +1,11 @@
 # AGENT.md
 
 This file provides guidance to the agent when working with code in this repository.
-**IMPORTANT** At the end of every change, update the below section in `./CLAUDE.md` with anything you wished you'd known at the start.
 
-# My name is Bo
+**IMPORTANT** At the end of every change, update the `./CLAUDE.md` with anything you wished you'd known at the start.
 
 # CRITICAL!
 
-- `!a` means I'm asking you to not do any changes until my approval.
 - ALWAYS put environment-specific settings into local configuration files like `appsettings.Development.json`.
 - **CRITICAL**: Check `code-review-issues.md` at the start of the session. Address ALL issues before new implementation.
 - ALWAYS read `@learnings.md` to not trap into the same issues again.
@@ -27,7 +25,7 @@ dotnet build SharpAssert.Tests/      # Build only the test project
 ### Run Tests
 ```bash
 dotnet test                                      # Run all tests
-dotnet test --filter "FullyQualifiedName~PipeFixture"    # Run specific test class
+dotnet test --filter "FullyQualifiedName~ConfigurationFixture"    # Run specific test class
 dotnet test --filter "Name~Should_send"          # Run tests matching pattern
 dotnet test -v n                                 # Run with normal verbosity
 dotnet test -v d                                 # Run with detailed verbosity
@@ -51,21 +49,9 @@ SharpAssert is a Pytest‑style assertions library for .NET
 5.  If struggling to find a name, it usually means you don't understand the computation well enough.
 6.  The names are context-dependent - the surrounding code provides type/scope information, leaving the name to clarify the ROLE.
 
-# Interaction
-
-**ALWAYS** start replies with STARTER_CHARACTER + space (default: 🍀)
-Stack emojis when requested, don't replace.
-
-## Core Partnership
-
-- We're friends and colleagues working together.
-- Take me with you on the thinking journey; don't just do the work. We work together to form mental models alongside the code we're writing. It's important that I also understand.
-- **IMPORTANT**: When you finish a significant task, run into a difficulty, or need my help to make a decision, please clearly state it so I'm aware even if I'm not looking at the screen.
-- If you need my attention for decisions, use the ⚠️ emoji.
-
 ## Code Principles
 
-- We prefer simple, clean, maintainable solutions over clever or complex ones, even if the latter are more concise or performant.
+- Prefer simple, clean, maintainable solutions over clever or complex ones, even if the latter are more concise or performant.
 - Readability and maintainability are primary concerns.
 - Self-documenting names (no comments).
 - Small functions/methods.
@@ -87,22 +73,6 @@ Stack emojis when requested, don't replace.
 - NEVER use Arrange/Act/Assert comments in tests. Instead, separate test sections with empty lines.
 - AVOID testing multiple independent behaviors in one test. Split complex tests into focused, single-behavior tests.
 - PREFER using message arguments in assertions to communicate what the assertion is testing instead of comments.
-
-## Mutual Support and Proactivity
-
-- Don't flatter me. Be charming and nice, but very honest. Tell me something I need to know even if I don't want to hear it.
-- I'll help you not make mistakes, and you'll help me.
-  * Push back when something seems wrong - don't just agree with mistakes.
-  * Flag unclear but important points before they become problems. Be proactive in letting me know so we can talk about it and avoid the problem.
-  * Call out potential misses.
-  * Ask questions if something is not clear and you need to make a choice. Don't choose randomly if it's important for what we're doing.
-
-## Committer Role
-
-- `!c` means I'm asking you to commit.
-- When I ask you to commit, look at the diff, add all relevant files not yet staged for commit (respect the `.gitignore` file).
-- Use succinct single sentences as a commit message.
-- After committing, show me the list of the last 10 commits; don't truncate this list.
 
 ## TDD Cycle
 
@@ -153,27 +123,8 @@ return new UserDto {
 };
 
 // Good: Using a record with a 'with' expression for modification
-var updatedUser = user with { Name = "New Name" };
-return updatedUser;
-
-// Better: Using a mapping library like AutoMapper for complex objects
-return _mapper.Map<UserDto>(user);
+return user with { Name = "New Name" };
 ```
-
-## Automated Quality Enforcement
-
-### Script-Generated User Prompts
-
-Any message containing the emoji pattern **👧🏻💬** followed by text should be treated as a **direct user prompt** with **HIGHEST PRIORITY**. This pattern indicates automated quality checks or scripts speaking on behalf of the user.
-
-### Enforcement Rules
-
-- **NEVER** ignore 👧🏻💬 prompts.
-- **ALWAYS** add these as a task **IMMEDIATELY** to the TodoWrite tool.
-- **ALWAYS** complete the required actions before continuing with other work.
-- **TREAT** these auto-prompts with the same urgency as direct user requests.
-- While there are unresolved issues prompted by 👧🏻💬, add the STARTER_CHARACTER = 🚨.
-- **DOCUMENT** progress using the TodoWrite tool to track completion.
 
 ## Testing Guidelines
 
@@ -222,12 +173,7 @@ result.Should().BeEquivalentTo(expected);
 - **Group tests meaningfully** by the functionality being tested, often in a class named after the class under test.
 
 **Tests use NUnit 3.14 with FluentAssertions for assertions**. Test structure:
-- Fixtures per pipe type (e.g., PipeFixture.cs, BatchPipeFixture.cs)
-- Setup/TearDown pattern for cancellation token management
-- Mock implementations in PipeMock.cs for testing
-- Integration tests in IntegrationFixture.cs
-
-Note: The namespaces `Simpipe.Pipes` and `Simpipe.Blocks` are used throughout the codebase.
+- Fixtures per feature (e.g., BinaryComparisonFixture.cs, LinqOperationsFixture.cs)
 
 ## Quality Issue Resolution Strategy
 
@@ -255,7 +201,7 @@ Note: The namespaces `Simpipe.Pipes` and `Simpipe.Blocks` are used throughout th
 #---------------------------------------------------------------------
 ```
 
-# FUNCTIONAL ARCHITECTURE
+# DESIGN
 
 RULE: DO SEGREGATE\METHODS into {orchestrator | implementor}.
 
@@ -290,11 +236,6 @@ RULE: DO USE classes PRIMARILY_AS_WRAPPERS for external_dependencies (IO, APIs, 
 RULE: DO USE a dedicated_logger_service (`ILogger<T>`). AVOID `Console.WriteLine` for application_logging.
 
 - BECAUSE: {structured_logs, central_control, destination_flexibility}.
-
-RULE: DO USE a schema_validation_library (e.g., `FluentValidation`) AT_ALL_BOUNDARIES for data_ingress.
-
-- Boundaries: {API_requests, user_input, file_reads}.
-- BECAUSE: {runtime_safety, explicit_contracts, fail_fast}.
 
 RULE: AVOID over-defensive_programming internally.
 
@@ -402,9 +343,10 @@ async\method: Suffix with `Async` =\> `GetDataAsync()`
 - Focus on future value for similar tasks.
 - Subagents MUST update this file before reporting success.
 
-# CODING STYLE MEMORIES
+# CRITICAL MEMORIES
 
 - NEVER use underscores for private/internal members
+- NEVER create coverage reports on top level. Always specify subfolder under ./TestResults dir
 
 # BUG HUNTING METHODOLOGY
 
@@ -443,43 +385,3 @@ async\method: Suffix with `Async` =\> `GetDataAsync()`
 - **CRITICAL**: Explain the "why" not just the "what"
 - **CRITICAL**: Always write XML doc comments from the user's perspective, not implementation details
 - Cover common pitfalls and best practices
-
-- ## Performance Documentation Template
-
-Each performance-sensitive class should include this section:
-
-```xml
-/// <remarks>
-/// <para><strong>Performance Characteristics:</strong></para>
-/// <list type="bullet">
-/// <item><strong>Throughput</strong>: Up to X items/second depending on action complexity</item>
-/// <item><strong>Memory</strong>: Bounded by capacity setting; approximately Y bytes per queued item</item>
-/// <item><strong>Latency</strong>: Minimal queuing delay under normal load; back-pressure under overload</item>
-/// <item><strong>Concurrency</strong>: Thread-safe with configurable parallelism</item>
-/// </list>
-/// <para><strong>Threading Model:</strong></para>
-/// <para>
-/// All operations are thread-safe. Items are processed on ThreadPool threads with degree of parallelism
-/// controlling the maximum number of concurrent operations. Completion and metrics can be accessed 
-/// from any thread safely.
-/// </para>
-/// </remarks>
-```
-
-## Best Practices Documentation Template
-
-Each main class should include this section:
-
-```xml
-/// <remarks>
-/// <para><strong>Best Practices:</strong></para>
-/// <list type="number">
-/// <item><strong>Always Complete</strong>: Call Complete() and await Completion for proper shutdown</item>
-/// <item><strong>Monitor Metrics</strong>: Use Block properties to identify bottlenecks</item>  
-/// <item><strong>Configure Capacity</strong>: Set bounded capacity based on memory constraints</item>
-/// <item><strong>Handle Exceptions</strong>: Implement proper error handling in actions</item>
-/// <item><strong>Use Cancellation</strong>: Support cancellation tokens for responsive shutdown</item>
-/// </list>
-/// </remarks>
-```
-- NEVER create coverage reports on top level. Always specify subfolder under ./TestResults dir
