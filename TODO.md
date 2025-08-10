@@ -1,0 +1,3 @@
+- Figure out package versioning
+- Github CI actions
+- Nuget publishing
