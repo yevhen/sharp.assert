@@ -53,6 +53,11 @@ This document is organized by topic to consolidate key learnings about the proje
     - Only add #line directives when actual rewrites occur to preserve unchanged files
     - Track rewrite state with `HasRewrites` property to conditionally add file-level #line directive
     - #line directives enable proper stack traces and debugging in original source files
+- **Line Number Tracking (Phase 4):**
+    - `GetLineSpan(node.Span).StartLinePosition.Line + 1` correctly extracts line numbers from syntax nodes
+    - Multi-line expressions correctly use the start line of the Assert call for line mapping
+    - Line numbers flow through the entire rewriting pipeline via the 4th parameter to SharpInternal.Assert
+    - #line directives around rewritten Assert calls ensure accurate debugging and stack traces
 
 ## API Design & Dependencies
 
@@ -68,4 +73,10 @@ This document is organized by topic to consolidate key learnings about the proje
   - Test the task directly by setting properties and calling Execute() 
   - Verify file processing, error handling, and configuration properties
   - Use temp directories for isolated file operations in tests
+- **MSBuild Task Enhancement (Phase 3):** Key improvements for production-ready MSBuild tasks:
+  - Add [Output] properties for MSBuild to track generated files
+  - Implement comprehensive generated file detection (AssemblyInfo.cs, GlobalUsings.g.cs, .designer., etc.)
+  - Use MessageImportance.Low for diagnostic messages to respect MSBuild verbosity levels
+  - Maintain backward compatibility - existing tests expect files without Assert calls to be skipped entirely
+  - Provide detailed file mapping diagnostics for troubleshooting rewriter issues
 - **Fixtures:** Test fixtures are organized by functionality (e.g., `AssertionFixture`, `ExpressionAnalysisFixture`, `RewriterFixture`, `SharpLambdaRewriteTaskFixture`).

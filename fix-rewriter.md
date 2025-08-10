@@ -28,19 +28,19 @@ Implement the same approach used by C# compiler team for Razor and source genera
   - [x] After each rewritten Assert, add: `#line default`
   - [x] Ensure proper escaping of file paths in #line directives
 
-### Phase 3: Rewriter Task Enhancement
-- [ ] Update `SharpAssert.Rewriter/SharpLambdaRewriteTask.cs`
-  - [ ] Pass original file paths to the rewriter
-  - [ ] Maintain mapping between original and rewritten files
-  - [ ] Add diagnostic output for troubleshooting (when verbose logging enabled)
-  - [ ] Handle edge cases (files without Assert calls, generated files)
+### Phase 3: Rewriter Task Enhancement ✅ COMPLETED
+- [x] Update `SharpAssert.Rewriter/SharpLambdaRewriteTask.cs`
+  - [x] Pass original file paths to the rewriter (already done in Phase 2)
+  - [x] Maintain mapping between original and rewritten files
+  - [x] Add diagnostic output for troubleshooting (when verbose logging enabled)
+  - [x] Handle edge cases (files without Assert calls, generated files)
 
-### Phase 4: Line Number Tracking
-- [ ] Update `SharpAssert.Rewriter/SharpAssertSyntaxRewriter.cs`
-  - [ ] Extract original line numbers from syntax nodes
-  - [ ] Pass line numbers through rewriting pipeline
-  - [ ] Ensure line numbers are preserved in generated Assert calls
-  - [ ] Handle multi-line Assert expressions correctly
+### Phase 4: Line Number Tracking ✅ COMPLETED
+- [x] Update `SharpAssert.Rewriter/SharpAssertSyntaxRewriter.cs`
+  - [x] Extract original line numbers from syntax nodes
+  - [x] Pass line numbers through rewriting pipeline
+  - [x] Ensure line numbers are preserved in generated Assert calls
+  - [x] Handle multi-line Assert expressions correctly
 
 ### Phase 5: Testing Infrastructure
 - [ ] Create test project for IDE experience validation
