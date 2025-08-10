@@ -24,6 +24,7 @@ public class RewriterFixture
             """;
         
         var expected = """
+            #line 1 "TestFile.cs"
             using static Sharp;
             
             class Test 
@@ -31,7 +32,10 @@ public class RewriterFixture
                 void Method() 
                 { 
                     var x = 1;
-                    global::SharpInternal.Assert(()=>x == 1,"x == 1",@"",8); 
+                    #line 8 "TestFile.cs"
+            global::SharpAssert.SharpInternal.Assert(()=>x == 1,"x == 1","TestFile.cs",8)
+            #line default
+            ; 
                 } 
             }
             """;
@@ -59,6 +63,7 @@ public class RewriterFixture
             """;
 
         var expected = """
+            #line 1 "TestFile.cs"
             using static Sharp;
             
             class Test 
@@ -66,7 +71,10 @@ public class RewriterFixture
                 void Method() 
                 { 
                     var items = new[] { 1, 2, 3 };
-                    global::SharpInternal.Assert(()=>items.Contains(2) && items.Length > 0,"items.Contains(2) && items.Length > 0",@"",8); 
+                    #line 8 "TestFile.cs"
+            global::SharpAssert.SharpInternal.Assert(()=>items.Contains(2) && items.Length > 0,"items.Contains(2) && items.Length > 0","TestFile.cs",8)
+            #line default
+            ; 
                 } 
             }
             """;
@@ -94,10 +102,12 @@ public class RewriterFixture
             }
             """;
 
+        var expected = source; // No rewrites should happen for async, so output == input
+
         var rewriter = new SharpAssertRewriter();
         var result = SharpAssertRewriter.Rewrite(source, "TestFile.cs");
 
-        result.Should().Be(source);
+        result.Should().Be(expected);
     }
 
     [Test]
@@ -119,6 +129,7 @@ public class RewriterFixture
             """;
 
         var expected = """
+            #line 1 "TestFile.cs"
             using static Sharp;
             
             class Test 
@@ -127,8 +138,14 @@ public class RewriterFixture
                 { 
                     var x = 1;
                     var y = 2;
-                    global::SharpInternal.Assert(()=>x == 1,"x == 1",@"",9);
-                    global::SharpInternal.Assert(()=>y > x,"y > x",@"",10); 
+                    #line 9 "TestFile.cs"
+            global::SharpAssert.SharpInternal.Assert(()=>x == 1,"x == 1","TestFile.cs",9)
+            #line default
+            ;
+                    #line 10 "TestFile.cs"
+            global::SharpAssert.SharpInternal.Assert(()=>y > x,"y > x","TestFile.cs",10)
+            #line default
+            ; 
                 } 
             }
             """;

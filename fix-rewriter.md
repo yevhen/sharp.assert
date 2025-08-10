@@ -20,13 +20,13 @@ Implement the same approach used by C# compiler team for Razor and source genera
   - [x] Create ItemGroup for tracking rewritten files
   - [x] Only swap Compile items during actual build (not design-time)
 
-### Phase 2: #line Directive Implementation
-- [ ] Modify `SharpAssert.Rewriter/SharpAssertRewriter.cs`
-  - [ ] Track original source file path for each syntax tree
-  - [ ] Add #line directive at start of generated file: `#line 1 "original/path.cs"`
-  - [ ] Before each rewritten Assert, add: `#line <original-line> "original/path.cs"`
-  - [ ] After each rewritten Assert, add: `#line default`
-  - [ ] Ensure proper escaping of file paths in #line directives
+### Phase 2: #line Directive Implementation ✅ COMPLETED
+- [x] Modify `SharpAssert.Rewriter/SharpAssertRewriter.cs`
+  - [x] Track original source file path for each syntax tree
+  - [x] Add #line directive at start of generated file: `#line 1 "original/path.cs"`
+  - [x] Before each rewritten Assert, add: `#line <original-line> "original/path.cs"`
+  - [x] After each rewritten Assert, add: `#line default`
+  - [x] Ensure proper escaping of file paths in #line directives
 
 ### Phase 3: Rewriter Task Enhancement
 - [ ] Update `SharpAssert.Rewriter/SharpLambdaRewriteTask.cs`

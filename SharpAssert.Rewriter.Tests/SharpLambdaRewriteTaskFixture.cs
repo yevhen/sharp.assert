@@ -9,7 +9,7 @@ public class SharpLambdaRewriteTaskFixture
 {
     const string DefaultLangVersion = "latest";
     const string DefaultNullableContext = "enable";
-    const string ExpectedRewrittenAssert = "global::SharpInternal.Assert(()=>";
+    const string ExpectedRewrittenAssert = "global::SharpAssert.SharpInternal.Assert(()=>";
     
     string tempDir;
     
@@ -125,7 +125,7 @@ public class SharpLambdaRewriteTaskFixture
         
         File.Exists(outputFileWithAssert).Should().BeTrue("files with Assert calls should be rewritten");
         var contentWithAssert = File.ReadAllText(outputFileWithAssert);
-        contentWithAssert.Should().Contain("global::SharpInternal.Assert(()=>");
+        contentWithAssert.Should().Contain("global::SharpAssert.SharpInternal.Assert(()=>");
         
         File.Exists(outputFileWithoutAssert).Should().BeFalse("files without Assert calls should be skipped");
     }

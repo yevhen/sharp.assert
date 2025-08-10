@@ -48,6 +48,11 @@ This document is organized by topic to consolidate key learnings about the proje
     - The rewrite task is injected `BeforeTargets="CoreCompile"` to ensure it runs before the compiler.
     - The output is written to a standard pattern: `$(IntermediateOutputPath)SharpRewritten\**\*.sharp.g.cs`.
 - **Graceful Fallback:** This is a critical principle. The MSBuild task is designed to fail gracefully. If the rewriter encounters an error, it copies the original source file, ensuring that a rewriter bug **does not break the user's build**.
+- **Line Directive Implementation:** 
+    - Use `SyntaxFactory.PreprocessingMessage()` instead of `SyntaxFactory.LineDirectiveTrivia()` for proper formatting of #line directives
+    - Only add #line directives when actual rewrites occur to preserve unchanged files
+    - Track rewrite state with `HasRewrites` property to conditionally add file-level #line directive
+    - #line directives enable proper stack traces and debugging in original source files
 
 ## API Design & Dependencies
 

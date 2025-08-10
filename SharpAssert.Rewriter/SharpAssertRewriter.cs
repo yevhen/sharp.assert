@@ -19,8 +19,20 @@ public class SharpAssertRewriter
         var semanticModel = compilation.GetSemanticModel(syntaxTree);
         var root = syntaxTree.GetRoot();
 
-        var rewriter = new SharpAssertSyntaxRewriter(semanticModel);
+        var rewriter = new SharpAssertSyntaxRewriter(semanticModel, fileName);
         var rewrittenRoot = rewriter.Visit(root);
+
+        // Only add #line directive if there were actual rewrites
+        if (rewriter.HasRewrites)
+        {
+            var lineDirective = CreateLineDirective(1, fileName);
+            var rewrittenWithLineDirective = rewrittenRoot.WithLeadingTrivia(
+                SyntaxFactory.TriviaList(
+                    lineDirective,
+                    SyntaxFactory.EndOfLine("\n")));
+
+            return rewrittenWithLineDirective.ToFullString();
+        }
 
         return rewrittenRoot.ToFullString();
     }
@@ -31,16 +43,37 @@ public class SharpAssertRewriter
         MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
         MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
     ];
+
+    public static SyntaxTrivia CreateLineDirective(int lineNumber, string filePath)
+    {
+        return SyntaxFactory.PreprocessingMessage($"#line {lineNumber} \"{EscapeFilePath(filePath)}\"");
+    }
+
+    public static SyntaxTrivia CreateDefaultLineDirective()
+    {
+        return SyntaxFactory.PreprocessingMessage("#line default");
+    }
+
+    public static string EscapeFilePath(string filePath)
+    {
+        // Escape backslashes and quotes in file paths for #line directives
+        return filePath.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    }
 }
 
-internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel) : CSharpSyntaxRewriter
+internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string originalFilePath) : CSharpSyntaxRewriter
 {
+    public bool HasRewrites { get; private set; }
     public override SyntaxNode? VisitInvocationExpression(InvocationExpressionSyntax node)
     {
         if (!IsSharpAssertCall(node))
             return base.VisitInvocationExpression(node);
 
-        return ContainsAwait(node) ? base.VisitInvocationExpression(node) : RewriteToLambda(node);
+        if (ContainsAwait(node))
+            return base.VisitInvocationExpression(node);
+
+        HasRewrites = true;
+        return RewriteToLambda(node);
     }
 
     static bool IsSharpAssertCall(InvocationExpressionSyntax node)
@@ -80,12 +113,24 @@ internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel) : CSharpSy
                         SyntaxFactory.Literal(expressionText))),
                     SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(
                         SyntaxKind.StringLiteralExpression,
-                        SyntaxFactory.Literal("@\"\"", ""))),
+                        SyntaxFactory.Literal(SharpAssertRewriter.EscapeFilePath(originalFilePath)))),
                     SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(
                         SyntaxKind.NumericLiteralExpression,
                         SyntaxFactory.Literal(lineNumber)))
                 ])));
         
-        return newInvocation.WithTriviaFrom(node);
+        // Add #line directives around the rewritten Assert
+        
+        return newInvocation
+            .WithLeadingTrivia(
+                node.GetLeadingTrivia()
+                    .Add(SharpAssertRewriter.CreateLineDirective(lineNumber, originalFilePath))
+                    .Add(SyntaxFactory.EndOfLine("\n")))
+            .WithTrailingTrivia(
+                SyntaxFactory.TriviaList(
+                    SyntaxFactory.EndOfLine("\n"),
+                    SharpAssertRewriter.CreateDefaultLineDirective(),
+                    SyntaxFactory.EndOfLine("\n"))
+                .AddRange(node.GetTrailingTrivia()));
     }
 }

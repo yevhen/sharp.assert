@@ -32,7 +32,7 @@ public class IntegrationFixture
         var rewriter = new SharpAssertRewriter();
         var rewrittenSource = SharpAssertRewriter.Rewrite(source, "Test.cs");
 
-        rewrittenSource.Should().Contain("global::SharpInternal.Assert");
+        rewrittenSource.Should().Contain("global::SharpAssert.SharpInternal.Assert");
         rewrittenSource.Should().Contain("()=>x == 2");
         rewrittenSource.Should().NotContain("Assert(x == 2)");
     }
@@ -79,8 +79,8 @@ public class IntegrationFixture
         var rewriter = new SharpAssertRewriter();
         var result = SharpAssertRewriter.Rewrite(source, "Test.cs");
         
-        result.Should().Contain("global::SharpInternal.Assert(()=>x < y");
-        result.Should().Contain("global::SharpInternal.Assert(()=>y > 0");
-        result.Should().Contain("global::SharpInternal.Assert(()=>x + y == 3");
+        result.Should().Contain("global::SharpAssert.SharpInternal.Assert(()=>x < y");
+        result.Should().Contain("global::SharpAssert.SharpInternal.Assert(()=>y > 0");
+        result.Should().Contain("global::SharpAssert.SharpInternal.Assert(()=>x + y == 3");
     }
 }

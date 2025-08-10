@@ -24,7 +24,7 @@ public class DebugRewriterFixture
         var rewriter = new SharpAssertRewriter();
         var result = SharpAssertRewriter.Rewrite(source, "TestFile.cs");
         
-        result.Should().Contain("global::SharpInternal.Assert");
+        result.Should().Contain("global::SharpAssert.SharpInternal.Assert");
         result.Should().Contain("()=>x == 1");
         result.Should().Contain("\"x == 1\"");
     }
