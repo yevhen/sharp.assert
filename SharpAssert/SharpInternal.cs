@@ -28,21 +28,12 @@ public static class SharpInternal
         if (message is not null && string.IsNullOrWhiteSpace(message))
             throw new ArgumentException("Message must be either null or non-empty", nameof(message));
 
-        // Force PowerAssert if flag is set
-        if (usePowerAssert)
+        if (usePowerAssert || usePowerAssertForUnsupported && HasUnsupportedFeatures(condition))
         {
             UsePowerAssert(condition, message);
             return;
         }
-        
-        // Check for unsupported features
-        if (usePowerAssertForUnsupported && HasUnsupportedFeatures(condition))
-        {
-            UsePowerAssert(condition, message);
-            return;
-        }
-        
-        // Use SharpAssert's analyzer
+
         var analyzer = new ExpressionAnalyzer();
         var context = new AssertionContext(expr, file, line, message);
         var failureMessage = analyzer.AnalyzeFailure(condition, context);
@@ -64,7 +55,10 @@ public static class SharpInternal
             var failureMessage = message is not null 
                 ? $"{message}\n{ex.Message}"
                 : ex.Message;
-            throw new SharpAssertionException(failureMessage);
+
+            var finalMessage = failureMessage.Replace("IsTrue", "Assert");
+
+            throw new SharpAssertionException(finalMessage);
         }
     }
     

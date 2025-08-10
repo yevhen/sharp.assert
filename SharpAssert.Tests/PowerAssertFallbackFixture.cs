@@ -17,7 +17,7 @@ public class PowerAssertFallbackFixture
         var ex = Assert.Throws<SharpAssertionException>(() =>
             SharpInternal.Assert(expr, "x == y", "test.cs", 42, null, usePowerAssert: true, usePowerAssertForUnsupported: false));
         
-        ex.Message.Should().Contain("IsTrue failed", "PowerAssert should generate failure message");
+        ex.Message.Should().Contain("Assert failed, expression was:", "PowerAssert should generate failure message");
     }
     
     [Test]

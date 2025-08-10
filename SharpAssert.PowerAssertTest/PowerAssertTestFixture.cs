@@ -17,7 +17,8 @@ public class PowerAssertTestFixture
             Assert(x > y))!;
 
         // PowerAssert's distinctive error format includes "IsTrue failed, expression was:"
-        ex.Message.Should().Contain("IsTrue failed, expression was:");
+        // But we change it to "Assert failed, expression was:"
+        ex.Message.Should().Contain("Assert failed, expression was:");
         ex.Message.Should().Contain("x > y");
     }
 }
