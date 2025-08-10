@@ -1,6 +1,6 @@
+using FluentAssertions;
+using static NUnit.Framework.Assert;
 using static Sharp;
-using NUnit.Framework;
-using System.Linq;
 
 namespace SharpAssert.IntegrationTest;
 
@@ -12,11 +12,25 @@ public class IntegrationTestFixture
     {
         var x = 1;
         var y = 2;
-        
+
         // These Assert calls should be rewritten to lambda form during build
         Assert(x == 1);
         Assert(x < y);
         Assert(x != y);
+    }
+
+    [Test]
+    public void Should_intercept_assert_calls()
+    {
+        var left = 5;
+        var right = 10;
+
+        var ex = Throws<SharpAssertionException>(() =>
+            Assert(left >= right))!;
+
+        ex.Message.Should().Contain("left >= right");
+        ex.Message.Should().Contain("*5*10*");
+        ex.Message.Should().Contain("TestFile.cs");
     }
 
     [Test]
