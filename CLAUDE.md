@@ -406,6 +406,17 @@ async\method: Suffix with `Async` =\> `GetDataAsync()`
 
 - NEVER use underscores for private/internal members
 
+# BUG HUNTING METHODOLOGY
+
+### Systematic Bug Hunt Algorithm:
+1. **Fix the bug**: Add failing test first and then fix the bug
+2. **Think other places where similar bug could happen**: Add failing tests and fix the bug
+3. **Check test coverage**: Run tests with coverage and verify branch coverage if the failing test was a missing test
+
+### Test Coverage Gaps to Watch:
+- Only testing negative scenarios (failures/errors) without positive scenarios (success) or other way around
+- Missing tests for the "happy path" where operations should succeed
+
 # Documentation Standards
 
 ## Required Elements for All Public APIs
