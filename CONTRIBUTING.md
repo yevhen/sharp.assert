@@ -26,44 +26,42 @@ dotnet test
 ```
 SharpAssert/
 ├── SharpAssert/                    # Main library with Assert methods
-├── SharpAssert.Generators/         # Source generator for interceptors
+├── SharpAssert.Rewriter/           # MSBuild source rewriter
 ├── SharpAssert.Tests/              # Unit tests for main library
-├── SharpAssert.Generators.Tests/   # Unit tests for generator
-├── SharpAssert.IntegrationTest/    # Integration tests (direct references)
-├── SharpAssert.PackageTest/        # Package tests (NuGet reference)
+├── SharpAssert.Rewriter.Tests/     # Unit tests for rewriter
+├── SharpAssert.PackageTest/        # Package tests (local NuGet feed)
+├── local-feed/                     # Local NuGet package feed
+├── nuget.config                    # NuGet feed configuration
+├── publish-local.sh                # Publish to local feed
+├── test-local.sh                   # End-to-end testing
 └── Directory.Build.props           # Centralized versioning
 ```
 
 ## 🧪 Testing Strategy
 
-### Three Levels of Testing
+### Two Levels of Testing
 
-1. **Unit Tests** (`SharpAssert.Tests` & `SharpAssert.Generators.Tests`)
+1. **Unit Tests** (`SharpAssert.Tests` & `SharpAssert.Rewriter.Tests`)
    - Fast, focused tests for individual components
-   - Run with: `dotnet test SharpAssert.Tests`
+   - Run with: `dotnet test`
 
-2. **Integration Tests** (`SharpAssert.IntegrationTest`)
-   - Tests interceptor functionality with direct project references
-   - Immediate feedback on generator changes
-   - Run with: `dotnet test SharpAssert.IntegrationTest`
-
-3. **Package Tests** (`SharpAssert.PackageTest`)
-   - Tests the actual NuGet package
-   - Validates end-user experience
-   - Run with: `cd SharpAssert.PackageTest && ./test-local-package.sh`
+2. **Package Tests** (`SharpAssert.PackageTest`)
+   - Tests the actual NuGet packages via local feed
+   - Validates complete end-user experience including MSBuild rewriting
+   - Run with: `./test-local.sh`
 
 ### Testing Workflow
 
 ```bash
-# During development (fast iteration)
-dotnet test SharpAssert.IntegrationTest
-
-# Before committing (comprehensive)
+# During development (unit tests)
 dotnet test
 
-# Validate package (final check)
-cd SharpAssert.PackageTest
-./test-local-package.sh
+# Before committing (comprehensive validation)
+./test-local.sh
+
+# Manual package testing
+./publish-local.sh
+dotnet test SharpAssert.PackageTest/
 ```
 
 ## 📦 Package Versioning
@@ -97,27 +95,26 @@ cd SharpAssert.PackageTest
 
 ## 🔧 Development Tips
 
-### Generator Development
+### Rewriter Development
 
-When working on the source generator:
+When working on the MSBuild rewriter:
 
-1. **Use Integration Tests for rapid iteration**
+1. **Use Package Tests for validation**
    ```bash
-   # Generator changes are picked up immediately
-   dotnet build SharpAssert.Generators
-   dotnet test SharpAssert.IntegrationTest
+   # Rewriter changes require package rebuild
+   ./test-local.sh
    ```
 
-2. **Inspect generated code**
+2. **Inspect rewritten code**
    ```bash
    # Generated files are in:
-   # obj/Debug/net9.0/SharpAssert.Generators/SharpAssert.Generators.AssertInterceptorGenerator/
+   # SharpAssert.PackageTest/obj/Debug/net9.0/SharpRewritten/
    ```
 
-3. **Debug the generator**
-   - Set breakpoints in generator code
-   - Attach debugger to build process
-   - Use `Debugger.Launch()` in generator code (remove before commit!)
+3. **Debug the rewriter**
+   - Set breakpoints in `SharpLambdaRewriteTask` or `SharpAssertRewriter`
+   - Use verbose MSBuild logging: `dotnet build -v diagnostic`
+   - Check #line directives in generated files
 
 ### Adding New Features
 
@@ -132,20 +129,20 @@ When working on the source generator:
 
 ### Common Problems
 
-**Interceptors not working:**
-- Check `Features=InterceptorsPreview` in .csproj
-- Verify `InterceptorsPreviewNamespaces` includes `SharpAssert.Generated`
-- Look for generated files in obj/ directory
+**Rewriter not working:**
+- Check both `SharpAssert` and `SharpAssert.Rewriter` packages are installed
+- Verify MSBuild output shows "SharpAssert: Rewriting X source files"
+- Look for rewritten files in `obj/Debug/net9.0/SharpRewritten/`
 
 **Package test fails:**
-- Clean packages directory: `rm -rf packages`
-- Verify version in Directory.Build.props
-- Check package reference in PackageTest.csproj
+- Clean local feed: `rm -rf local-feed`
+- Rebuild packages: `./publish-local.sh`
+- Check wildcard versioning: `1.0.0-dev*` in PackageTest.csproj
 
-**Generator not running:**
-- Clean and rebuild: `dotnet clean && dotnet build`
-- Check generator is referenced as `OutputItemType="Analyzer"`
-- Verify generator targets `netstandard2.0`
+**Local feed issues:**
+- Verify `nuget.config` points to `./local-feed`
+- Check timestamp versioning prevents cache conflicts
+- Ensure package source mapping directs SharpAssert* packages to local feed
 
 ## 📝 Commit Guidelines
 
@@ -154,7 +151,7 @@ Write clear, descriptive commit messages that explain what the change does:
 
 ```
 Add support for collection assertions
-Handle null expressions in interceptor
+Handle null expressions in rewriter
 Add edge cases for async assertions
 Update contributing guidelines
 ```
@@ -170,7 +167,7 @@ Examples:
 ```
 Add comprehensive unit tests for SharpLambdaRewriteTask
 
-Fix interceptor generation for complex expressions
+Fix rewriter generation for complex expressions
 - Handle nested method calls correctly
 - Add support for null-conditional operators
 

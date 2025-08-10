@@ -8,8 +8,8 @@
         <!-- Package metadata -->
         <PackageId>SharpAssert</PackageId>
         <Title>SharpAssert</Title>
-        <Description>Pytest-style assertions library for .NET with C# 12 interceptors for enhanced error messages</Description>
-        <PackageTags>testing;assertions;interceptors;pytest</PackageTags>
+        <Description>Assertions made simple</Description>
+        <PackageTags>nunit;xunit;testing;assertions;pytest</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
 
     </PropertyGroup>

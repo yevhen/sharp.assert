@@ -1,10 +1,10 @@
 # SharpAssert
 
-A pytest-style assertions library for .NET with detailed error reporting and full IDE support.
+A pytest inspired assertion library for .NET that provides detailed error reporting with no special syntax.
 
 ## Overview
 
-SharpAssert provides rich assertion diagnostics by automatically transforming your assertion expressions at compile time, giving you detailed failure messages without sacrificing performance or IDE experience.
+SharpAssert provides rich assertion diagnostics by automatically transforming your assertion expressions at compile time using MSBuild source rewriting, giving you detailed failure messages with powerful expression analysis.
 
 ```csharp
 using static Sharp;
@@ -13,7 +13,7 @@ var items = new[] { 1, 2, 3 };
 var target = 4;
 
 Assert(items.Contains(target));
-// Assertion failed: items.Contains(target)
+// Assertion failed: items.Contains(target) at MyTest.cs:15
 // Left:  [1, 2, 3]  
 // Right: 4
 // Result: false
@@ -24,13 +24,13 @@ Assert(items.Contains(target));
 - **🔍 Detailed Expression Analysis** - See exactly why your assertions failed
 - **🚀 Full IDE Support** - IntelliSense, Go to Definition, refactoring all work perfectly  
 - **⚡ Zero Runtime Overhead** - No reflection, no performance penalty
-- **🛠 Modern C# 12 Interceptors** - Uses official .NET interceptor technology
+- **🛠 MSBuild Source Rewriting** - Compile-time transformation with #line directives for debugging
 - **📦 Simple Setup** - Just add NuGet package, no MSBuild configuration needed
 
 ## Requirements
 
-- **.NET 8.0 or later** - Required for C# 12 interceptors support
-- **C# 12.0 or later** - Uses interceptor language feature  
+- **.NET 9.0 or later** - Required for MSBuild source rewriting support
+- **C# 13.0 or later** - Modern language features for expression analysis  
 - **Compatible IDEs** - Visual Studio 2022 17.7+, Rider 2023.3+, VS Code with C# extension
 
 ## Quick Start
@@ -41,17 +41,14 @@ Assert(items.Contains(target));
 dotnet add package SharpAssert
 ```
 
-### 2. Enable Interceptors in Your Project
+### 2. Update Your Project File
 
-Add these properties to your `.csproj` file:
+Add modern C# language version to your `.csproj` file:
 
 ```xml
 <PropertyGroup>
-  <LangVersion>12.0</LangVersion>
-  <Features>InterceptorsPreview</Features>
-  <InterceptorsPreviewNamespaces>
-    $(InterceptorsPreviewNamespaces);SharpAssert.Generated
-  </InterceptorsPreviewNamespaces>
+  <LangVersion>13.0</LangVersion>
+  <Nullable>enable</Nullable>
 </PropertyGroup>
 ```
 
@@ -76,23 +73,23 @@ public void Should_find_matching_item()
 
 ## How It Works
 
-SharpAssert uses **C# 12 interceptors** to automatically transform your assertion calls at compile time:
+SharpAssert uses **MSBuild source rewriting** to automatically transform your assertion calls at compile time:
 
 1. **You write:** `Assert(x == y)` 
-2. **Compiler generates:** Interceptor that calls `SharpInternal.Assert(() => x == y, "x == y", "file.cs", 42)`
-3. **Runtime analysis:** Expression tree provides detailed failure diagnostics
-4. **Full IDE support:** Original code remains unchanged, IntelliSense works perfectly
+2. **MSBuild rewrites:** `global::SharpAssert.SharpInternal.Assert(() => x == y, "x == y", "file.cs", 42)`
+3. **Runtime analysis:** Expression tree provides detailed failure diagnostics when assertions fail
+4. **Dual-world design:** Original code preserved for IDE, rewritten code used for compilation
 
 ## Benefits Over Traditional Approaches
 
-| Feature | SharpAssert | Traditional Assert |
-|---------|-------------|-------------------|
-| **IDE Support** | ✅ Full IntelliSense | ❌ Broken by source rewriting |
-| **Go to Definition** | ✅ Works perfectly | ❌ Navigates to generated code |
-| **Refactoring** | ✅ All tools work | ❌ Breaks on generated files |
-| **Setup Complexity** | ✅ Just add NuGet package | ❌ Requires MSBuild configuration |
-| **Build Performance** | ✅ Fast compile-time generation | ❌ Slower file I/O processing |
-| **Debugging** | ✅ Natural debugging experience | ❌ Debugger confusion |
+| Feature               | SharpAssert                    | Traditional Assert               |
+|-----------------------|--------------------------------|----------------------------------|
+| **IDE Support**       | ✅ Full IntelliSense            | ❌ Broken by source rewriting     |
+| **Go to Definition**  | ✅ Works perfectly              | ❌ Navigates to generated code    |
+| **Refactoring**       | ✅ All tools work               | ❌ Breaks on generated files      |
+| **Setup Complexity**  | ✅ Just add NuGet package       | ❌ Requires MSBuild configuration |
+| **Build Performance** | ✅ Fast compile-time generation | ❌ Slower file I/O processing     |
+| **Debugging**         | ✅ Natural debugging experience | ❌ Debugger confusion             |
 
 ## Advanced Usage
 
@@ -120,16 +117,16 @@ Assert(user.IsActive, $"User {user.Name} should be active for this operation");
 ### Async-Safe Usage
 
 ```csharp
-// Automatically skipped - no interceptor generated for await expressions
-Assert(await GetBoolAsync()); // Falls back to CallerArgumentExpression
+// Works with async expressions
+Assert(await GetBoolAsync()); // Rewritten to provide detailed analysis
 ```
 
 ## Architecture
 
 SharpAssert is built on modern .NET technologies:
 
-- **C# 12 Interceptors** - Official compile-time interception
-- **Source Generators** - Roslyn-powered code generation  
+- **MSBuild Source Rewriting** - Compile-time code transformation
+- **Roslyn Syntax Analysis** - Advanced C# code parsing and generation  
 - **Expression Trees** - Runtime expression analysis
 - **CallerArgumentExpression** - Fallback for edge cases
 
@@ -145,14 +142,14 @@ dotnet new console
 # Install SharpAssert package
 dotnet add package SharpAssert
 
-# Enable interceptors in project file
+# Install both packages
+dotnet add package SharpAssert.Rewriter
+
+# Update project file with modern C#
 cat >> SharpAssertTest.csproj << 'EOF'
   <PropertyGroup>
-    <LangVersion>12.0</LangVersion>
-    <Features>InterceptorsPreview</Features>
-    <InterceptorsPreviewNamespaces>
-      $(InterceptorsPreviewNamespaces);SharpAssert.Generated
-    </InterceptorsPreviewNamespaces>
+    <LangVersion>13.0</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 EOF
 
@@ -201,31 +198,25 @@ SharpAssert is working correctly!
 
 ## Development Integration
 
-### Test Project Architecture
+### Development Workflow
 
-SharpAssert includes two complementary test projects:
+SharpAssert uses a **Local NuGet Feed** approach for development and testing:
 
-| Project | Reference Type | Purpose | Generator Updates |
-|---------|---------------|---------|-------------------|
-| **`SharpAssert.IntegrationTest`** | Direct Project | Development/Fast iteration | ✅ Immediate |
-| **`SharpAssert.PackageTest`** | NuGet Package | Package validation | ❌ Requires rebuild |
+```bash
+# Publish to local feed and test in one command
+./test-local.sh
 
-### Integration Test Project (Fast Development)
-
-The `SharpAssert.IntegrationTest` project uses **direct project references** for fast development:
-
-```xml
-<!-- Integration test picks up generator changes immediately -->
-<ProjectReference Include="../SharpAssert/SharpAssert.csproj" />
-<ProjectReference Include="../SharpAssert.Generators/SharpAssert.Generators.csproj" 
-                  OutputItemType="Analyzer" 
-                  ReferenceOutputAssembly="false" />
+# Or run steps manually:
+./publish-local.sh          # Publish packages to local-feed/
+dotnet test SharpAssert.PackageTest/  # Test with local packages
 ```
 
-Benefits:
-- ✅ **Generator changes** picked up immediately during `dotnet build`
-- ✅ **No package rebuild** needed for testing modifications  
-- ✅ **Fast iteration** for development and debugging
+### Local Development Benefits
+
+- ✅ **Simple workflow** - Single command testing
+- ✅ **No cache management** - Timestamp-based versioning  
+- ✅ **No file editing** - Stable wildcard package references
+- ✅ **Professional approach** - Standard NuGet development pattern
 
 ### Package Test Project (Package Validation)
 
@@ -242,7 +233,7 @@ The script automatically:
 2. 📦 Builds and packs SharpAssert with `-local` suffix  
 3. 🔧 Updates test project to use the exact package version
 4. 🧪 Runs comprehensive package validation tests
-5. ✅ Verifies interceptors work via NuGet package
+5. ✅ Confirms Assert calls are properly transformed
 
 **Example output:**
 ```
@@ -254,9 +245,9 @@ The script automatically:
 📋 Package version: 1.0.0-local
 🧪 Running package tests...
   ✓ Should_support_basic_assertions_via_package
-  ✓ Should_provide_detailed_error_messages_via_interceptors  
+  ✓ Should_provide_detailed_error_messages  
 ✅ All package tests passed!
-🎉 The SharpAssert package (v1.0.0-local) works correctly with interceptors.
+🎉 SharpAssert packages work correctly from local feed
 ```
 
 This serves as the **automated Clean Install Test** to ensure packaging works correctly.
@@ -266,20 +257,22 @@ This serves as the **automated Clean Install Test** to ensure packaging works co
 ### CS9270: InterceptsLocation deprecated warning
 This warning appears in .NET 9+ but doesn't affect functionality. Future versions will use `InterceptableLocation`.
 
-### Interceptors not working
-1. Verify .NET 8+ and C# 12+
-2. Check `Features` and `InterceptorsPreviewNamespaces` in `.csproj`
+### Rewriter not working
+1. Verify both `SharpAssert` and `SharpAssert.Rewriter` packages are installed
+2. Check .NET 9+ and C# 13+ are configured
 3. Ensure `using static Sharp;` import
-4. Run the Clean Install Test above to verify setup
+4. Run `./test-local.sh` to verify complete setup
 
 ### No detailed error messages
-1. Check that interceptors are enabled
-2. Verify build output contains generated interceptor files in `obj/GeneratedFiles`
+1. Check build output contains: "SharpAssert: Rewriting X source files"
+2. Verify rewritten files exist in `obj/Debug/net9.0/SharpRewritten/`
 3. Ensure `SharpInternal.Assert` calls are being made (check generated code)
+4. Look for #line directives in generated files
 
-### Generator changes not reflected
-- **Integration Test**: Changes picked up automatically (uses direct references)
-- **Package consumers**: Must rebuild package with `dotnet pack` and update version
+### Development workflow
+- Use `./publish-local.sh` to update local packages
+- Run `./test-local.sh` for comprehensive validation  
+- Local feed uses timestamp versioning to avoid cache issues
 
 ## Contributing
 
