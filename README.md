@@ -133,18 +133,6 @@ SharpAssert is built on modern .NET technologies:
 - **Expression Trees** - Runtime expression analysis
 - **CallerArgumentExpression** - Fallback for edge cases
 
-## Migration from SharpAssert 1.x (MSBuild Rewriter)
-
-If upgrading from the old MSBuild-based version:
-
-1. Remove old packages: `SharpAssert.Rewriter`
-2. Remove MSBuild customizations from `.csproj`  
-3. Install new package: `SharpAssert`
-4. Add interceptor configuration (see Quick Start)
-5. Update target framework to .NET 8+
-
-Your test code remains exactly the same!
-
 ## Clean Install Test
 
 To verify SharpAssert works correctly from a fresh installation:
@@ -246,28 +234,29 @@ The `SharpAssert.PackageTest` project verifies the **actual NuGet package** work
 ```bash
 # Run the automated package test
 cd SharpAssert.PackageTest
-./run-package-test.sh
+./test-local-package.sh
 ```
 
 The script automatically:
-1. 📦 Builds and packs SharpAssert  
-2. 🔧 Configures test project to use local package
-3. 🧪 Runs comprehensive package validation tests
-4. ✅ Verifies interceptors work via NuGet package
+1. 🧹 Cleans packages directory to avoid version conflicts
+2. 📦 Builds and packs SharpAssert with `-local` suffix  
+3. 🔧 Updates test project to use the exact package version
+4. 🧪 Runs comprehensive package validation tests
+5. ✅ Verifies interceptors work via NuGet package
 
 **Example output:**
 ```
-🔧 Setting up SharpAssert Package Test...
-📦 Building and packing SharpAssert...
-📋 Found package: SharpAssert.1.0.0-dev
-🔧 Configuring package reference...
+🔧 SharpAssert Local Package Test
+================================================
+🧹 Cleaning packages directory...
+📦 Building SharpAssert with local suffix...
+✅ Built package: SharpAssert.1.0.0-local
+📋 Package version: 1.0.0-local
 🧪 Running package tests...
   ✓ Should_support_basic_assertions_via_package
   ✓ Should_provide_detailed_error_messages_via_interceptors  
-  ✓ Should_handle_complex_expressions_via_package
-  ✓ Should_support_custom_error_messages_via_package
-  ✓ Should_work_with_string_operations
-✅ Package test completed successfully!
+✅ All package tests passed!
+🎉 The SharpAssert package (v1.0.0-local) works correctly with interceptors.
 ```
 
 This serves as the **automated Clean Install Test** to ensure packaging works correctly.
@@ -294,7 +283,12 @@ This warning appears in .NET 9+ but doesn't affect functionality. Future version
 
 ## Contributing
 
-Contributions welcome! See our [contributing guide](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our comprehensive [Contributing Guide](CONTRIBUTING.md) for:
+- 🚀 Quick start guide for developers
+- 🧪 Testing strategy and workflow
+- 📦 Package versioning best practices  
+- 🔧 Development tips and debugging help
+- 📝 Commit guidelines and release process
 
 ## License
 
