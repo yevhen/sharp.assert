@@ -28,8 +28,7 @@ public class IntegrationFixture
                 } 
             }
             """;
-        
-        var rewriter = new SharpAssertRewriter();
+
         var rewrittenSource = SharpAssertRewriter.Rewrite(source, "Test.cs");
 
         rewrittenSource.Should().Contain("global::SharpAssert.SharpInternal.Assert");
@@ -51,7 +50,6 @@ public class IntegrationFixture
             }
             """;
 
-        var rewriter = new SharpAssertRewriter();
         var result = SharpAssertRewriter.Rewrite(source, "Test.cs");
 
         result.Should().Be(source);
@@ -76,7 +74,6 @@ public class IntegrationFixture
             }
             """;
 
-        var rewriter = new SharpAssertRewriter();
         var result = SharpAssertRewriter.Rewrite(source, "Test.cs");
         
         result.Should().Contain("global::SharpAssert.SharpInternal.Assert(()=>x < y");

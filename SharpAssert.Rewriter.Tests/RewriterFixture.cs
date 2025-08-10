@@ -1,6 +1,4 @@
 using FluentAssertions;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 
 namespace SharpAssert.Rewriter.Tests;
 
@@ -39,8 +37,7 @@ public class RewriterFixture
                 } 
             }
             """;
-        
-        var rewriter = new SharpAssertRewriter();
+
         var result = SharpAssertRewriter.Rewrite(source, "TestFile.cs");
 
         result.Should().Be(expected);
@@ -79,7 +76,6 @@ public class RewriterFixture
             }
             """;
 
-        var rewriter = new SharpAssertRewriter();
         var result = SharpAssertRewriter.Rewrite(source, "TestFile.cs");
 
         result.Should().Be(expected);
@@ -104,7 +100,6 @@ public class RewriterFixture
 
         var expected = source; // No rewrites should happen for async, so output == input
 
-        var rewriter = new SharpAssertRewriter();
         var result = SharpAssertRewriter.Rewrite(source, "TestFile.cs");
 
         result.Should().Be(expected);
@@ -150,7 +145,6 @@ public class RewriterFixture
             }
             """;
 
-        var rewriter = new SharpAssertRewriter();
         var result = SharpAssertRewriter.Rewrite(source, "TestFile.cs");
         
         result.Should().Be(expected);

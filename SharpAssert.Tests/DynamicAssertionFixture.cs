@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 namespace SharpAssert;
 
 [TestFixture]

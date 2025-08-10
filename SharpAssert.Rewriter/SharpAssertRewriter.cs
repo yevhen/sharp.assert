@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace SharpAssert.Rewriter;
 
-public class SharpAssertRewriter
+public static class SharpAssertRewriter
 {
     public static string Rewrite(string source, string fileName)
     {

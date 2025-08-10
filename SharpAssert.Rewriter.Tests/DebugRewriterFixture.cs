@@ -20,8 +20,7 @@ public class DebugRewriterFixture
                 } 
             }
             """;
-        
-        var rewriter = new SharpAssertRewriter();
+
         var result = SharpAssertRewriter.Rewrite(source, "TestFile.cs");
         
         result.Should().Contain("global::SharpAssert.SharpInternal.Assert");
