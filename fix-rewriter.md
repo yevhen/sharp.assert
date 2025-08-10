@@ -42,33 +42,15 @@ Implement the same approach used by C# compiler team for Razor and source genera
   - [x] Ensure line numbers are preserved in generated Assert calls
   - [x] Handle multi-line Assert expressions correctly
 
-### Phase 5: Testing Infrastructure
-- [ ] Create test project for IDE experience validation
-  - [ ] Test IntelliSense works in original files
-  - [ ] Test navigation (Go to Definition, Find All References)
-  - [ ] Test refactoring operations
-  - [ ] Test debugging breakpoints
-  - [ ] Test error reporting points to correct line
-
 ### Phase 6: Edge Cases & Polish
 - [ ] Handle files with existing #line directives
 - [ ] Support for partial classes across multiple files
 - [ ] Ensure compatibility with source generators
 - [ ] Test with async/await in Assert expressions
-- [ ] Verify performance impact is minimal
-
-### Phase 7: Integration Testing
-- [ ] Test with Visual Studio 2022
-- [ ] Test with JetBrains Rider
-- [ ] Test with VS Code + C# extension
-- [ ] Test command-line builds (dotnet build)
-- [ ] Test CI/CD scenarios (GitHub Actions, Azure DevOps)
 
 ### Phase 8: Documentation
 - [ ] Update README with IDE compatibility notes
-- [ ] Document the dual-world approach for contributors
 - [ ] Add troubleshooting guide for common issues
-- [ ] Create examples showing debugging experience
 
 ## Expected Outcome
 
