@@ -13,7 +13,6 @@ public class PackageTestFixture
         var x = 1;
         var y = 2;
 
-        // These Assert calls should be rewritten to lambda form by the MSBuild rewriter
         Assert(x == 1);
         Assert(x < y);
         Assert(x != y);
@@ -28,7 +27,6 @@ public class PackageTestFixture
         var ex = Throws<SharpAssertionException>(() =>
             Assert(left >= right))!;
 
-        // The rewritten code should provide detailed error information
         ex.Message.Should().Contain("left >= right");
         ex.Message.Should().Contain("5");
         ex.Message.Should().Contain("10");
@@ -39,9 +37,8 @@ public class PackageTestFixture
     public void Should_rewrite_complex_expressions()
     {
         var x = 1;
-        
-        // Test with more complex expressions
         var items = new[] { 1, 2, 3 };
+
         Assert(items.Length == 3);
         Assert(items.Contains(x));
     }
@@ -49,8 +46,8 @@ public class PackageTestFixture
     [Test]
     public void Should_rewrite_boolean_expressions()
     {
-        // Test with boolean expressions
         var isTrue = true;
+
         Assert(isTrue);
         Assert(!false);
     }
