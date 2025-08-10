@@ -7,6 +7,9 @@ namespace SharpAssert.Rewriter.Tests;
 [TestFixture]
 public class SharpLambdaRewriteTaskFixture
 {
+    const string DefaultLangVersion = "latest";
+    const string DefaultNullableContext = "enable";
+    
     string tempDir;
     
     [SetUp]
@@ -38,24 +41,14 @@ public class SharpLambdaRewriteTaskFixture
             }
             """);
         
-        var outputDir = Path.Combine(tempDir, "output");
-        var task = new SharpLambdaRewriteTask 
-        {
-            Sources = new[] { CreateTaskItem(sourceFile) },
-            ProjectDir = tempDir,
-            IntermediateDir = Path.Combine(tempDir, "obj"),
-            OutputDir = outputDir,
-            BuildEngine = new MockBuildEngine()
-        };
+        var task = CreateTask(sourceFile);
         
         var result = task.Execute();
-        
+
         result.Should().BeTrue();
-        var outputFile = Path.Combine(outputDir, "Test.cs.sharp.g.cs");
-        File.Exists(outputFile).Should().BeTrue();
-        var content = File.ReadAllText(outputFile);
-        content.Should().Contain("global::SharpInternal.Assert(()=>");
-        content.Should().Contain("x == 1");
+        
+        var outputFile = GetExpectedOutputPath(sourceFile);
+        VerifyRewrittenOutput(outputFile, "x == 1");
     }
 
     [Test]
@@ -72,20 +65,13 @@ public class SharpLambdaRewriteTaskFixture
             }
             """);
         
-        var outputDir = Path.Combine(tempDir, "output");
-        var task = new SharpLambdaRewriteTask 
-        {
-            Sources = new[] { CreateTaskItem(sourceFile) },
-            ProjectDir = tempDir,
-            IntermediateDir = Path.Combine(tempDir, "obj"),
-            OutputDir = outputDir,
-            BuildEngine = new MockBuildEngine()
-        };
+        var task = CreateTask(sourceFile);
         
         var result = task.Execute();
         
         result.Should().BeTrue();
-        var outputFile = Path.Combine(outputDir, "NoAssert.cs.sharp.g.cs");
+        
+        var outputFile = GetExpectedOutputPath(sourceFile);
         File.Exists(outputFile).Should().BeFalse("files without Assert calls should not be processed");
     }
 
@@ -102,32 +88,17 @@ public class SharpLambdaRewriteTaskFixture
             class Test2 { void Method() { Assert(1 == 1); } }
             """);
         
-        var outputDir = Path.Combine(tempDir, "output");
-        var task = new SharpLambdaRewriteTask 
-        {
-            Sources = new[] { CreateTaskItem(sourceFile1), CreateTaskItem(sourceFile2) },
-            ProjectDir = tempDir,
-            IntermediateDir = Path.Combine(tempDir, "obj"),
-            OutputDir = outputDir,
-            BuildEngine = new MockBuildEngine()
-        };
+        var task = CreateTask(sourceFile1, sourceFile2);
         
         var result = task.Execute();
         
         result.Should().BeTrue();
         
-        var outputFile1 = Path.Combine(outputDir, "Test1.cs.sharp.g.cs");
-        var outputFile2 = Path.Combine(outputDir, "Test2.cs.sharp.g.cs");
+        var outputFile1 = GetExpectedOutputPath(sourceFile1);
+        var outputFile2 = GetExpectedOutputPath(sourceFile2);
         
-        File.Exists(outputFile1).Should().BeTrue();
-        File.Exists(outputFile2).Should().BeTrue();
-        
-        var content1 = File.ReadAllText(outputFile1);
-        var content2 = File.ReadAllText(outputFile2);
-        
-        content1.Should().Contain("global::SharpInternal.Assert(()=>");
-        content2.Should().Contain("global::SharpInternal.Assert(()=>");
-        content2.Should().Contain("1 == 1");
+        VerifyRewrittenOutput(outputFile1);
+        VerifyRewrittenOutput(outputFile2, "1 == 1");
     }
 
     [Test]
@@ -142,22 +113,14 @@ public class SharpLambdaRewriteTaskFixture
             class TestWithoutAssert { void Method() { Console.WriteLine("test"); } }
             """);
         
-        var outputDir = Path.Combine(tempDir, "output");
-        var task = new SharpLambdaRewriteTask 
-        {
-            Sources = new[] { CreateTaskItem(sourceFileWithAssert), CreateTaskItem(sourceFileWithoutAssert) },
-            ProjectDir = tempDir,
-            IntermediateDir = Path.Combine(tempDir, "obj"),
-            OutputDir = outputDir,
-            BuildEngine = new MockBuildEngine()
-        };
+        var task = CreateTask(sourceFileWithAssert, sourceFileWithoutAssert);
         
         var result = task.Execute();
         
         result.Should().BeTrue();
         
-        var outputFileWithAssert = Path.Combine(outputDir, "WithAssert.cs.sharp.g.cs");
-        var outputFileWithoutAssert = Path.Combine(outputDir, "WithoutAssert.cs.sharp.g.cs");
+        var outputFileWithAssert = GetExpectedOutputPath(sourceFileWithAssert);
+        var outputFileWithoutAssert = GetExpectedOutputPath(sourceFileWithoutAssert);
         
         File.Exists(outputFileWithAssert).Should().BeTrue("files with Assert calls should be rewritten");
         var contentWithAssert = File.ReadAllText(outputFileWithAssert);
@@ -178,22 +141,15 @@ public class SharpLambdaRewriteTaskFixture
             class Nested { void Method() { Assert(true); } }
             """);
         
-        var outputDir = Path.Combine(tempDir, "output");
-        var task = new SharpLambdaRewriteTask 
-        {
-            Sources = new[] { CreateTaskItem(sourceFile) },
-            ProjectDir = tempDir,
-            IntermediateDir = Path.Combine(tempDir, "obj"),
-            OutputDir = outputDir,
-            BuildEngine = new MockBuildEngine()
-        };
+        var task = CreateTask(sourceFile);
         
         var result = task.Execute();
         
         result.Should().BeTrue();
         
-        var expectedOutputFile = Path.Combine(outputDir, "src", "nested", "Nested.cs.sharp.g.cs");
+        var expectedOutputFile = GetExpectedOutputPath(sourceFile);
         File.Exists(expectedOutputFile).Should().BeTrue("output path should preserve directory structure");
+        
         var content = File.ReadAllText(expectedOutputFile);
         content.Should().Contain("global::SharpInternal.Assert(()=>");
     }
@@ -216,20 +172,13 @@ public class SharpLambdaRewriteTaskFixture
             }
             """);
         
-        var outputDir = Path.Combine(tempDir, "output");
-        var task = new SharpLambdaRewriteTask 
-        {
-            Sources = new[] { CreateTaskItem(sourceFile) },
-            ProjectDir = tempDir,
-            IntermediateDir = Path.Combine(tempDir, "obj"),
-            OutputDir = outputDir,
-            BuildEngine = new MockBuildEngine()
-        };
+        var task = CreateTask(sourceFile);
         
         var result = task.Execute();
         
         result.Should().BeTrue();
-        var outputFile = Path.Combine(outputDir, "AsyncAssert.cs.sharp.g.cs");
+        
+        var outputFile = GetExpectedOutputPath(sourceFile);
         File.Exists(outputFile).Should().BeTrue("file with async Assert should still be processed");
         
         var content = File.ReadAllText(outputFile);
@@ -247,20 +196,13 @@ public class SharpLambdaRewriteTaskFixture
             class @#$%^&*() { Assert(x == 1); }
             """);
         
-        var outputDir = Path.Combine(tempDir, "output");
-        var task = new SharpLambdaRewriteTask 
-        {
-            Sources = new[] { CreateTaskItem(sourceFile) },
-            ProjectDir = tempDir,
-            IntermediateDir = Path.Combine(tempDir, "obj"),
-            OutputDir = outputDir,
-            BuildEngine = new MockBuildEngine()
-        };
+        var task = CreateTask(sourceFile);
         
         var result = task.Execute();
         
         result.Should().BeTrue("task should handle errors gracefully and return true");
-        var outputFile = Path.Combine(outputDir, "InvalidSyntax.cs.sharp.g.cs");
+        
+        var outputFile = GetExpectedOutputPath(sourceFile);
         File.Exists(outputFile).Should().BeTrue("fallback should create output file with original content");
         
         var content = File.ReadAllText(outputFile);
@@ -270,15 +212,7 @@ public class SharpLambdaRewriteTaskFixture
     [Test]
     public void Should_handle_empty_source_list()
     {
-        var outputDir = Path.Combine(tempDir, "output");
-        var task = new SharpLambdaRewriteTask 
-        {
-            Sources = Array.Empty<ITaskItem>(),
-            ProjectDir = tempDir,
-            IntermediateDir = Path.Combine(tempDir, "obj"),
-            OutputDir = outputDir,
-            BuildEngine = new MockBuildEngine()
-        };
+        var task = CreateTask();
         
         var result = task.Execute();
         
@@ -293,22 +227,14 @@ public class SharpLambdaRewriteTaskFixture
             class DefaultConfig { void Method() { Assert(true); } }
             """);
         
-        var outputDir = Path.Combine(tempDir, "output");
-        var task = new SharpLambdaRewriteTask 
-        {
-            Sources = new[] { CreateTaskItem(sourceFile) },
-            ProjectDir = tempDir,
-            IntermediateDir = Path.Combine(tempDir, "obj"),
-            OutputDir = outputDir,
-            BuildEngine = new MockBuildEngine()
-            // LangVersion and NullableContext not set - should use defaults
-        };
+        var task = CreateTask(sourceFile);
+        // LangVersion and NullableContext not set - should use defaults
         
         var result = task.Execute();
         
         result.Should().BeTrue();
-        task.LangVersion.Should().Be("latest");
-        task.NullableContext.Should().Be("enable");
+        task.LangVersion.Should().Be(DefaultLangVersion);
+        task.NullableContext.Should().Be(DefaultNullableContext);
     }
 
     [Test]
@@ -319,17 +245,9 @@ public class SharpLambdaRewriteTaskFixture
             class CustomConfig { void Method() { Assert(true); } }
             """);
         
-        var outputDir = Path.Combine(tempDir, "output");
-        var task = new SharpLambdaRewriteTask 
-        {
-            Sources = new[] { CreateTaskItem(sourceFile) },
-            ProjectDir = tempDir,
-            IntermediateDir = Path.Combine(tempDir, "obj"),
-            OutputDir = outputDir,
-            LangVersion = "9.0",
-            NullableContext = "disable",
-            BuildEngine = new MockBuildEngine()
-        };
+        var task = CreateTask(sourceFile);
+        task.LangVersion = "9.0";
+        task.NullableContext = "disable";
         
         var result = task.Execute();
         
@@ -346,16 +264,8 @@ public class SharpLambdaRewriteTaskFixture
             class LogTest { void Method() { Assert(true); } }
             """);
         
-        var outputDir = Path.Combine(tempDir, "output");
-        var mockEngine = new MockBuildEngine();
-        var task = new SharpLambdaRewriteTask 
-        {
-            Sources = new[] { CreateTaskItem(sourceFile) },
-            ProjectDir = tempDir,
-            IntermediateDir = Path.Combine(tempDir, "obj"),
-            OutputDir = outputDir,
-            BuildEngine = mockEngine
-        };
+        var task = CreateTaskWithMockEngine(sourceFile);
+        var mockEngine = (MockBuildEngine)task.BuildEngine;
         
         var result = task.Execute();
         
@@ -381,6 +291,42 @@ public class SharpLambdaRewriteTaskFixture
     ITaskItem CreateTaskItem(string itemSpec)
     {
         return new TaskItem(itemSpec);
+    }
+    
+    SharpLambdaRewriteTask CreateTask(params string[] sourceFiles)
+    {
+        return new SharpLambdaRewriteTask 
+        {
+            Sources = sourceFiles.Select(CreateTaskItem).ToArray(),
+            ProjectDir = tempDir,
+            IntermediateDir = Path.Combine(tempDir, "obj"),
+            OutputDir = Path.Combine(tempDir, "output"),
+            BuildEngine = new MockBuildEngine()
+        };
+    }
+    
+    SharpLambdaRewriteTask CreateTaskWithMockEngine(params string[] sourceFiles)
+    {
+        var mockEngine = new MockBuildEngine();
+        var task = CreateTask(sourceFiles);
+        task.BuildEngine = mockEngine;
+        return task;
+    }
+    
+    string GetExpectedOutputPath(string sourceFile)
+    {
+        var relativePath = Path.GetRelativePath(tempDir, sourceFile);
+        return Path.Combine(tempDir, "output", relativePath + ".sharp.g.cs");
+    }
+    
+    void VerifyRewrittenOutput(string outputFile, string? expectedContent = null)
+    {
+        File.Exists(outputFile).Should().BeTrue();
+        var content = File.ReadAllText(outputFile);
+        content.Should().Contain("global::SharpInternal.Assert(()=>");
+        
+        if (expectedContent != null)
+            content.Should().Contain(expectedContent);
     }
 }
 
