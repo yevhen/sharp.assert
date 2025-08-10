@@ -1,11 +1,10 @@
-using FluentAssertions;
 using static NUnit.Framework.Assert;
 using static Sharp;
 
-namespace SharpAssert.IntegrationTest;
+namespace SharpAssert.PackageTest;
 
 [TestFixture]
-public class IntegrationTestFixture
+public class AssertFixture
 {
     [Test]
     public void Should_rewrite_basic_assertions()
@@ -37,7 +36,7 @@ public class IntegrationTestFixture
     public void Should_rewrite_complex_expressions()
     {
         var x = 1;
-        
+
         // Test with more complex expressions
         var items = new[] { 1, 2, 3 };
         Assert(items.Length == 3);
@@ -52,13 +51,13 @@ public class IntegrationTestFixture
         Assert(isTrue);
         Assert(!false);
     }
-    
+
     [Test]
     public void Should_rewrite_string_operations()
     {
         var name = "test";
         var expected = "test";
-        
+
         Assert(name == expected);
         Assert(name.Length > 0);
         Assert(!string.IsNullOrEmpty(name));
