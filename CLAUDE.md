@@ -17,7 +17,7 @@ This file provides guidance to the agent when working with code in this reposito
 
 ### Build
 ```bash
-dotnet build                          # Build the solution
+dotnet build                         # Build the solution
 dotnet build SharpAssert/            # Build only the main library
 dotnet build SharpAssert.Tests/      # Build only the test project
 ```
@@ -27,9 +27,8 @@ dotnet build SharpAssert.Tests/      # Build only the test project
 PREFER 
 
 ```bash
-dotnet test -v q                                 # Run all tests
-dotnet test -v n                                 # Run with normal verbosity
-dotnet test -v d                                 # Run with detailed verbosity
+dotnet test                                      # Run all tests
+dotnet test -v <level>                           # Run all tests with verbosity q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]
 ```
 
 ### Clean
