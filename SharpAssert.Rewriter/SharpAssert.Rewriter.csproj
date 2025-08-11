@@ -4,14 +4,14 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     
     <!-- Package metadata -->
     <PackageId>SharpAssert.Rewriter</PackageId>
     <Title>SharpAssert.Rewriter</Title>
-    <Description>MSBuild source rewriter for SharpAssert assertion library</Description>
+    <Description>MSBuild source rewriter for SharpAssert. Automatically transforms Assert(expression) calls into detailed diagnostic expressions at compile time while preserving full IDE experience.</Description>
     <Version>1.0.0</Version>
     <Authors>Yevhen Bobrov</Authors>
     <Company>Cloudrite</Company>
@@ -22,12 +22,22 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>msbuild;rewriter;assertions;testing</PackageTags>
     <PackageIcon Condition="Exists('..\icon.png')">icon.png</PackageIcon>
+    <PackageReleaseNotes>Initial release of SharpAssert.Rewriter - MSBuild source rewriter that transforms Assert calls at compile time while preserving IDE experience.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <!-- Source symbols and XML documentation for Release builds only -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Framework" Version="17.8.3" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.8.3" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <!-- MSBuild dependencies should not be included in package as they're provided by MSBuild -->
+    <PackageReference Include="Microsoft.Build.Framework" Version="17.8.3" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.8.3" PrivateAssets="all" />
+    <!-- Roslyn needs to be included in the package -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="none" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,9 +46,16 @@
     <None Include="..\icon.png" Pack="true" PackagePath="\" Condition="Exists('..\icon.png')" />
   </ItemGroup>
   
-  <!-- Include all built assemblies in the tools directory -->
+  <!-- Suppress warnings specific to MSBuild task packages -->
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <!-- Include all necessary assemblies for the MSBuild task -->
   <ItemGroup>
-    <Content Include="bin\$(Configuration)\$(TargetFramework)\*.dll" Pack="true" PackagePath="tools\$(TargetFramework)\" />
+    <Content Include="bin\$(Configuration)\$(TargetFramework)\*.dll" 
+             Pack="true" 
+             PackagePath="tools\$(TargetFramework)\" />
   </ItemGroup>
 
 </Project>
