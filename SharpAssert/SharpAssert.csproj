@@ -4,6 +4,9 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+
+        <!-- Suppress NETSDK1206 warning from PowerAssert's Libuv dependency -->
+        <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
         
         <!-- Package metadata -->
         <PackageId>SharpAssert</PackageId>
