@@ -23,13 +23,10 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
     // Not used internally but kept for compatibility with existing test/build configurations
     public string IntermediateDir { get; set; } = string.Empty;
     public string OutputDir { get; set; } = string.Empty;
-    
     public string LangVersion { get; set; } = "latest";
-    
     public string NullableContext { get; set; } = "enable";
     
     public bool UsePowerAssert { get; set; } = false;
-    
     public bool UsePowerAssertForUnsupported { get; set; } = true;
     
     [Output]
