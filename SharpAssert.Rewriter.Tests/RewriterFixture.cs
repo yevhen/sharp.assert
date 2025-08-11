@@ -27,6 +27,7 @@ public class RewriterFixture
         
         var absolutePath = GetExpectedAbsolutePath("TestFile.cs");
         var expected = $$"""
+            #nullable restore
             #line 1 "{{absolutePath}}"
             using static Sharp;
             
@@ -66,6 +67,7 @@ public class RewriterFixture
 
         var absolutePath = GetExpectedAbsolutePath("TestFile.cs");
         var expected = $$"""
+            #nullable restore
             #line 1 "{{absolutePath}}"
             using static Sharp;
             
@@ -131,6 +133,7 @@ public class RewriterFixture
 
         var absolutePath = GetExpectedAbsolutePath("TestFile.cs");
         var expected = $$"""
+            #nullable restore
             #line 1 "{{absolutePath}}"
             using static Sharp;
             
@@ -175,6 +178,7 @@ public class RewriterFixture
         
         var absolutePath = GetExpectedAbsolutePath("TestFile.cs");
         var expected = $$"""
+            #nullable restore
             #line 1 "{{absolutePath}}"
             using static Sharp;
             
@@ -213,6 +217,7 @@ public class RewriterFixture
         
         var absolutePath = GetExpectedAbsolutePath("TestFile.cs");
         var expected = $$"""
+            #nullable restore
             #line 1 "{{absolutePath}}"
             using static Sharp;
             
@@ -250,6 +255,7 @@ public class RewriterFixture
         
         var absolutePath = GetExpectedAbsolutePath("TestFile.cs");
         var expected = $$"""
+            #nullable restore
             #line 1 "{{absolutePath}}"
             using static Sharp;
             
@@ -287,6 +293,7 @@ public class RewriterFixture
         
         var absolutePath = GetExpectedAbsolutePath("TestFile.cs");
         var expected = $$"""
+            #nullable restore
             #line 1 "{{absolutePath}}"
             using static Sharp;
             

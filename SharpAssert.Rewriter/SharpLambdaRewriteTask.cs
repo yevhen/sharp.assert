@@ -24,7 +24,6 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
     public string IntermediateDir { get; set; } = string.Empty;
     public string OutputDir { get; set; } = string.Empty;
     public string LangVersion { get; set; } = "latest";
-    public string NullableContext { get; set; } = "enable";
     
     public bool UsePowerAssert { get; set; } = false;
     public bool UsePowerAssertForUnsupported { get; set; } = true;
@@ -52,7 +51,6 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
         LogDiagnostics($"Project directory: {ProjectDir}");
         LogDiagnostics($"Output directory: {OutputDir}");
         LogDiagnostics($"Language version: {LangVersion}");
-        LogDiagnostics($"Nullable context: {NullableContext}");
 
         EnsureDirectoryExists(OutputDir);
 

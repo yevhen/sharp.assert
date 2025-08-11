@@ -8,7 +8,6 @@ namespace SharpAssert.Rewriter.Tests;
 public class SharpLambdaRewriteTaskFixture
 {
     const string DefaultLangVersion = "latest";
-    const string DefaultNullableContext = "enable";
     const string ExpectedRewrittenAssert = "global::SharpAssert.SharpInternal.Assert(()=>";
     
     string tempDir;
@@ -231,17 +230,16 @@ public class SharpLambdaRewriteTaskFixture
             """);
         
         var task = CreateTask(sourceFile);
-        // LangVersion and NullableContext not set - should use defaults
+        // LangVersion not set - should use default
         
         var result = task.Execute();
         
         result.Should().BeTrue();
         task.LangVersion.Should().Be(DefaultLangVersion);
-        task.NullableContext.Should().Be(DefaultNullableContext);
     }
 
     [Test]
-    public void Should_accept_custom_langversion_and_nullable_context()
+    public void Should_accept_custom_langversion()
     {
         var sourceFile = CreateSourceFile("CustomConfig.cs", """
             using static Sharp;
@@ -250,13 +248,11 @@ public class SharpLambdaRewriteTaskFixture
         
         var task = CreateTask(sourceFile);
         task.LangVersion = "9.0";
-        task.NullableContext = "disable";
         
         var result = task.Execute();
         
         result.Should().BeTrue();
         task.LangVersion.Should().Be("9.0");
-        task.NullableContext.Should().Be("disable");
     }
 
     [Test]

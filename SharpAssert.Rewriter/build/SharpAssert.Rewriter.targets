@@ -29,7 +29,6 @@
         IntermediateDir="$(IntermediateOutputPath)"
         OutputDir="$(IntermediateOutputPath)SharpRewritten"
         LangVersion="$(LangVersion)"
-        NullableContext="$(Nullable)"
         UsePowerAssert="$(SharpAssertUsePowerAssert)"
         UsePowerAssertForUnsupported="$(SharpAssertUsePowerAssertForUnsupported)" />
 

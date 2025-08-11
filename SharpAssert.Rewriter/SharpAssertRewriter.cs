@@ -45,13 +45,16 @@ public static class SharpAssertRewriter
 
     static string AddFileLineDirective(SyntaxNode rewrittenRoot, string absoluteFileName)
     {
+        var nullableRestoreDirective = SyntaxFactory.PreprocessingMessage("#nullable restore");
         var lineDirective = CreateLineDirective(FirstLineNumber, absoluteFileName);
-        var rewrittenWithLineDirective = rewrittenRoot.WithLeadingTrivia(
+        var rewrittenWithDirectives = rewrittenRoot.WithLeadingTrivia(
             SyntaxFactory.TriviaList(
+                nullableRestoreDirective,
+                SyntaxFactory.EndOfLine(NewLine),
                 lineDirective,
                 SyntaxFactory.EndOfLine(NewLine)));
 
-        return rewrittenWithLineDirective.ToFullString();
+        return rewrittenWithDirectives.ToFullString();
     }
 
     public static SyntaxTrivia CreateLineDirective(int lineNumber, string filePath) =>
