@@ -95,6 +95,64 @@ cd SharpAssert.PackageTest
 
 ## 🔧 Development Tips
 
+### Package Validation
+
+SharpAssert uses a **Local NuGet Feed** approach for development and testing:
+
+```bash
+# Publish to local feed and test in one command
+./test-local.sh
+
+# Or run steps manually:
+./publish-local.sh          # Publish packages to local-feed/
+dotnet test SharpAssert.PackageTest/  # Test with local packages
+```
+
+### Local Development Benefits
+
+- ✅ **Simple workflow** - Single command testing
+- ✅ **No cache management** - Timestamp-based versioning
+- ✅ **No file editing** - Stable wildcard package references
+- ✅ **Professional approach** - Standard NuGet development pattern
+
+### Package Test Project
+
+The `SharpAssert.PackageTest` project verifies the **actual NuGet package** works correctly:
+
+```bash
+# Run the automated package test
+cd SharpAssert.PackageTest
+./test-local-package.sh
+```
+
+The script automatically:
+1. 🧹 Cleans packages directory to avoid version conflicts
+2. 📦 Builds and packs SharpAssert with `-local` suffix
+3. 🔧 Updates test project to use the exact package version
+4. 🧪 Runs comprehensive package validation tests
+5. ✅ Confirms Assert calls are properly transformed
+
+**Example output:**
+```
+🔧 SharpAssert Local Package Test
+================================================
+🧹 Cleaning packages directory...
+📦 Building SharpAssert with local suffix...
+✅ Built package: SharpAssert.1.0.0-local
+📋 Package version: 1.0.0-local
+🧪 Running package tests...
+  ✓ Should_support_basic_assertions_via_package
+  ✓ Should_provide_detailed_error_messages  
+✅ All package tests passed!
+🎉 SharpAssert packages work correctly from local feed
+```
+This serves as the **automated Clean Install Test** to ensure packaging works correctly.
+
+## Development workflow
+- Use `./publish-local.sh` to update local packages
+- Run `./test-local.sh` for comprehensive validation
+- Local feed uses timestamp versioning to avoid cache issues
+
 ### Rewriter Development
 
 When working on the MSBuild rewriter:
