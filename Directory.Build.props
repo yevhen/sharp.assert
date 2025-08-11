@@ -21,7 +21,6 @@
         <!-- Common package metadata -->
         <Authors>Yevhen Bobrov</Authors>
         <Copyright>Copyright © $([System.DateTime]::Now.Year)</Copyright>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
     
 </Project>

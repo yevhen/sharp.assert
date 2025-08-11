@@ -9,14 +9,24 @@
         <PackageId>SharpAssert</PackageId>
         <Title>SharpAssert</Title>
         <Description>Assertions made simple</Description>
+        <Version>1.0.0</Version>
+        <Authors>Yevhen Bobrov</Authors>
+        <Company>Cloudrite</Company>
+        <Copyright>Copyright © 2025 Yevhen Bobrov</Copyright>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <PackageProjectUrl>https://github.com/yevhen/SharpAssert</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/yevhen/SharpAssert</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
         <PackageTags>nunit;xunit;testing;assertions;pytest</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageIcon Condition="Exists('..\icon.png')">icon.png</PackageIcon>
 
     </PropertyGroup>
 
     <ItemGroup>
-        <!-- Include README in package -->
         <None Include="..\README.md" Pack="true" PackagePath="\" />
+        <None Include="..\LICENSE" Pack="true" PackagePath="\" />
+        <None Include="..\icon.png" Pack="true" PackagePath="\" Condition="Exists('..\icon.png')" />
     </ItemGroup>
 
     <ItemGroup>
