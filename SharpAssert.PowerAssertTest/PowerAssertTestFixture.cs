@@ -1,6 +1,5 @@
 using FluentAssertions;
 using static Sharp;
-using static NUnit.Framework.Assert;
 
 namespace SharpAssert.PowerAssertTest;
 

@@ -1,6 +1,5 @@
 using FluentAssertions;
 using static Sharp;
-using static NUnit.Framework.Assert;
 
 namespace SharpAssert.PackageTest;
 
@@ -69,8 +68,10 @@ public class PackageTestFixture
         string? nullValue = null;
         string nonNullValue = "test";
         
+        Assert(nonNullValue != null);
+        
         var ex = Throws<SharpAssertionException>(() =>
-            Assert(nullValue != null))!;
+            Assert(nullValue != null));
             
         ex.Message.Should().Contain("nullValue != null");
         ex.Message.Should().Contain("null");
