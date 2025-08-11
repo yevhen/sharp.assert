@@ -77,71 +77,68 @@ public class CoreAssertionFixture : TestBase
     }
 
     [Test]
-    public void Assert_throws_expected_exception_type()
+    public void Throws_captures_expected_exception()
     {
         var exception = new NullReferenceException();
 
-        var actual = AssertThrows<NullReferenceException>(() => throw exception);
+        var result = Throws<NullReferenceException>(() => throw exception);
+        Assert(result);
 
-        actual.Should().Be(exception);
+        result.Exception.Should().Be(exception);
     }
 
     [Test]
-    public void Assert_throws_unexpected_exception_type()
+    public void Throws_fails_when_unexpected_exception_type()
     {
         var exception = new ArgumentException();
 
-        var actual = VerifyThrowsException<SharpAssertionException>(() =>
-            AssertThrows<NullReferenceException>(() => throw exception))!;
+        var actual = VerifyThrowsException<SharpAssertionException>(() => {
+            Throws<NullReferenceException>(() => throw exception);
+        })!;
 
         actual.Message.Should().Contain(
             "Expected exception of type 'System.NullReferenceException', " +
-            "but got 'System.ArgumentException: Value does not fall within the expected range.'");
+            "but got 'System.ArgumentException': Value does not fall within the expected range.");
     }
 
     [Test]
-    public void Assert_throws_unexpected_exception_type_with_custom_message()
+    public void Throws_fails_when_unexpected_exception_type_with_detailed_message()
     {
         var exception = new ArgumentException("Invalid argument");
 
         var actual = VerifyThrowsException<SharpAssertionException>(() =>
-            AssertThrows<NullReferenceException>(() => throw exception, "Custom message"))!;
+            Throws<NullReferenceException>(() => throw exception))!;
 
         actual.Message.Should().Contain(
-            "Custom message\nExpected exception of type 'System.NullReferenceException', " +
-            "but got 'System.ArgumentException: Invalid argument'");
+            "Expected exception of type 'System.NullReferenceException', " +
+            "but got 'System.ArgumentException': Invalid argument");
+
+        actual.Message.Should().Contain("Full exception details:");
     }
 
     [Test]
-    public void Assert_throws_when_no_exception_is_thrown()
+    public void Assert_does_not_throw_when_no_exception_is_thrown()
     {
-        var actual = VerifyThrowsException<SharpAssertionException>(() =>
-            AssertThrows<ArgumentException>(() => { /* do nothing */ }))!;
-
-        actual.Message.Should().Contain(
-            "Expected exception of type 'System.ArgumentException', but no exception was thrown");
+        Assert(!Throws<ArgumentException>(() => { /* do nothing */ }));
     }
 
     [Test]
-    public void Assert_throws_when_no_exception_is_thrown_with_custom_message()
+    public void Can_check_exception_message_directly()
     {
-        var actual = VerifyThrowsException<SharpAssertionException>(() =>
-            AssertThrows<ArgumentException>(() => { /* do nothing */ }, "Custom message"))!;
-
-        actual.Message.Should().Contain(
-            "Custom message\nExpected exception of type 'System.ArgumentException', but no exception was thrown");
+        Assert(Throws<ArgumentException>(() =>
+                throw new ArgumentException("Invalid parameter")).Message == "Invalid parameter");
     }
 
     [Test]
-    public void Assert_throws_includes_full_stack_trace_in_error_message()
+    public void Throws_includes_full_stack_trace_in_error_message()
     {
         var actual = VerifyThrowsException<SharpAssertionException>(() =>
-            AssertThrows<NullReferenceException>(() => ThrowDeepException()))!;
+            Throws<NullReferenceException>(() => ThrowDeepException()))!;
 
         actual.Message.Should().Contain("Full exception details:");
         actual.Message.Should().Contain("at SharpAssert.CoreAssertionFixture.ThrowDeepException()");
         actual.Message.Should().Contain(
-            "at SharpAssert.CoreAssertionFixture.<Assert_throws_includes_full_stack_trace_in_error_message>");
+            "at SharpAssert.CoreAssertionFixture.<Throws_includes_full_stack_trace_in_error_message>");
     }
 
     void ThrowDeepException() => throw new InvalidOperationException("Deep exception with stack trace");
@@ -160,51 +157,50 @@ public class CoreAssertionFixture : TestBase
     }
 
     [Test]
-    public async Task AssertThrowsAsync_catches_expected_exception_type()
+    public async Task ThrowsAsync_catches_expected_exception_type()
     {
         var exception = new InvalidOperationException("Test exception");
 
-        var actual = await AssertThrowsAsync<InvalidOperationException>(async () => 
+        var result = await ThrowsAsync<InvalidOperationException>(async () => 
         {
             await Task.Delay(1);
             throw exception;
         });
 
-        actual.Should().Be(exception);
+        Assert(result);
+        result.Exception.Should().Be(exception);
     }
 
     [Test]
-    public async Task AssertThrowsAsync_returns_caught_exception()
+    public async Task ThrowsAsync_can_check_exception_message()
     {
-        var actual = await AssertThrowsAsync<ArgumentException>(async () =>
+        var result = await ThrowsAsync<ArgumentException>(async () =>
         {
             await Task.Delay(1);
             throw new ArgumentException("Test message");
         });
 
-        actual.Message.Should().Be("Test message");
-        actual.Should().BeOfType<ArgumentException>();
+        Assert(result && result.Message == "Test message");
+        result.Exception.Should().BeOfType<ArgumentException>();
     }
 
     [Test]
-    public async Task AssertThrowsAsync_fails_when_no_exception_thrown()
+    public async Task ThrowsAsync_detects_when_no_exception_thrown()
     {
-        var actual = await VerifyThrowsException<SharpAssertionException>(async () =>
-            await AssertThrowsAsync<ArgumentException>(async () => 
-            {
-                await Task.Delay(1);
-                // No exception thrown
-            }));
+        var result = await ThrowsAsync<ArgumentException>(async () => 
+        {
+            await Task.Delay(1);
+            // No exception thrown
+        });
 
-        actual!.Message.Should().Contain(
-            "Expected exception of type 'System.ArgumentException', but no exception was thrown");
+        Assert(!result);
     }
 
     [Test]
-    public async Task AssertThrowsAsync_fails_when_wrong_exception_type()
+    public async Task ThrowsAsync_fails_when_wrong_exception_type()
     {
         var actual = await VerifyThrowsException<SharpAssertionException>(async () =>
-            await AssertThrowsAsync<ArgumentException>(async () =>
+            await ThrowsAsync<ArgumentException>(async () =>
             {
                 await Task.Delay(1);
                 throw new InvalidOperationException("Wrong exception");
@@ -212,40 +208,28 @@ public class CoreAssertionFixture : TestBase
 
         actual!.Message.Should().Contain(
             "Expected exception of type 'System.ArgumentException', " +
-            "but got 'System.InvalidOperationException: Wrong exception'");
+            "but got 'System.InvalidOperationException': Wrong exception");
     }
 
     [Test]
-    public async Task AssertThrowsAsync_includes_custom_message_in_failures()
+    public async Task ThrowsAsync_fails_when_no_exception_thrown()
     {
-        var actual = await VerifyThrowsException<SharpAssertionException>(async () =>
-            await AssertThrowsAsync<ArgumentException>(async () =>
-            {
-                await Task.Delay(1);
-                // No exception thrown
-            }, "Custom failure message"));
-
-        actual!.Message.Should().Contain(
-            "Custom failure message\nExpected exception of type 'System.ArgumentException', but no exception was thrown");
-    }
-
-    [Test]
-    public async Task AssertThrowsAsync_handles_task_cancellation()
-    {
-        var actual = await AssertThrowsAsync<TaskCanceledException>(async () =>
+        var result = await ThrowsAsync<ArgumentException>(async () =>
         {
-            var cts = new CancellationTokenSource();
-            await cts.CancelAsync();
-            await Task.Delay(1000, cts.Token);
+            await Task.Delay(1);
+            // No exception thrown
         });
 
-        actual.Should().BeOfType<TaskCanceledException>();
+        var actual = VerifyThrowsException<InvalidOperationException>(() => _ = result.Exception);
+
+        actual!.Message.Should().Contain(
+            "Expected exception of type 'System.ArgumentException', but no exception was thrown");
     }
 
     [Test]
-    public async Task AssertThrowsAsync_unwraps_aggregate_exceptions()
+    public async Task ThrowsAsync_unwraps_aggregate_exceptions()
     {
-        var actual = await AssertThrowsAsync<InvalidOperationException>(async () =>
+        var result = await ThrowsAsync<InvalidOperationException>(async () =>
         {
             var task = Task.Run(() => throw new InvalidOperationException("Inner exception"));
             try
@@ -259,30 +243,18 @@ public class CoreAssertionFixture : TestBase
             }
         });
 
-        actual.Message.Should().Be("Inner exception");
+        Assert(result && result.Message == "Inner exception");
     }
 
     [Test]
-    public async Task AssertThrowsAsync_includes_full_stack_trace()
+    public async Task ThrowsAsync_includes_full_stack_trace()
     {
         var actual = await VerifyThrowsException<SharpAssertionException>(async () =>
-            await AssertThrowsAsync<ArgumentException>(async () => await ThrowDeepAsyncException()));
+            await ThrowsAsync<ArgumentException>(async () => await ThrowDeepAsyncException()));
 
         actual!.Message.Should().Contain("Full exception details:");
         actual.Message.Should().Contain("at SharpAssert.CoreAssertionFixture.ThrowDeepAsyncException()");
         actual.Message.Should().Contain("InvalidOperationException: Deep async exception");
-    }
-
-    [Test]
-    public async Task AssertThrowsAsync_works_with_task_returning_functions()
-    {
-        var actual = await AssertThrowsAsync<ArgumentException>(async () =>
-        {
-            var result = await Task.FromResult("test");
-            throw new ArgumentException($"Processing {result} failed");
-        });
-
-        actual.Message.Should().Be("Processing test failed");
     }
 
     static async Task ThrowDeepAsyncException()
