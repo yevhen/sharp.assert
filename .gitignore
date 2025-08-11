@@ -6,4 +6,5 @@ riderModule.iml
 coverage.cobertura.xml
 TestResults
 .branches
+.idea/
 local-feed
