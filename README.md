@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/yevhen/SharpAssert/blob/master/Logo.png?raw=true" alt="SharpAssert logo"/>
+</p>
+
 # SharpAssert
 
 A pytest inspired assertion library for .NET that provides detailed error reporting with no special syntax.
