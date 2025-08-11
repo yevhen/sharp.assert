@@ -1,4 +1,5 @@
 using FluentAssertions;
+using static NUnit.Framework.Assert;
 using static Sharp;
 
 namespace SharpAssert;
@@ -74,5 +75,78 @@ public class CoreAssertionFixture : TestBase
         var action = () => Assert(true, "   ");
         action.Should().Throw<ArgumentException>()
               .WithMessage("*Message must be either null or non-empty*");
+    }
+
+    [Test]
+    public void Assert_throws_expected_exception_type()
+    {
+        var exception = new NullReferenceException();
+
+        var actual = AssertThrows<NullReferenceException>(() => throw exception);
+
+        actual.Should().Be(exception);
+    }
+
+    [Test]
+    public void Assert_throws_unexpected_exception_type()
+    {
+        var exception = new ArgumentException();
+
+        var actual = Throws<SharpAssertionException>(() =>
+            AssertThrows<NullReferenceException>(() => throw exception))!;
+
+        actual.Message.Should().Contain(
+            "Expected exception of type 'System.NullReferenceException', " +
+            "but got 'System.ArgumentException: Value does not fall within the expected range.'");
+    }
+
+    [Test]
+    public void Assert_throws_unexpected_exception_type_with_custom_message()
+    {
+        var exception = new ArgumentException("Invalid argument");
+
+        var actual = Throws<SharpAssertionException>(() =>
+            AssertThrows<NullReferenceException>(() => throw exception, "Custom message"))!;
+
+        actual.Message.Should().Contain(
+            "Custom message\nExpected exception of type 'System.NullReferenceException', " +
+            "but got 'System.ArgumentException: Invalid argument'");
+    }
+
+    [Test]
+    public void Assert_throws_when_no_exception_is_thrown()
+    {
+        var actual = Throws<SharpAssertionException>(() =>
+            AssertThrows<ArgumentException>(() => { /* do nothing */ }))!;
+
+        actual.Message.Should().Contain(
+            "Expected exception of type 'System.ArgumentException', but no exception was thrown");
+    }
+
+    [Test]
+    public void Assert_throws_when_no_exception_is_thrown_with_custom_message()
+    {
+        var actual = Throws<SharpAssertionException>(() =>
+            AssertThrows<ArgumentException>(() => { /* do nothing */ }, "Custom message"))!;
+
+        actual.Message.Should().Contain(
+            "Custom message\nExpected exception of type 'System.ArgumentException', but no exception was thrown");
+    }
+
+    [Test]
+    public void Assert_throws_includes_full_stack_trace_in_error_message()
+    {
+        var actual = Throws<SharpAssertionException>(() =>
+            AssertThrows<NullReferenceException>(() => ThrowDeepException()))!;
+
+        actual.Message.Should().Contain("Full exception details:");
+        actual.Message.Should().Contain("at SharpAssert.CoreAssertionFixture.ThrowDeepException()");
+        actual.Message.Should().Contain(
+            "at SharpAssert.CoreAssertionFixture.<Assert_throws_includes_full_stack_trace_in_error_message>");
+    }
+
+    void ThrowDeepException()
+    {
+        throw new InvalidOperationException("Deep exception with stack trace");
     }
 }
