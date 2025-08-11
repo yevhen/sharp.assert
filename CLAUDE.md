@@ -23,10 +23,11 @@ dotnet build SharpAssert.Tests/      # Build only the test project
 ```
 
 ### Run Tests
+
+PREFER 
+
 ```bash
-dotnet test                                      # Run all tests
-dotnet test --filter "FullyQualifiedName~ConfigurationFixture"    # Run specific test class
-dotnet test --filter "Name~Should_send"          # Run tests matching pattern
+dotnet test -v q                                 # Run all tests
 dotnet test -v n                                 # Run with normal verbosity
 dotnet test -v d                                 # Run with detailed verbosity
 ```

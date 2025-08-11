@@ -149,4 +149,176 @@ public class CoreAssertionFixture : TestBase
     {
         throw new InvalidOperationException("Deep exception with stack trace");
     }
+
+    [Test]
+    public async Task AssertThrowsAsync_catches_expected_exception_type()
+    {
+        var exception = new InvalidOperationException("Test exception");
+
+        var actual = await AssertThrowsAsync<InvalidOperationException>(async () => 
+        {
+            await Task.Delay(1);
+            throw exception;
+        });
+
+        actual.Should().Be(exception);
+    }
+
+    [Test]
+    public async Task AssertThrowsAsync_returns_caught_exception()
+    {
+        var actual = await AssertThrowsAsync<ArgumentException>(async () =>
+        {
+            await Task.Delay(1);
+            throw new ArgumentException("Test message");
+        });
+
+        actual.Message.Should().Be("Test message");
+        actual.Should().BeOfType<ArgumentException>();
+    }
+
+    [Test]
+    public async Task AssertThrowsAsync_fails_when_no_exception_thrown()
+    {
+        var actual = await Throws<SharpAssertionException>(async () =>
+            await AssertThrowsAsync<ArgumentException>(async () => 
+            {
+                await Task.Delay(1);
+                // No exception thrown
+            }));
+
+        actual!.Message.Should().Contain(
+            "Expected exception of type 'System.ArgumentException', but no exception was thrown");
+    }
+
+    [Test]
+    public async Task AssertThrowsAsync_fails_when_wrong_exception_type()
+    {
+        var actual = await Throws<SharpAssertionException>(async () =>
+            await AssertThrowsAsync<ArgumentException>(async () =>
+            {
+                await Task.Delay(1);
+                throw new InvalidOperationException("Wrong exception");
+            }));
+
+        actual!.Message.Should().Contain(
+            "Expected exception of type 'System.ArgumentException', " +
+            "but got 'System.InvalidOperationException: Wrong exception'");
+    }
+
+    [Test]
+    public async Task AssertThrowsAsync_includes_custom_message_in_failures()
+    {
+        var actual = await Throws<SharpAssertionException>(async () =>
+            await AssertThrowsAsync<ArgumentException>(async () =>
+            {
+                await Task.Delay(1);
+                // No exception thrown
+            }, "Custom failure message"));
+
+        actual!.Message.Should().Contain(
+            "Custom failure message\nExpected exception of type 'System.ArgumentException', but no exception was thrown");
+    }
+
+    [Test]
+    public async Task AssertThrowsAsync_handles_task_cancellation()
+    {
+        var actual = await AssertThrowsAsync<TaskCanceledException>(async () =>
+        {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            await Task.Delay(1000, cts.Token);
+        });
+
+        actual.Should().BeOfType<TaskCanceledException>();
+    }
+
+    [Test]
+    public async Task AssertThrowsAsync_unwraps_aggregate_exceptions()
+    {
+        var actual = await AssertThrowsAsync<InvalidOperationException>(async () =>
+        {
+            var task = Task.Run(() => throw new InvalidOperationException("Inner exception"));
+            try
+            {
+                await task;
+            }
+            catch (Exception ex)
+            {
+                // Simulate AggregateException wrapping
+                throw new AggregateException(ex);
+            }
+        });
+
+        actual.Message.Should().Be("Inner exception");
+    }
+
+    [Test]
+    public async Task AssertThrowsAsync_includes_full_stack_trace()
+    {
+        var actual = await Throws<SharpAssertionException>(async () =>
+            await AssertThrowsAsync<ArgumentException>(async () => await ThrowDeepAsyncException()));
+
+        actual!.Message.Should().Contain("Full exception details:");
+        actual.Message.Should().Contain("at SharpAssert.CoreAssertionFixture.ThrowDeepAsyncException()");
+        actual.Message.Should().Contain("InvalidOperationException: Deep async exception");
+    }
+
+    async Task ThrowDeepAsyncException()
+    {
+        await Task.Delay(1);
+        throw new InvalidOperationException("Deep async exception with stack trace");
+    }
+
+    [Test]
+    public async Task AssertThrowsAsync_works_with_task_returning_functions()
+    {
+        var actual = await AssertThrowsAsync<ArgumentException>(async () =>
+        {
+            var result = await Task.FromResult("test");
+            throw new ArgumentException($"Processing {result} failed");
+        });
+
+        actual.Message.Should().Be("Processing test failed");
+    }
+
+    [Test]
+    public async Task AssertThrowsAsync_handles_valuetask_exceptions()
+    {
+        var actual = await AssertThrowsAsync<ArgumentException>(async () =>
+        {
+            await new ValueTask(Task.Delay(1));
+            throw new ArgumentException("ValueTask exception");
+        });
+
+        actual.Message.Should().Be("ValueTask exception");
+    }
+
+    // Helper method for testing exception throwing
+    static T? Throws<T>(Action action) where T : Exception
+    {
+        try
+        {
+            action();
+            return null;
+        }
+        catch (T ex)
+        {
+            return ex;
+        }
+    }
+
+    // Helper method for testing async assertion failures
+    static async Task<T?> Throws<T>(Func<Task> action) where T : Exception
+    {
+        try
+        {
+            await action();
+            return null;
+        }
+        catch (T ex)
+        {
+            return ex;
+        }
+    }
 }

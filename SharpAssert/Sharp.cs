@@ -56,4 +56,95 @@ public static class Sharp
             throw new SharpAssertionException(finalMessage);
         }
     }
+
+    /// <summary>Asserts that a specific async action throws an exception of type T, optionally providing a custom message.</summary>
+    public static async Task<T> AssertThrowsAsync<T>(Func<Task> action, string? message = null) where T : Exception
+    {
+        try
+        {
+            await action();
+
+            var failureMessage = $"Expected exception of type '{typeof(T).FullName}', but no exception was thrown";
+            var finalMessage = message is not null
+                ? $"{message}\n{failureMessage}"
+                : failureMessage;
+
+            throw new SharpAssertionException(finalMessage);
+        }
+        catch (T ex)
+        {
+            return ex;
+        }
+        catch (Exception ex)
+        {
+            // Handle AggregateException unwrapping (common in async scenarios)
+            if (ex is AggregateException aggEx && aggEx.InnerExceptions.Count == 1)
+            {
+                var innerEx = aggEx.InnerExceptions[0];
+                if (innerEx is T expectedEx)
+                    return expectedEx;
+                
+                // Use inner exception for error reporting
+                ex = innerEx;
+            }
+
+            var exceptionDescription = string.IsNullOrEmpty(ex.Message) 
+                ? ex.GetType().FullName 
+                : $"{ex.GetType().FullName}: {ex.Message}";
+
+            var failureMessage = $"Expected exception of type '{typeof(T).FullName}', but got '{exceptionDescription}'\n\nFull exception details:\n{ex}";
+
+            var finalMessage = message is not null
+                ? $"{message}\n{failureMessage}"
+                : failureMessage;
+
+            throw new SharpAssertionException(finalMessage);
+        }
+    }
+
+    /// <summary>Asserts that a specific async function throws an exception of type T, optionally providing a custom message.</summary>
+    public static async Task<T> AssertThrowsAsync<T>(Func<Task<object?>> action, string? message = null) where T : Exception
+    {
+        try
+        {
+            await action();
+
+            var failureMessage = $"Expected exception of type '{typeof(T).FullName}', but no exception was thrown";
+            var finalMessage = message is not null
+                ? $"{message}\n{failureMessage}"
+                : failureMessage;
+
+            throw new SharpAssertionException(finalMessage);
+        }
+        catch (T ex)
+        {
+            return ex;
+        }
+        catch (Exception ex)
+        {
+            // Handle AggregateException unwrapping (common in async scenarios)
+            if (ex is AggregateException aggEx && aggEx.InnerExceptions.Count == 1)
+            {
+                var innerEx = aggEx.InnerExceptions[0];
+                if (innerEx is T expectedEx)
+                    return expectedEx;
+                
+                // Use inner exception for error reporting
+                ex = innerEx;
+            }
+
+            var exceptionDescription = string.IsNullOrEmpty(ex.Message) 
+                ? ex.GetType().FullName 
+                : $"{ex.GetType().FullName}: {ex.Message}";
+
+            var failureMessage = $"Expected exception of type '{typeof(T).FullName}', but got '{exceptionDescription}'\n\nFull exception details:\n{ex}";
+
+            var finalMessage = message is not null
+                ? $"{message}\n{failureMessage}"
+                : failureMessage;
+
+            throw new SharpAssertionException(finalMessage);
+        }
+    }
+
 }
