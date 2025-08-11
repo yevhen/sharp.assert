@@ -14,8 +14,8 @@ var target = 4;
 
 Assert(items.Contains(target));
 // Assertion failed: items.Contains(target) at MyTest.cs:15
-// Left:  [1, 2, 3]  
-// Right: 4
+// items:  [1, 2, 3]  
+// target: 4
 // Result: false
 ```
 
@@ -66,8 +66,8 @@ public void Should_find_matching_item()
     
     Assert(users.Contains(searchName));
     // Assertion failed: users.Contains(searchName)
-    // Array: ["Alice", "Bob", "Charlie"]
-    // Search: "David"  
+    // users: ["Alice", "Bob", "Charlie"]
+    // searchName: "David"  
     // Result: false
 }
 ```
@@ -102,10 +102,10 @@ var expectedTotal = 12.00m;
 
 Assert(order.Items.Length > 0 && order.Total == expectedTotal);
 // Assertion failed: order.Items.Length > 0 && order.Total == expectedTotal
-// Left:  order.Items.Length > 0 → True (Length: 2)
-// Right: order.Total == expectedTotal → False
-//   Left:  15.50
-//   Right: 12.00
+// order.Items.Length > 0 → True (Length: 2)
+// order.Total == expectedTotal → False
+//   order.Total:  15.50
+//   expectedTotal: 12.00
 // Result: False
 ```
 
