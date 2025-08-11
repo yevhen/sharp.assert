@@ -127,8 +127,7 @@ To force PowerAssert for all assertions (useful for comparison or debugging):
 
 ### Rewriter not working
 1. Verify both `SharpAssert` and `SharpAssert.Rewriter` packages are installed
-2. Check .NET 9+ and C# 13+ are configured
-3. Ensure `using static Sharp;` import
+2. Ensure `using static Sharp;` import
 
 ### No detailed error messages
 1. Check build output contains: "SharpAssert: Rewriting X source files"
