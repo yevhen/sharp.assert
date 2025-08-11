@@ -26,17 +26,9 @@ Assert(items.Contains(target));
 ## Features
 
 - **🔍 Detailed Expression Analysis** - See exactly why your assertions failed
-- **🚀 Full IDE Support** - IntelliSense, Go to Definition, refactoring all work perfectly  
 - **⚡ Zero Runtime Overhead** - No reflection, no performance penalty
-- **🛠 MSBuild Source Rewriting** - Compile-time transformation with #line directives for debugging
 - **📦 Simple Setup** - Just add NuGet package, no MSBuild configuration needed
-- **🔄 Automatic Fallback** - PowerAssert integration ensures all assertions work, even for features still in development
-
-## Requirements
-
-- **.NET 9.0 or later** - Required for MSBuild source rewriting support
-- **C# 13.0 or later** - Modern language features for expression analysis  
-- **Compatible IDEs** - Visual Studio 2022 17.7+, Rider 2023.3+, VS Code with C# extension
+- **🔄 PowerAssert Integration** - Complete support for PowerAssert (switch option)
 
 ## Quick Start
 
