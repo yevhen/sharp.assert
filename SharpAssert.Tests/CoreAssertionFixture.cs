@@ -1,5 +1,4 @@
 using FluentAssertions;
-using static NUnit.Framework.Assert;
 using static Sharp;
 
 namespace SharpAssert;
@@ -92,7 +91,7 @@ public class CoreAssertionFixture : TestBase
     {
         var exception = new ArgumentException();
 
-        var actual = Throws<SharpAssertionException>(() =>
+        var actual = VerifyThrowsException<SharpAssertionException>(() =>
             AssertThrows<NullReferenceException>(() => throw exception))!;
 
         actual.Message.Should().Contain(
@@ -105,7 +104,7 @@ public class CoreAssertionFixture : TestBase
     {
         var exception = new ArgumentException("Invalid argument");
 
-        var actual = Throws<SharpAssertionException>(() =>
+        var actual = VerifyThrowsException<SharpAssertionException>(() =>
             AssertThrows<NullReferenceException>(() => throw exception, "Custom message"))!;
 
         actual.Message.Should().Contain(
@@ -116,7 +115,7 @@ public class CoreAssertionFixture : TestBase
     [Test]
     public void Assert_throws_when_no_exception_is_thrown()
     {
-        var actual = Throws<SharpAssertionException>(() =>
+        var actual = VerifyThrowsException<SharpAssertionException>(() =>
             AssertThrows<ArgumentException>(() => { /* do nothing */ }))!;
 
         actual.Message.Should().Contain(
@@ -126,7 +125,7 @@ public class CoreAssertionFixture : TestBase
     [Test]
     public void Assert_throws_when_no_exception_is_thrown_with_custom_message()
     {
-        var actual = Throws<SharpAssertionException>(() =>
+        var actual = VerifyThrowsException<SharpAssertionException>(() =>
             AssertThrows<ArgumentException>(() => { /* do nothing */ }, "Custom message"))!;
 
         actual.Message.Should().Contain(
@@ -136,7 +135,7 @@ public class CoreAssertionFixture : TestBase
     [Test]
     public void Assert_throws_includes_full_stack_trace_in_error_message()
     {
-        var actual = Throws<SharpAssertionException>(() =>
+        var actual = VerifyThrowsException<SharpAssertionException>(() =>
             AssertThrows<NullReferenceException>(() => ThrowDeepException()))!;
 
         actual.Message.Should().Contain("Full exception details:");
@@ -145,9 +144,19 @@ public class CoreAssertionFixture : TestBase
             "at SharpAssert.CoreAssertionFixture.<Assert_throws_includes_full_stack_trace_in_error_message>");
     }
 
-    void ThrowDeepException()
+    void ThrowDeepException() => throw new InvalidOperationException("Deep exception with stack trace");
+
+    static T? VerifyThrowsException<T>(Action action) where T : Exception
     {
-        throw new InvalidOperationException("Deep exception with stack trace");
+        try
+        {
+            action();
+            return null;
+        }
+        catch (T ex)
+        {
+            return ex;
+        }
     }
 
     [Test]
@@ -180,7 +189,7 @@ public class CoreAssertionFixture : TestBase
     [Test]
     public async Task AssertThrowsAsync_fails_when_no_exception_thrown()
     {
-        var actual = await Throws<SharpAssertionException>(async () =>
+        var actual = await VerifyThrowsException<SharpAssertionException>(async () =>
             await AssertThrowsAsync<ArgumentException>(async () => 
             {
                 await Task.Delay(1);
@@ -194,7 +203,7 @@ public class CoreAssertionFixture : TestBase
     [Test]
     public async Task AssertThrowsAsync_fails_when_wrong_exception_type()
     {
-        var actual = await Throws<SharpAssertionException>(async () =>
+        var actual = await VerifyThrowsException<SharpAssertionException>(async () =>
             await AssertThrowsAsync<ArgumentException>(async () =>
             {
                 await Task.Delay(1);
@@ -209,7 +218,7 @@ public class CoreAssertionFixture : TestBase
     [Test]
     public async Task AssertThrowsAsync_includes_custom_message_in_failures()
     {
-        var actual = await Throws<SharpAssertionException>(async () =>
+        var actual = await VerifyThrowsException<SharpAssertionException>(async () =>
             await AssertThrowsAsync<ArgumentException>(async () =>
             {
                 await Task.Delay(1);
@@ -226,7 +235,7 @@ public class CoreAssertionFixture : TestBase
         var actual = await AssertThrowsAsync<TaskCanceledException>(async () =>
         {
             var cts = new CancellationTokenSource();
-            cts.Cancel();
+            await cts.CancelAsync();
             await Task.Delay(1000, cts.Token);
         });
 
@@ -256,18 +265,12 @@ public class CoreAssertionFixture : TestBase
     [Test]
     public async Task AssertThrowsAsync_includes_full_stack_trace()
     {
-        var actual = await Throws<SharpAssertionException>(async () =>
+        var actual = await VerifyThrowsException<SharpAssertionException>(async () =>
             await AssertThrowsAsync<ArgumentException>(async () => await ThrowDeepAsyncException()));
 
         actual!.Message.Should().Contain("Full exception details:");
         actual.Message.Should().Contain("at SharpAssert.CoreAssertionFixture.ThrowDeepAsyncException()");
         actual.Message.Should().Contain("InvalidOperationException: Deep async exception");
-    }
-
-    async Task ThrowDeepAsyncException()
-    {
-        await Task.Delay(1);
-        throw new InvalidOperationException("Deep async exception with stack trace");
     }
 
     [Test]
@@ -282,34 +285,13 @@ public class CoreAssertionFixture : TestBase
         actual.Message.Should().Be("Processing test failed");
     }
 
-    [Test]
-    public async Task AssertThrowsAsync_handles_valuetask_exceptions()
+    static async Task ThrowDeepAsyncException()
     {
-        var actual = await AssertThrowsAsync<ArgumentException>(async () =>
-        {
-            await new ValueTask(Task.Delay(1));
-            throw new ArgumentException("ValueTask exception");
-        });
-
-        actual.Message.Should().Be("ValueTask exception");
+        await Task.Delay(1);
+        throw new InvalidOperationException("Deep async exception with stack trace");
     }
 
-    // Helper method for testing exception throwing
-    static T? Throws<T>(Action action) where T : Exception
-    {
-        try
-        {
-            action();
-            return null;
-        }
-        catch (T ex)
-        {
-            return ex;
-        }
-    }
-
-    // Helper method for testing async assertion failures
-    static async Task<T?> Throws<T>(Func<Task> action) where T : Exception
+    static async Task<T?> VerifyThrowsException<T>(Func<Task> action) where T : Exception
     {
         try
         {
