@@ -46,18 +46,7 @@ Assert(items.Contains(target));
 dotnet add package SharpAssert
 ```
 
-### 2. Update Your Project File
-
-Add modern C# language version to your `.csproj` file:
-
-```xml
-<PropertyGroup>
-  <LangVersion>13.0</LangVersion>
-  <Nullable>enable</Nullable>
-</PropertyGroup>
-```
-
-### 3. Use SharpAssert in Your Tests
+### 2. Use SharpAssert in Your Tests
 
 ```csharp
 using static Sharp;
@@ -84,17 +73,6 @@ SharpAssert uses **MSBuild source rewriting** to automatically transform your as
 2. **MSBuild rewrites:** `global::SharpAssert.SharpInternal.Assert(() => x == y, "x == y", "file.cs", 42)`
 3. **Runtime analysis:** Expression tree provides detailed failure diagnostics when assertions fail
 4. **Dual-world design:** Original code preserved for IDE, rewritten code used for compilation
-
-## Benefits Over Traditional Approaches
-
-| Feature               | SharpAssert                    | Traditional Assert               |
-|-----------------------|--------------------------------|----------------------------------|
-| **IDE Support**       | ✅ Full IntelliSense            | ❌ Broken by source rewriting     |
-| **Go to Definition**  | ✅ Works perfectly              | ❌ Navigates to generated code    |
-| **Refactoring**       | ✅ All tools work               | ❌ Breaks on generated files      |
-| **Setup Complexity**  | ✅ Just add NuGet package       | ❌ Requires MSBuild configuration |
-| **Build Performance** | ✅ Fast compile-time generation | ❌ Slower file I/O processing     |
-| **Debugging**         | ✅ Natural debugging experience | ❌ Debugger confusion             |
 
 ## Advanced Usage
 
@@ -153,149 +131,18 @@ To force PowerAssert for all assertions (useful for comparison or debugging):
 </PropertyGroup>
 ```
 
-## Clean Install Test
-
-To verify SharpAssert works correctly from a fresh installation:
-
-```bash
-# Create new test project
-mkdir SharpAssertTest && cd SharpAssertTest
-dotnet new console
-
-# Install SharpAssert package
-dotnet add package SharpAssert
-
-# Install both packages
-dotnet add package SharpAssert.Rewriter
-
-# Update project file with modern C#
-cat >> SharpAssertTest.csproj << 'EOF'
-  <PropertyGroup>
-    <LangVersion>13.0</LangVersion>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-EOF
-
-# Create test code
-cat > Program.cs << 'EOF'
-using static Sharp;
-
-var x = 5;
-var y = 10;
-var items = new[] { 1, 2, 3 };
-
-Console.WriteLine("Testing SharpAssert...");
-
-// This should pass
-Assert(x < y);
-Console.WriteLine("✓ Simple assertion passed");
-
-// This should fail with detailed message
-try 
-{
-    Assert(items.Contains(999));
-}
-catch (SharpAssertionException ex)
-{
-    Console.WriteLine($"✓ Detailed error message: {ex.Message}");
-}
-
-Console.WriteLine("SharpAssert is working correctly!");
-EOF
-
-# Build and run
-dotnet build
-dotnet run
-```
-
-**Expected output:**
-```
-Testing SharpAssert...
-✓ Simple assertion passed
-✓ Detailed error message: Assertion failed: items.Contains(999)
-  Array: [1, 2, 3]
-  Search: 999
-  Result: false
-SharpAssert is working correctly!
-```
-
-## Development Integration
-
-### Development Workflow
-
-SharpAssert uses a **Local NuGet Feed** approach for development and testing:
-
-```bash
-# Publish to local feed and test in one command
-./test-local.sh
-
-# Or run steps manually:
-./publish-local.sh          # Publish packages to local-feed/
-dotnet test SharpAssert.PackageTest/  # Test with local packages
-```
-
-### Local Development Benefits
-
-- ✅ **Simple workflow** - Single command testing
-- ✅ **No cache management** - Timestamp-based versioning  
-- ✅ **No file editing** - Stable wildcard package references
-- ✅ **Professional approach** - Standard NuGet development pattern
-
-### Package Test Project (Package Validation)
-
-The `SharpAssert.PackageTest` project verifies the **actual NuGet package** works correctly:
-
-```bash
-# Run the automated package test
-cd SharpAssert.PackageTest
-./test-local-package.sh
-```
-
-The script automatically:
-1. 🧹 Cleans packages directory to avoid version conflicts
-2. 📦 Builds and packs SharpAssert with `-local` suffix  
-3. 🔧 Updates test project to use the exact package version
-4. 🧪 Runs comprehensive package validation tests
-5. ✅ Confirms Assert calls are properly transformed
-
-**Example output:**
-```
-🔧 SharpAssert Local Package Test
-================================================
-🧹 Cleaning packages directory...
-📦 Building SharpAssert with local suffix...
-✅ Built package: SharpAssert.1.0.0-local
-📋 Package version: 1.0.0-local
-🧪 Running package tests...
-  ✓ Should_support_basic_assertions_via_package
-  ✓ Should_provide_detailed_error_messages  
-✅ All package tests passed!
-🎉 SharpAssert packages work correctly from local feed
-```
-
-This serves as the **automated Clean Install Test** to ensure packaging works correctly.
-
 ## Troubleshooting
-
-### CS9270: InterceptsLocation deprecated warning
-This warning appears in .NET 9+ but doesn't affect functionality. Future versions will use `InterceptableLocation`.
 
 ### Rewriter not working
 1. Verify both `SharpAssert` and `SharpAssert.Rewriter` packages are installed
 2. Check .NET 9+ and C# 13+ are configured
 3. Ensure `using static Sharp;` import
-4. Run `./test-local.sh` to verify complete setup
 
 ### No detailed error messages
 1. Check build output contains: "SharpAssert: Rewriting X source files"
 2. Verify rewritten files exist in `obj/Debug/net9.0/SharpRewritten/`
 3. Ensure `SharpInternal.Assert` calls are being made (check generated code)
 4. Look for #line directives in generated files
-
-### Development workflow
-- Use `./publish-local.sh` to update local packages
-- Run `./test-local.sh` for comprehensive validation  
-- Local feed uses timestamp versioning to avoid cache issues
 
 ## Contributing
 
@@ -309,7 +156,3 @@ We welcome contributions! Please see our comprehensive [Contributing Guide](CONT
 ## License
 
 [MIT License](LICENSE)
-
----
-
-**SharpAssert** - Rich assertion diagnostics with full IDE support 🚀
