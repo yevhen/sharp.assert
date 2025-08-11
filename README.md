@@ -26,6 +26,7 @@ Assert(items.Contains(target));
 - **⚡ Zero Runtime Overhead** - No reflection, no performance penalty
 - **🛠 MSBuild Source Rewriting** - Compile-time transformation with #line directives for debugging
 - **📦 Simple Setup** - Just add NuGet package, no MSBuild configuration needed
+- **🔄 Automatic Fallback** - PowerAssert integration ensures all assertions work, even for features still in development
 
 ## Requirements
 
@@ -129,6 +130,24 @@ SharpAssert is built on modern .NET technologies:
 - **Roslyn Syntax Analysis** - Advanced C# code parsing and generation  
 - **Expression Trees** - Runtime expression analysis
 - **CallerArgumentExpression** - Fallback for edge cases
+- **PowerAssert Backend** - Automatic fallback for complex scenarios
+
+### PowerAssert Integration
+
+SharpAssert includes PowerAssert as an intelligent fallback mechanism. 
+When SharpAssert encounters expressions it doesn't yet fully support, it automatically delegates to PowerAssert to ensure you always get meaningful diagnostics. 
+This happens transparently - you'll still get detailed error messages regardless of the underlying engine.
+
+**Note:** Async/await and dynamic expressions currently use basic diagnostics via `CallerArgumentExpression`. 
+Full support for these features is planned for future releases.
+
+To force PowerAssert for all assertions (useful for comparison or debugging):
+
+```xml
+<PropertyGroup>
+  <UsePowerAssert>true</UsePowerAssert>
+</PropertyGroup>
+```
 
 ## Clean Install Test
 

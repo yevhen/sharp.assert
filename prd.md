@@ -298,15 +298,19 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 ---
 
 ## 7. Dependencies
-- **DiffPlex** — string & sequence diffs
+- **PowerAssert** (current) — Automatic fallback for unsupported features
+  ```bash
+  dotnet add package PowerAssert
+  ```
+- **DiffPlex** (planned) — string & sequence diffs
   ```bash
   dotnet add package DiffPlex
   ```
-- **FluentAssertions** — readable collection diffs & predicate messaging
+- **FluentAssertions** (planned) — readable collection diffs & predicate messaging
   ```bash
   dotnet add package FluentAssertions
   ```
-- **Compare‑Net‑Objects** — deep object diffs
+- **Compare‑Net‑Objects** (planned) — deep object diffs
   ```bash
   dotnet add package KellermanSoftware.CompareNetObjects
   ```
@@ -365,7 +369,7 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 
 ---
 
-### **Increment 4: MSBuild Rewriter - Sync Cases Only** ✅ COMPLETED
+### **Increment 4: MSBuild Rewriter - Sync Cases Only with PowerAssert Fallback** ✅ COMPLETED
 **Outcome**: Build rewrites `Assert(expr)` to `SharpInternal.Assert(() => expr, ...)`
 **Tests** (SharpAssert.Rewriter.Tests/RewriterFixture.cs):
 - `Should_rewrite_simple_assertion_to_lambda()` - Assert(x==1) becomes lambda
@@ -379,6 +383,10 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 - ✅ Generate lambda wrapping for sync cases
 - ✅ Write to intermediate directory
 - ✅ Create .targets file for integration
+- ✅ Add PowerAssert NuGet dependency
+- ✅ Implement UnsupportedFeatureDetector for runtime feature detection
+- ✅ Add UsePowerAssert and UsePowerAssertForUnsupportedFeatures MSBuild properties
+- ✅ Update SharpInternal.Assert to support PowerAssert fallback parameters
 
 ---
 
