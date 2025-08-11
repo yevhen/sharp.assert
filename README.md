@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/yevhen/sharp.assert/blob/master/logo.png?raw=true" alt="SharpAssert logo"/>
+  <img src="https://raw.githubusercontent.com/yevhen/sharp.assert/refs/heads/main/logo.png" alt="SharpAssert logo"/>
 </p>
 
 # SharpAssert
