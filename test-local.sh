@@ -8,37 +8,57 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🧪 Testing SharpAssert with Local Feed${NC}"
-echo "======================================"
+echo -e "${BLUE}🧪 Testing SharpAssert with Local Feed (Isolated)${NC}"
+echo "=============================================="
+
+# Define package cache directory for isolation
+PACKAGE_CACHE="./test-packages"
+
+echo -e "${YELLOW}🧹 Cleaning package cache...${NC}"
+rm -rf $PACKAGE_CACHE
 
 echo -e "${YELLOW}📦 Publishing latest packages to local feed...${NC}"
 ./publish-local.sh
 
-echo -e "${YELLOW}🔄 Restoring packages from local feed...${NC}"
-dotnet restore SharpAssert.PackageTest/ --verbosity quiet
-dotnet restore SharpAssert.PowerAssertTest/ --verbosity quiet
+echo -e "${YELLOW}🔄 Restoring packages from local feed (isolated cache)...${NC}"
+dotnet restore SharpAssert.PackageTesting.sln \
+  --packages $PACKAGE_CACHE \
+  --configfile nuget.package-tests.config \
+  --verbosity quiet
 
-echo -e "${YELLOW}🏗️ Building test projects...${NC}"
-dotnet build SharpAssert.PackageTest/ --verbosity quiet
-dotnet build SharpAssert.PowerAssertTest/ --verbosity quiet
+echo -e "${YELLOW}🏗️ Building package test projects...${NC}"
+dotnet build SharpAssert.PackageTesting.sln \
+  --packages $PACKAGE_CACHE \
+  --no-restore \
+  --verbosity quiet
 
 echo -e "${YELLOW}🧪 Running package tests...${NC}"
 echo ""
 
 echo -e "${BLUE}📦 Running basic package tests...${NC}"
-if ! dotnet test SharpAssert.PackageTest/ --no-build --verbosity normal; then
+if ! dotnet test SharpAssert.PackageTest/ \
+  --no-build \
+  --no-restore \
+  --verbosity normal; then
     echo -e "${RED}❌ Basic package tests failed${NC}"
     exit 1
 fi
 
 echo ""
 echo -e "${BLUE}⚡ Running PowerAssert (forced mode) tests...${NC}"
-if ! dotnet test SharpAssert.PowerAssertTest/ --no-build --verbosity normal; then
+if ! dotnet test SharpAssert.PowerAssertTest/ \
+  --no-build \
+  --no-restore \
+  --verbosity normal; then
     echo -e "${RED}❌ PowerAssert forced mode tests failed${NC}"
     exit 1
 fi
 
 echo ""
-echo -e "${GREEN}✅ All tests passed!${NC}"
-echo -e "${GREEN}🎉 SharpAssert packages work correctly from local feed${NC}"
-echo -e "${GREEN}⚡ PowerAssert integration validated successfully${NC}"
+echo -e "${GREEN}✅ All package tests passed!${NC}"
+echo -e "${GREEN}📦 Packages validated in isolation (cache: $PACKAGE_CACHE)${NC}"
+echo -e "${GREEN}🎉 No global cache pollution${NC}"
+
+# Cleanup
+echo -e "${YELLOW}🧹 Cleaning up test package cache...${NC}"
+rm -rf $PACKAGE_CACHE
