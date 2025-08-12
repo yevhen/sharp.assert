@@ -581,7 +581,13 @@ Each increment must:
 
 ---
 
-## 9. Testing Strategy
+## 9. Four-Layer Testing Strategy
+
+SharpAssert employs an innovative four-layer testing approach that ensures robustness while maintaining fast development cycles and preventing environmental issues.
+
+### 9.1 Testing Architecture Overview
+
+**Layer 1: Unit Tests** (`SharpAssert.Tests/`)
 - **Runtime unit tests (expression‑tree):**
     - Binaries, logicals, membership, `SequenceEqual`, strings, collections, objects, nulls, type mismatches.
 - **Async tests:**
@@ -589,13 +595,59 @@ Each increment must:
     - `AssertAsync` minimal diagnostics.
 - **Dynamic tests:**
     - `AssertDynamicBinary` for common ops; collection/object/string values printed correctly.
-- **Rewriter tests:**
-    - Source → rewritten source (golden files) for each mapping row; ensure no `await` or `dynamic` leaks into `Expression<Func<bool>>`.
-    - Test the graceful fallback mechanism where the rewriter leaves invalid code alone.
-- **Integration:**
-    - Real test project with `EnableSharpLambdaRewrite=true`; run & verify messages.
-    - Large collections/strings ensure truncation works.
-    - Test configuration scoping with `SharpConfig.WithOptions`.
+- **Fast execution** - focused on individual components, no MSBuild integration.
+
+**Layer 2: Integration Tests** (`SharpAssert.IntegrationTests/`) 
+- **Innovation**: Tests MSBuild rewriter as actual task during development without NuGet packaging
+- **Technical approach**: Uses `ProjectReference` with `ReferenceOutputAssembly="false"` and direct `.targets` import
+- **Benefits**: Validates complete MSBuild integration, catches rewriter issues early, no packaging overhead
+- **Scope**: End-to-end rewriting validation, complex expression handling, graceful fallback testing
+
+**Layer 3: Package Tests** (`SharpAssert.PackageTest/`, `SharpAssert.PowerAssertTest/`)
+- **Isolated validation**: Tests actual NuGet packages using separate solution (`SharpAssert.PackageTesting.sln`)
+- **Cache isolation**: Custom package cache per test run prevents global cache pollution
+- **Dual modes**: Basic SharpAssert functionality + PowerAssert forced mode
+- **Real-world simulation**: Validates package structure, dependencies, and user experience
+
+**Layer 4: CI Validation**
+- **Two-phase approach**: Development layer (unit + integration) followed by package layer
+- **Isolated environments**: Each phase uses separate package caches and configurations
+- **Comprehensive coverage**: Ensures both development workflow and end-user package experience
+
+### 9.2 Developer Experience Benefits
+
+**Fast Development Cycle**:
+```bash
+./dev-test.sh    # Quick unit + integration tests (main solution)
+```
+
+**Comprehensive Validation**:
+```bash
+./test-local.sh  # Full package validation with isolation
+```
+
+**Quality Assurance Advantages**:
+- **Early MSBuild detection**: Integration tests catch rewriter issues without packaging
+- **Environmental isolation**: Package tests prevent global cache conflicts
+- **Multi-scenario coverage**: Basic + PowerAssert modes ensure all code paths
+- **CI robustness**: Two-layer approach catches both development and packaging issues
+
+### 9.3 Testing Strategy Details
+
+**Rewriter tests:**
+- Source → rewritten source (golden files) for each mapping row; ensure no `await` or `dynamic` leaks into `Expression<Func<bool>>`.
+- Test the graceful fallback mechanism where the rewriter leaves invalid code alone.
+
+**Integration testing innovation:**
+- MSBuild task testing during development via direct `.targets` import
+- `SharpAssertRewriterPath` override enables testing local build output
+- Large collections/strings ensure truncation works.
+- Test configuration scoping with `SharpConfig.WithOptions`.
+
+**Package validation:**
+- NuGet package structure and dependency verification
+- Isolated cache testing prevents environmental pollution
+- PowerAssert fallback mode validation ensures backward compatibility
 
 ---
 
@@ -632,6 +684,8 @@ Each increment must:
 - No double evaluation; order preserved.
 - Easy to read messages, truncated sensibly; optional external diff viewer.
 - Configuration is thread-safe and easy to use.
+- **Quality Assurance:** Four-layer testing ensures development velocity, MSBuild integration validation, and package reliability without environmental conflicts.
+- **Developer Experience:** Fast development testing (`dev-test.sh`) and comprehensive package validation (`test-local.sh`) with clear separation of concerns.
 
 ---
 
@@ -643,4 +697,54 @@ Each increment must:
 
 ---
 
-This PRD gives a clear, minimal rewrite strategy (wrap to lambda / emit async/dynamic thunks) and a rich runtime that mirrors pytest’s UX, including great diffs for strings, collections, sequences, and deep object graphs. The walking skeleton can be implemented fast, then iterated safely.
+## 15. Testing Architecture Innovation
+
+### 15.1 Competitive Advantage
+
+SharpAssert's four-layer testing strategy represents a significant innovation in .NET library development, particularly for MSBuild-integrated tools:
+
+**Industry Problem**: Traditional .NET library testing requires either:
+- Unit tests only (miss integration issues)
+- Full NuGet packaging for integration tests (slow, cache pollution)
+- Complex test harnesses that don't reflect real usage
+
+**SharpAssert Solution**: 
+- **Integration without packaging**: Test MSBuild rewriter as actual task during development
+- **True isolation**: Package tests use dedicated caches, preventing global pollution
+- **Fast feedback loops**: Separate development vs. validation testing workflows
+- **CI confidence**: Two-layer validation catches both development and packaging issues
+
+### 15.2 Technical Innovation Details
+
+**MSBuild Task Testing During Development**:
+```xml
+<!-- Enable testing rewriter without NuGet packaging -->
+<ProjectReference Include="..\SharpAssert.Rewriter\SharpAssert.Rewriter.csproj"
+                  ReferenceOutputAssembly="false" />
+<Import Project="..\SharpAssert.Rewriter\build\SharpAssert.Rewriter.targets" />
+<PropertyGroup>
+  <SharpAssertRewriterPath>$(MSBuildThisFileDirectory)..\SharpAssert.Rewriter\bin\$(Configuration)\net9.0\SharpAssert.Rewriter.dll</SharpAssertRewriterPath>
+</PropertyGroup>
+```
+
+**Package Testing with Complete Isolation**:
+```bash
+# Isolated cache prevents global pollution
+dotnet restore SharpAssert.PackageTesting.sln \
+  --packages ./test-packages \
+  --configfile nuget.package-tests.config
+```
+
+### 15.3 Strategic Benefits
+
+- **Development Velocity**: Fast unit + integration testing enables rapid iteration
+- **Quality Assurance**: Comprehensive validation without environmental side effects
+- **Maintainer Confidence**: Early detection of MSBuild integration issues
+- **User Experience**: Package tests ensure real-world scenarios work correctly
+- **Ecosystem Friendliness**: No global cache pollution during testing
+
+This testing approach could serve as a model for other MSBuild-integrated .NET libraries.
+
+---
+
+This PRD gives a clear, minimal rewrite strategy (wrap to lambda / emit async/dynamic thunks) and a rich runtime that mirrors pytest's UX, including great diffs for strings, collections, sequences, and deep object graphs. The walking skeleton can be implemented fast, then iterated safely with confidence through the four-layer testing strategy.
