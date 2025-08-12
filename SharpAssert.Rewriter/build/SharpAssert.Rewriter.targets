@@ -56,4 +56,22 @@
     
   </Target>
 
+  <!-- Clean target to remove generated files -->
+  <Target Name="SharpAssertClean" BeforeTargets="Clean">
+    <PropertyGroup>
+      <SharpRewrittenPath>$(IntermediateOutputPath)SharpRewritten</SharpRewrittenPath>
+    </PropertyGroup>
+
+    <Message Text="SharpAssert: Cleaning generated files from $(SharpRewrittenPath)"
+             Importance="low"
+             Condition="Exists('$(SharpRewrittenPath)')" />
+
+    <RemoveDir Directories="$(SharpRewrittenPath)"
+               Condition="Exists('$(SharpRewrittenPath)')" />
+
+    <ItemGroup>
+      <FileWrites Include="$(SharpRewrittenPath)/**/*" />
+    </ItemGroup>
+  </Target>
+
 </Project>
