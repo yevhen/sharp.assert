@@ -27,4 +27,13 @@
         <Using Include="NUnit.Framework" />
     </ItemGroup>
 
+    <ItemGroup>
+        <!-- Link integration test files to avoid duplication -->
+        <Compile Include="..\SharpAssert.IntegrationTests\**\*.cs" 
+                 Link="Shared\%(RecursiveDir)%(Filename)%(Extension)"
+                 Exclude="..\SharpAssert.IntegrationTests\obj\**;..\SharpAssert.IntegrationTests\bin\**" />
+                 
+        <!-- Keep any package-specific tests in this project directly -->
+    </ItemGroup>
+
 </Project>
