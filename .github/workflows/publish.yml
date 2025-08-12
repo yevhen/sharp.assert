@@ -32,22 +32,18 @@ jobs:
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
     
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore SharpAssert.sln
     
     - name: Build
-      run: dotnet build --configuration Release --no-restore -p:Version=${{ steps.get_version.outputs.VERSION }}
+      run: dotnet build SharpAssert.sln --configuration Release --no-restore -p:Version=${{ steps.get_version.outputs.VERSION }}
     
     - name: Run tests
-      run: dotnet test --configuration Release --no-build
-    
-    - name: Pack
-      run: dotnet pack --configuration Release --no-build --output ./packages -p:Version=${{ steps.get_version.outputs.VERSION }}
+      run: dotnet test SharpAssert.sln --configuration Release --no-build
     
     - name: Test package
       run: |
-        cd SharpAssert.PackageTest
-        chmod +x test-local-package.sh
-        ./test-local-package.sh
+        chmod +x test-local.sh
+        ./test-local.sh
     
     - name: Publish to NuGet
       run: dotnet nuget push ./packages/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
