@@ -5,11 +5,13 @@
     <SharpAssertEmitRewriteInfo Condition="'$(SharpAssertEmitRewriteInfo)' == ''">false</SharpAssertEmitRewriteInfo>
     <SharpAssertUsePowerAssert Condition="'$(SharpAssertUsePowerAssert)' == ''">false</SharpAssertUsePowerAssert>
     <SharpAssertUsePowerAssertForUnsupported Condition="'$(SharpAssertUsePowerAssertForUnsupported)' == ''">true</SharpAssertUsePowerAssertForUnsupported>
+    <SharpAssertRewriterPath Condition="'$(SharpAssertRewriterPath)' == ''">$(MSBuildThisFileDirectory)../tools/net9.0/SharpAssert.Rewriter.dll</SharpAssertRewriterPath>
   </PropertyGroup>
 
   <UsingTask 
     TaskName="SharpLambdaRewriteTask" 
-    AssemblyFile="$(MSBuildThisFileDirectory)../tools/net9.0/SharpAssert.Rewriter.dll" />
+    AssemblyFile="$(SharpAssertRewriterPath)" 
+    Condition="'$(SharpAssertRewriterPath)' != ''" />
 
   <Target Name="SharpLambdaRewrite" BeforeTargets="CoreCompile"
           Condition="'$(EnableSharpLambdaRewrite)'=='true' and '$(DesignTimeBuild)' != 'true' and '$(BuildingForLiveUnitTesting)' != 'true'">

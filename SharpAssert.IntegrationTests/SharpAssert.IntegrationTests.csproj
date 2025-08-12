@@ -8,17 +8,22 @@
     <RootNamespace>SharpAssert.IntegrationTests</RootNamespace>
     <!-- Suppress PowerAssert warning -->
     <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
+    
+    <!-- Override the rewriter assembly path for local development -->
+    <SharpAssertRewriterPath>$(MSBuildThisFileDirectory)..\SharpAssert.Rewriter\bin\$(Configuration)\net9.0\SharpAssert.Rewriter.dll</SharpAssertRewriterPath>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Reference SharpAssert library normally -->
     <ProjectReference Include="..\SharpAssert\SharpAssert.csproj" />
     
-    <!-- Reference Rewriter as MSBuild task/analyzer (critical difference!) -->
+    <!-- Build the rewriter project but don't reference its assembly -->
     <ProjectReference Include="..\SharpAssert.Rewriter\SharpAssert.Rewriter.csproj"
-                      OutputItemType="Analyzer" 
                       ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <!-- Import the targets file to enable MSBuild task -->
+  <Import Project="..\SharpAssert.Rewriter\build\SharpAssert.Rewriter.targets" />
 
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="8.5.0" />

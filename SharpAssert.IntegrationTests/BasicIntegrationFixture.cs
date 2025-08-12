@@ -19,7 +19,7 @@ public class BasicIntegrationFixture
         exception.Should().NotBeNull();
         
         exception.Message.Should().Contain("x == y");
-        exception.Message.Should().Contain("x: 5");
-        exception.Message.Should().Contain("y: 10");
+        exception.Message.Should().Contain("Left:  5");
+        exception.Message.Should().Contain("Right: 10");
     }
 }
