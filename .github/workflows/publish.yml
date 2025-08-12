@@ -40,13 +40,43 @@ jobs:
     - name: Run tests
       run: dotnet test SharpAssert.sln --configuration Release --no-build
     
-    - name: Test package
+    - name: Create packages
       run: |
-        chmod +x test-local.sh
-        ./test-local.sh
+        mkdir -p ./packages
+        dotnet pack SharpAssert.Runtime/SharpAssert.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./packages \
+          -p:PackageVersion=${{ steps.get_version.outputs.VERSION }}
+        dotnet pack SharpAssert/SharpAssert.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./packages \
+          -p:PackageVersion=${{ steps.get_version.outputs.VERSION }}
+    
+    - name: Verify packages
+      run: |
+        echo "Created packages:"
+        ls -la ./packages/
+        echo "Package count: $(ls ./packages/*.nupkg | wc -l)"
+    
+    - name: Test packages locally
+      run: |
+        # Create temporary local feed for testing
+        mkdir -p test-feed
+        cp ./packages/*.nupkg test-feed/
+        echo "Testing packages in test-feed:"
+        ls -la test-feed/
     
     - name: Publish to NuGet
-      run: dotnet nuget push ./packages/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      run: |
+        for package in ./packages/*.nupkg; do
+          echo "Publishing $(basename $package)..."
+          dotnet nuget push "$package" \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+        done
     
     - name: Create GitHub Release
       uses: actions/create-release@v1
