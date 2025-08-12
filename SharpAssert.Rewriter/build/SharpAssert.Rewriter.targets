@@ -13,14 +13,18 @@
     AssemblyFile="$(SharpAssertRewriterPath)" 
     Condition="'$(SharpAssertRewriterPath)' != ''" />
 
+  <!-- Define source files for input/output tracking -->
+  <ItemGroup>
+    <_SharpInput Include="@(Compile)" />
+    <_SharpNonSourceFiles Include="@(Compile)" Condition="$([System.String]::Copy('%(Identity)').Contains('Microsoft.NET.Test.Sdk.Program.cs')) or $([System.String]::Copy('%(Identity)').EndsWith('.AssemblyInfo.cs')) or $([System.String]::Copy('%(Identity)').EndsWith('.AssemblyAttributes.cs')) or $([System.String]::Copy('%(Identity)').EndsWith('.GlobalUsings.g.cs'))" />
+    <_SharpSourceFiles Include="@(Compile)" Exclude="@(_SharpNonSourceFiles)" />
+  </ItemGroup>
+
   <Target Name="SharpLambdaRewrite" BeforeTargets="CoreCompile"
-          Condition="'$(EnableSharpLambdaRewrite)'=='true' and '$(DesignTimeBuild)' != 'true' and '$(BuildingForLiveUnitTesting)' != 'true'">
+          Condition="'$(EnableSharpLambdaRewrite)'=='true' and '$(DesignTimeBuild)' != 'true' and '$(BuildingForLiveUnitTesting)' != 'true'"
+          Inputs="@(_SharpSourceFiles);$(SharpAssertRewriterPath)"
+          Outputs="@(_SharpSourceFiles->'$(IntermediateOutputPath)SharpRewritten\%(RecursiveDir)%(Filename)%(Extension).sharp.g.cs')">
     
-    <ItemGroup>
-      <_SharpInput Include="@(Compile)" />
-      <_SharpNonSourceFiles Include="@(Compile)" Condition="$([System.String]::Copy('%(Identity)').Contains('Microsoft.NET.Test.Sdk.Program.cs')) or $([System.String]::Copy('%(Identity)').EndsWith('.AssemblyInfo.cs')) or $([System.String]::Copy('%(Identity)').EndsWith('.AssemblyAttributes.cs')) or $([System.String]::Copy('%(Identity)').EndsWith('.GlobalUsings.g.cs'))" />
-      <_SharpSourceFiles Include="@(Compile)" Exclude="@(_SharpNonSourceFiles)" />
-    </ItemGroup>
 
     <Message Text="SharpAssert: Rewriting Sharp.Assert calls to lambda form" Importance="normal" 
              Condition="'$(SharpAssertEmitRewriteInfo)'=='true'" />
