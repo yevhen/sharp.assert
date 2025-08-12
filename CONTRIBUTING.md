@@ -25,8 +25,8 @@ dotnet test
 
 ```
 SharpAssert/
-├── SharpAssert/                    # Main library with Assert methods
-├── SharpAssert.Rewriter/           # MSBuild source rewriter
+├── SharpAssert.Runtime/            # Core assertion library with Assert methods
+├── SharpAssert/                    # MSBuild source rewriter + main package
 ├── SharpAssert.Tests/              # Unit tests for main library
 ├── SharpAssert.Rewriter.Tests/     # Unit tests for rewriter
 ├── SharpAssert.IntegrationTests/   # ★ Integration tests (MSBuild task)
@@ -95,14 +95,14 @@ The **SharpAssert.IntegrationTests** project enables testing the MSBuild rewrite
 
 ```xml
 <!-- Project reference for build dependency only -->
-<ProjectReference Include="..\SharpAssert.Rewriter\SharpAssert.Rewriter.csproj"
+<ProjectReference Include="..\SharpAssert\SharpAssert.csproj"
                   ReferenceOutputAssembly="false" />
 
 <!-- Direct import of targets file (simulates NuGet package behavior) -->
-<Import Project="..\SharpAssert.Rewriter\build\SharpAssert.Rewriter.targets" />
+<Import Project="..\SharpAssert\build\SharpAssert.targets" />
 
 <!-- Override rewriter path to use local build output -->
-<SharpAssertRewriterPath>$(MSBuildThisFileDirectory)..\SharpAssert.Rewriter\bin\$(Configuration)\net9.0\SharpAssert.Rewriter.dll</SharpAssertRewriterPath>
+<SharpAssertRewriterPath>$(MSBuildThisFileDirectory)..\SharpAssert\bin\$(Configuration)\net9.0\SharpAssert.dll</SharpAssertRewriterPath>
 ```
 
 This approach:
@@ -290,14 +290,14 @@ Working on the MSBuild rewriter now has **two validation approaches**:
 ### Common Problems by Test Layer
 
 **Integration Tests (SharpAssert.IntegrationTests) - MSBuild Task Issues:**
-- Verify the rewriter project builds successfully: `dotnet build SharpAssert.Rewriter/`
+- Verify the rewriter project builds successfully: `dotnet build SharpAssert/`
 - Check that `SharpAssertRewriterPath` points to correct assembly location
 - Ensure `.targets` file is properly imported
 - Look for rewritten files in `SharpAssert.IntegrationTests/obj/Debug/net9.0/SharpRewritten/`
 - Use `dotnet build SharpAssert.IntegrationTests/ -v diagnostic` for detailed MSBuild logging
 
 **Package Tests - End-to-End Issues:**
-- **Rewriter not working**: Check both `SharpAssert` and `SharpAssert.Rewriter` packages are installed
+- **Rewriter not working**: Check `SharpAssert` package is installed (SharpAssert.Runtime comes automatically)
 - **Package test fails**: Clean local feed `rm -rf local-feed` then `./publish-local.sh`
 - **Version conflicts**: Check wildcard versioning `1.0.0-dev*` in test projects
 - **Isolation issues**: Ensure using `nuget.package-tests.config` and isolated cache
