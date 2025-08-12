@@ -29,10 +29,10 @@ jobs:
           9.0.x
     
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore SharpAssert.sln
     
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build SharpAssert.sln --configuration Release --no-restore
     
     - name: Run Unit and Integration Tests
       run: dotnet test SharpAssert.sln --configuration Release --no-build --logger trx --collect:"XPlat Code Coverage"
