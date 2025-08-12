@@ -13,17 +13,14 @@ The package-testing-implementation.md has been ✅ **COMPLETED** with the follow
 - ✅ dev-test.sh for development testing
 - ✅ Basic package workflow functional
 
+This addresses 2 critical issues that need to be resolved for optimal development workflow.
+
 ## Remaining Critical Issues
 
 Based on actual testing, these issues still need to be addressed:
 
 1. **Generated file cleanup** - ❌ CONFIRMED: `dotnet clean` doesn't remove `SharpRewritten/` folder
 2. **MSBuild input/output tracking** - ⚠️ NEEDS TESTING: Incremental builds may miss rewriter assembly changes
-3. **Task assembly versioning** - ⚠️ NEEDS TESTING: Cached task assembly detection during development
-
-## Issues That Are No Longer Relevant
-
-4. **Package resolution updates** - ✅ RESOLVED: The test-local.sh script with isolated packages addresses the core workflow concern
 
 ---
 
@@ -136,51 +133,6 @@ dotnet build --verbosity normal | grep -i "sharp"
         Outputs="@(_SharpSourceFiles->'$(IntermediateOutputPath)SharpRewritten\%(RecursiveDir)%(Filename)%(Extension).sharp.g.cs')">
 ```
 
----
-
-## Fix 3: Add Task Assembly Versioning Checks
-
-**Problem:** ⚠️ **NEEDS TESTING** - MSBuild caches task assemblies and may not reload when they change during development.
-
-**Impact:** Changes to `SharpLambdaRewriteTask` might not be reflected until MSBuild process restarts.
-
-**Assessment:** This is primarily a development-time issue that may be mitigated by the existing package workflow. Test whether this is actually a problem before implementing.
-
-### Testing First
-
-```bash
-# Test if task assembly changes are detected
-# 1. Make a small change to SharpLambdaRewriteTask.cs (add a debug message)
-# 2. Rebuild the rewriter: dotnet build SharpAssert.Rewriter/
-# 3. Test in integration project: cd SharpAssert.IntegrationTests && dotnet build
-# 4. Check if the change is reflected
-```
-
-**Recommendation:** Only implement if testing confirms the issue exists in practice.
-
----
-
-## ~~Fix 4: Force Package Resolution Updates in Dev Workflow~~ ✅ RESOLVED
-
-**Problem:** ~~Stale `project.assets.json` files cause new dev packages to be ignored.~~
-
-**Status:** ✅ **RESOLVED** - This issue has been addressed by the package testing implementation.
-
-**What was implemented:**
-- ✅ `test-local.sh` script uses isolated package cache (`./test-packages`)
-- ✅ `nuget.package-tests.config` with proper package source mapping
-- ✅ `SharpAssert.PackageTesting.sln` separate solution for package testing
-- ✅ Isolated restore process that avoids global cache pollution
-
-**Current workflow effectiveness:**
-- ✅ `./test-local.sh` successfully publishes and tests packages in isolation
-- ✅ No stale package issues observed during testing
-- ✅ Package updates are properly detected and used
-
-**Recommendation:** No additional changes needed for Fix 4.
-
----
-
 ## Updated Implementation Plan
 
 ### Priority Order (Based on Current Analysis)
@@ -190,14 +142,9 @@ dotnet build --verbosity normal | grep -i "sharp"
 - [ ] Test cleanup functionality
 - [ ] Commit fix
 
-#### Medium Priority: Fix 2 & 3 - Testing Required ⚠️ NEEDS ASSESSMENT
+#### Medium Priority: Fix 2 - Testing Required ⚠️ NEEDS ASSESSMENT
 - [ ] Test current incremental build behavior
-- [ ] Test task assembly caching behavior
-- [ ] Implement fixes only if issues are confirmed
-
-#### Low Priority: Fix 4 - Already Resolved ✅ COMPLETE
-- [x] Package workflow isolation implemented
-- [x] No additional changes needed
+- [ ] Implement fix only if issues are confirmed
 
 ### Simplified Success Criteria
 
@@ -205,14 +152,12 @@ After implementing remaining fixes:
 
 1. ✅ `dotnet clean` removes all generated files (Fix 1)
 2. ⚠️ Changes to rewriter logic trigger regeneration (Test Fix 2)
-3. ✅ New dev packages are picked up automatically (Already working)
-4. ⚠️ MSBuild detects stale task assemblies (Test Fix 3)
-5. ✅ Dev workflow (`./test-local.sh`) remains fast and reliable (Already working)
-6. ✅ No impact on normal CI/CD or published package usage (Already working)
+3. ✅ Dev workflow (`./test-local.sh`) remains fast and reliable (Already working)
+4. ✅ No impact on normal CI/CD or published package usage (Already working)
 
 ### Next Steps
 
 1. **Immediately implement Fix 1** (confirmed issue, low risk)
-2. **Test behaviors for Fix 2 & 3** before implementing
+2. **Test behavior for Fix 2** before implementing
 3. **Update learnings.md** with findings
-4. **Consider this analysis complete** if testing shows Fix 2 & 3 are not needed
+4. **Consider this analysis complete** if testing shows Fix 2 is not needed
