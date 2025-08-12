@@ -85,6 +85,43 @@ This document is organized by topic to consolidate key learnings about the proje
   - Provide detailed file mapping diagnostics for troubleshooting rewriter issues
 - **Fixtures:** Test fixtures are organized by functionality (e.g., `AssertionFixture`, `ExpressionAnalysisFixture`, `RewriterFixture`, `SharpLambdaRewriteTaskFixture`).
 
+## MSBuild Integration Testing Innovation
+
+- **`ReferenceOutputAssembly="false"` Pattern:** Critical for MSBuild task testing - include rewriter project in build order without assembly reference pollution
+- **Direct `.targets` Import Strategy:** Import `.targets` file directly instead of via NuGet package for true integration testing without packaging overhead
+- **`SharpAssertRewriterPath` Override:** Custom property to point to local development build instead of packaged tools directory (`$(MSBuildThisFileDirectory)..\SharpAssert.Rewriter\bin\$(Configuration)\net9.0\`)
+- **MSBuild Task Assembly Loading:** Tasks loaded via `AssemblyFile` in UsingTask are cached by MSBuild process - recompiling rewriter doesn't reload task without MSBuild restart
+- **Generated File Directory Pattern:** `$(IntermediateOutputPath)SharpRewritten\` provides predictable output location separate from source files
+- **Design-Time Build Exclusion:** Critical to exclude rewriter during `$(DesignTimeBuild)` and `$(BuildingForLiveUnitTesting)` to preserve IDE experience
+- **File Pattern Exclusion Logic:** Complex but necessary exclusion patterns for generated files: `Microsoft.NET.Test.Sdk.Program.cs`, `*.AssemblyInfo.cs`, `*.GlobalUsings.g.cs`
+
+## Package Testing Isolation Techniques
+
+- **Separate Solution Files:** Main solution (`SharpAssert.sln`) vs package testing (`SharpAssert.PackageTesting.sln`) prevents dev workflow contamination
+- **NuGet Source Mapping:** `packageSourceMapping` in `nuget.package-tests.config` ensures SharpAssert packages only come from local feed, preventing version conflicts
+- **Package Cache Isolation:** Use `--packages ./test-packages` for isolated cache that doesn't pollute global NuGet cache
+- **File Linking with MSBuild:** `<Compile Include="..\SharpAssert.IntegrationTests\**\*.cs" Link="..."/>` shares test files without duplication
+- **Wildcard Version References:** `Version="1.0.0-dev*"` allows testing against latest local builds without hardcoding timestamps
+- **Config File Isolation:** Separate `nuget.package-tests.config` with `<clear/>` prevents interference from user/machine level configs
+
+## Development Process & Workflow Insights
+
+- **Multi-Layer Testing Strategy Benefits:** Unit (fast dev) → Integration (MSBuild behavior) → Package (real-world usage) → CI (clean environment)
+- **Timestamp-Based Dev Versions:** `1.0.0-dev20250812155111` pattern enables rapid iteration without version conflicts
+- **Cache Management Critical:** NuGet cache pollution is a major source of "works on my machine" issues - isolated caches prevent false positives
+- **MSBuild vs Package Testing Trade-offs:** Integration tests faster but miss packaging issues; package tests slower but catch real deployment problems
+- **Script-Based Automation:** `./dev-test.sh` (fast dev cycle) vs `./test-local.sh` (full validation) provides appropriate tool for each workflow stage
+
+## Technical Gotchas & Problems Solved
+
+- **MSBuild Property Evaluation Order:** Properties must be defined before UsingTask - `SharpAssertRewriterPath` must have default before being used in AssemblyFile
+- **NuGet Package Source Precedence:** Without source mapping, higher priority sources can override local packages even with version wildcards
+- **Project.Assets.Json Staleness:** Incremental MSBuild restore doesn't always detect new packages with same version pattern - requires `--force-evaluate`
+- **Assembly Loading Context:** MSBuild tasks run in separate AppDomain - assembly conflicts between task dependencies and target project dependencies
+- **Generated File Cleanup:** `dotnet clean` doesn't automatically remove custom output directories - requires explicit `<RemoveDir>` target
+- **Cross-Platform Path Handling:** MSBuild path handling differences between Windows/Unix require careful attention to separators and absolute vs relative paths
+- **Package Source Discovery:** NuGet source discovery during package testing can fail silently if local feed structure is incorrect - verify with `--verbosity detailed`
+
 ## PowerAssert Integration (Phase 2)
 
 - **MSBuild Property Integration:** Successfully extended MSBuild integration to support PowerAssert flags:
