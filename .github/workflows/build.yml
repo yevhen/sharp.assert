@@ -34,17 +34,31 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore
     
-    - name: Run unit tests
-      run: dotnet test --configuration Release --no-build --logger trx --collect:"XPlat Code Coverage"
+    - name: Run Unit and Integration Tests
+      run: dotnet test SharpAssert.sln --configuration Release --no-build --logger trx --collect:"XPlat Code Coverage"
     
-    - name: Run integration tests
-      run: dotnet test SharpAssert.IntegrationTest --configuration Release --no-build --logger trx
-    
-    - name: Build and test package
+    - name: Create Local Package
       run: |
-        cd SharpAssert.PackageTest
-        chmod +x test-local-package.sh
-        ./test-local-package.sh
+        chmod +x ./publish-local.sh
+        ./publish-local.sh
+    
+    - name: Test NuGet Packages (Isolated)
+      run: |
+        # Use isolated solution and cache
+        dotnet restore SharpAssert.PackageTesting.sln \
+          --packages ./ci-packages \
+          --configfile nuget.package-tests.config
+        
+        dotnet build SharpAssert.PackageTesting.sln \
+          --packages ./ci-packages \
+          --no-restore \
+          --configuration Release
+        
+        dotnet test SharpAssert.PackageTesting.sln \
+          --no-build \
+          --no-restore \
+          --configuration Release \
+          --logger trx
     
     - name: Upload test results
       uses: actions/upload-artifact@v4
