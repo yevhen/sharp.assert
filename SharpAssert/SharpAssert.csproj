@@ -26,6 +26,13 @@
 
     </PropertyGroup>
 
+    <!-- Source symbols and XML documentation for Release builds only -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
     <ItemGroup>
         <None Include="..\README.md" Pack="true" PackagePath="\" />
         <None Include="..\LICENSE" Pack="true" PackagePath="\" />
