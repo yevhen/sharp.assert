@@ -68,15 +68,25 @@ jobs:
         echo "Testing packages in test-feed:"
         ls -la test-feed/
     
-    - name: Publish to NuGet
+    - name: Publish to NuGet (dependency order)
       run: |
-        for package in ./packages/*.nupkg; do
-          echo "Publishing $(basename $package)..."
-          dotnet nuget push "$package" \
-            --api-key ${{ secrets.NUGET_API_KEY }} \
-            --source https://api.nuget.org/v3/index.json \
-            --skip-duplicate
-        done
+        # Publish Runtime package first (dependency)
+        echo "Publishing SharpAssert.Runtime (dependency)..."
+        dotnet nuget push ./packages/SharpAssert.Runtime.*.nupkg \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
+        
+        # Wait for NuGet indexing (dependency propagation)
+        echo "Waiting 30 seconds for NuGet indexing..."
+        sleep 30
+        
+        # Publish main package (depends on Runtime)
+        echo "Publishing SharpAssert (main package)..."
+        dotnet nuget push ./packages/SharpAssert.*.nupkg \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
     
     - name: Create GitHub Release
       uses: actions/create-release@v1
