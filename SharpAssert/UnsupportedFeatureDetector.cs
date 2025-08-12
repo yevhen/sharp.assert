@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 
 namespace SharpAssert;
 
-public class UnsupportedFeatureDetector : ExpressionVisitor
+internal class UnsupportedFeatureDetector : ExpressionVisitor
 {
     public bool HasUnsupported { get; private set; }
     
