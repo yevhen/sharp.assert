@@ -142,22 +142,37 @@ dotnet build --verbosity normal | grep -i "sharp"
 - [x] Test cleanup functionality
 - [x] Commit fix
 
-#### Medium Priority: Fix 2 - Testing Required ⚠️ NEEDS ASSESSMENT
-- [ ] Test current incremental build behavior
-- [ ] Implement fix only if issues are confirmed
+#### Medium Priority: Fix 2 - MSBuild Input/Output Tracking ✅ **COMPLETED**
+- [x] Test current incremental build behavior - ❌ CONFIRMED: Target runs every build
+- [x] Implement proper `Inputs`/`Outputs` attributes on `SharpLambdaRewrite` target
+- [x] Test incremental build optimization works correctly
 
 ### Simplified Success Criteria
 
-After implementing remaining fixes:
+After implementing all fixes:
 
 1. ✅ `dotnet clean` removes all generated files (Fix 1)
-2. ⚠️ Changes to rewriter logic trigger regeneration (Test Fix 2)
+2. ✅ Incremental builds optimize rewriter performance (Fix 2)
 3. ✅ Dev workflow (`./test-local.sh`) remains fast and reliable (Already working)
 4. ✅ No impact on normal CI/CD or published package usage (Already working)
 
 ### Next Steps
 
-1. **Immediately implement Fix 1** (confirmed issue, low risk)
-2. **Test behavior for Fix 2** before implementing
-3. **Update learnings.md** with findings
-4. **Consider this analysis complete** if testing shows Fix 2 is not needed
+1. ✅ **Fix 1 implemented** - `dotnet clean` now properly removes generated files
+2. ✅ **Fix 2 implemented** - MSBuild incremental builds now skip rewriter when appropriate
+3. ✅ **Testing completed** - All integration tests pass, dev workflow remains stable
+4. ✅ **Analysis complete** - Both critical caching issues have been resolved
+
+## Implementation Summary
+
+Both critical MSBuild caching issues have been successfully resolved:
+
+**Fix 1: Generated File Cleanup**
+- Added `SharpAssertClean` target to remove `obj/*/SharpRewritten/` directory during clean
+- Verified with `dotnet clean` testing
+
+**Fix 2: MSBuild Input/Output Tracking**  
+- Added `Inputs="@(_SharpSourceFiles);$(SharpAssertRewriterPath)"` 
+- Added `Outputs="@(_SharpSourceFiles->'$(IntermediateOutputPath)SharpRewritten\%(RecursiveDir)%(Filename)%(Extension).sharp.g.cs')"` 
+- Moved `_SharpSourceFiles` ItemGroup outside target for proper evaluation
+- Verified incremental builds now skip rewriter when source files unchanged
