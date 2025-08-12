@@ -22,9 +22,8 @@
         <PackageReference Include="NUnit.Analyzers" Version="4.4.0" />
         <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
         
-        <!-- Stable wildcard references to local development packages -->
+        <!-- Single package reference - Runtime dependency comes automatically -->
         <PackageReference Include="SharpAssert" Version="1.0.0-dev*" />
-        <PackageReference Include="SharpAssert.Rewriter" Version="1.0.0-dev*" />
     </ItemGroup>
 
     <ItemGroup>

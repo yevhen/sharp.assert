@@ -41,13 +41,13 @@ dotnet test --configuration Release --no-build
 
 # Pack both projects
 echo -e "${BLUE}📦 Creating NuGet packages...${NC}"
-dotnet pack SharpAssert/SharpAssert.csproj \
+dotnet pack SharpAssert.Runtime/SharpAssert.csproj \
     --configuration Release \
     --no-build \
     --output ./packages \
     -p:PackageVersion="$VERSION"
 
-dotnet pack SharpAssert.Rewriter/SharpAssert.Rewriter.csproj \
+dotnet pack SharpAssert/SharpAssert.csproj \
     --configuration Release \
     --no-build \
     --output ./packages \

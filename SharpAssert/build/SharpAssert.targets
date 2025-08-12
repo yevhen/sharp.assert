@@ -5,7 +5,7 @@
     <SharpAssertEmitRewriteInfo Condition="'$(SharpAssertEmitRewriteInfo)' == ''">false</SharpAssertEmitRewriteInfo>
     <SharpAssertUsePowerAssert Condition="'$(SharpAssertUsePowerAssert)' == ''">false</SharpAssertUsePowerAssert>
     <SharpAssertUsePowerAssertForUnsupported Condition="'$(SharpAssertUsePowerAssertForUnsupported)' == ''">true</SharpAssertUsePowerAssertForUnsupported>
-    <SharpAssertRewriterPath Condition="'$(SharpAssertRewriterPath)' == ''">$(MSBuildThisFileDirectory)../tools/net9.0/SharpAssert.Rewriter.dll</SharpAssertRewriterPath>
+    <SharpAssertRewriterPath Condition="'$(SharpAssertRewriterPath)' == ''">$(MSBuildThisFileDirectory)../tools/net9.0/SharpAssert.dll</SharpAssertRewriterPath>
   </PropertyGroup>
 
   <UsingTask 

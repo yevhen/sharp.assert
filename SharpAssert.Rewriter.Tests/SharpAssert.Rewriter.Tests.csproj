@@ -22,8 +22,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SharpAssert.Rewriter\SharpAssert.Rewriter.csproj" />
     <ProjectReference Include="..\SharpAssert\SharpAssert.csproj" />
+    <ProjectReference Include="..\SharpAssert.Runtime\SharpAssert.csproj" />
   </ItemGroup>
 
   <ItemGroup>

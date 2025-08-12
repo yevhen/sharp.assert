@@ -104,6 +104,13 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Wildcard Version References:** `Version="1.0.0-dev*"` allows testing against latest local builds without hardcoding timestamps
 - **Config File Isolation:** Separate `nuget.package-tests.config` with `<clear/>` prevents interference from user/machine level configs
 
+## Package Architecture & Structure
+
+- **Conditional Project/Package References:** Use `Condition="Exists('..\SharpAssert.Runtime\SharpAssert.csproj')"` to enable local development with ProjectReference while maintaining PackageReference for NuGet packaging
+- **Dependency Order in Packaging:** When packages depend on each other, pack dependencies first then reference local feed: `--source local-feed --source https://api.nuget.org/v3/index.json`
+- **Single Package Strategy:** Users prefer installing one main package (e.g., "SharpAssert") with transitive dependencies (e.g., "SharpAssert.Runtime") rather than multiple packages
+- **Wildcard Version Matching:** `Version="1.0.0-dev*"` enables flexible local development while maintaining precise version control in production
+
 ## Development Process & Workflow Insights
 
 - **Multi-Layer Testing Strategy Benefits:** Unit (fast dev) → Integration (MSBuild behavior) → Package (real-world usage) → CI (clean environment)

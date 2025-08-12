@@ -1,46 +1,69 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    
+    <!-- Package metadata -->
+    <PackageId>SharpAssert</PackageId>
+    <Title>SharpAssert</Title>
+    <Description>Pytest-style assertions for .NET - includes MSBuild source rewriter and core runtime. Simply install this package to get powerful, informative assertions with excellent IDE support.</Description>
+    <Version>1.0.0</Version>
+    <Authors>Yevhen Bobrov</Authors>
+    <Company>Cloudrite</Company>
+    <Copyright>Copyright © 2025 Yevhen Bobrov</Copyright>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageProjectUrl>https://github.com/yevhen/SharpAssert</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/yevhen/SharpAssert</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>msbuild;rewriter;assertions;testing</PackageTags>
+    <PackageIcon Condition="Exists('..\icon.png')">icon.png</PackageIcon>
+    <PackageReleaseNotes>Initial release of SharpAssert.Rewriter - MSBuild source rewriter that transforms Assert calls at compile time while preserving IDE experience.</PackageReleaseNotes>
+  </PropertyGroup>
 
-        <!-- Suppress NETSDK1206 warning from PowerAssert's Libuv dependency -->
-        <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
-        
-        <!-- Package metadata -->
-        <PackageId>SharpAssert</PackageId>
-        <Title>SharpAssert</Title>
-        <Description>Assertions made simple</Description>
-        <Version>1.0.0</Version>
-        <Authors>Yevhen Bobrov</Authors>
-        <Company>Cloudrite</Company>
-        <Copyright>Copyright © 2025 Yevhen Bobrov</Copyright>
-        <PackageLicenseFile>LICENSE</PackageLicenseFile>
-        <PackageProjectUrl>https://github.com/yevhen/SharpAssert</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/yevhen/SharpAssert</RepositoryUrl>
-        <RepositoryType>git</RepositoryType>
-        <PackageTags>nunit;xunit;testing;assertions;pytest</PackageTags>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageIcon Condition="Exists('..\icon.png')">icon.png</PackageIcon>
+  <!-- Source symbols and XML documentation for Release builds only -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
 
-    </PropertyGroup>
+  <ItemGroup>
+    <!-- MSBuild dependencies should not be included in package as they're provided by MSBuild -->
+    <PackageReference Include="Microsoft.Build.Framework" Version="17.8.3" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.8.3" PrivateAssets="all" />
+    <!-- Roslyn needs to be included in the package -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="none" />
+    <!-- Runtime dependency - conditional based on build scenario -->
+    <!-- For local development: use ProjectReference -->
+    <ProjectReference Include="..\SharpAssert.Runtime\SharpAssert.csproj" 
+                      Condition="Exists('..\SharpAssert.Runtime\SharpAssert.csproj')" 
+                      PrivateAssets="none" />
+    <!-- For packaging: use PackageReference when Runtime project doesn't exist locally -->
+    <PackageReference Include="SharpAssert.Runtime" Version="1.0.0-dev*" 
+                      Condition="!Exists('..\SharpAssert.Runtime\SharpAssert.csproj')" />
+  </ItemGroup>
 
-    <!-- Source symbols and XML documentation for Release builds only -->
-    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-        <IncludeSymbols>true</IncludeSymbols>
-        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-        <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    </PropertyGroup>
+  <ItemGroup>
+    <None Include="build\SharpAssert.targets" Pack="true" PackagePath="build\" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="\" />
+    <None Include="..\icon.png" Pack="true" PackagePath="\" Condition="Exists('..\icon.png')" />
+  </ItemGroup>
+  
+  <!-- Suppress warnings specific to MSBuild task packages -->
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);NU5128;NETSDK1206</NoWarn>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <None Include="..\README.md" Pack="true" PackagePath="\" />
-        <None Include="..\LICENSE" Pack="true" PackagePath="\" />
-        <None Include="..\icon.png" Pack="true" PackagePath="\" Condition="Exists('..\icon.png')" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="PowerAssert" Version="1.0.87" />
-    </ItemGroup>
+  <!-- Include all necessary assemblies for the MSBuild task -->
+  <ItemGroup>
+    <Content Include="bin\$(Configuration)\$(TargetFramework)\*.dll" 
+             Pack="true" 
+             PackagePath="tools\$(TargetFramework)\" />
+  </ItemGroup>
 
 </Project>

@@ -22,7 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\SharpAssert\SharpAssert.csproj" />
+        <ProjectReference Include="..\SharpAssert.Runtime\SharpAssert.csproj" />
     </ItemGroup>
 
     <ItemGroup>

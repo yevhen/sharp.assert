@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>SharpAssert.Runtime</AssemblyName>
+
+        <!-- Suppress NETSDK1206 warning from PowerAssert's Libuv dependency -->
+        <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
+        
+        <!-- Package metadata -->
+        <PackageId>SharpAssert.Runtime</PackageId>
+        <Title>SharpAssert Runtime</Title>
+        <Description>Core assertion library for SharpAssert - pytest-style assertions for .NET</Description>
+        <Version>1.0.0</Version>
+        <Authors>Yevhen Bobrov</Authors>
+        <Company>Cloudrite</Company>
+        <Copyright>Copyright © 2025 Yevhen Bobrov</Copyright>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <PackageProjectUrl>https://github.com/yevhen/SharpAssert</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/yevhen/SharpAssert</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>nunit;xunit;testing;assertions;pytest</PackageTags>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageIcon Condition="Exists('..\icon.png')">icon.png</PackageIcon>
+
+    </PropertyGroup>
+
+    <!-- Source symbols and XML documentation for Release builds only -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="..\README.md" Pack="true" PackagePath="\" />
+        <None Include="..\LICENSE" Pack="true" PackagePath="\" />
+        <None Include="..\icon.png" Pack="true" PackagePath="\" Condition="Exists('..\icon.png')" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="PowerAssert" Version="1.0.87" />
+    </ItemGroup>
+
+</Project>

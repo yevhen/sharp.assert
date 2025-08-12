@@ -18,22 +18,26 @@ VERSION="1.0.0-dev$(date +%Y%m%d%H%M%S)"
 
 echo -e "${YELLOW}🏗️ Building packages with version: $VERSION${NC}"
 
-# Build and pack both projects with development version
+# Build and pack projects in dependency order  
+echo -e "${BLUE}📦 Packing SharpAssert.Runtime...${NC}"
+dotnet pack SharpAssert.Runtime/SharpAssert.csproj \
+    --configuration Release \
+    --output local-feed \
+    -p:PackageVersion="$VERSION" \
+    --verbosity quiet
+
+echo -e "${BLUE}📦 Packing SharpAssert (with local feed as source)...${NC}"
 dotnet pack SharpAssert/SharpAssert.csproj \
     --configuration Release \
     --output local-feed \
     -p:PackageVersion="$VERSION" \
-    --verbosity quiet
-
-dotnet pack SharpAssert.Rewriter/SharpAssert.Rewriter.csproj \
-    --configuration Release \
-    --output local-feed \
-    -p:PackageVersion="$VERSION" \
-    --verbosity quiet
+    --verbosity quiet \
+    --source local-feed \
+    --source https://api.nuget.org/v3/index.json
 
 echo -e "${GREEN}✅ Published packages to local feed:${NC}"
+echo -e "  📋 SharpAssert.Runtime $VERSION"
 echo -e "  📋 SharpAssert $VERSION"
-echo -e "  📋 SharpAssert.Rewriter $VERSION"
 echo -e "${BLUE}📁 Feed location: ./local-feed/${NC}"
 echo ""
 echo -e "${YELLOW}💡 Now run: dotnet restore && dotnet test${NC}"
