@@ -8,3 +8,4 @@ TestResults
 .branches
 .idea/
 local-feed
+.DS_Store
