@@ -1,18 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.Tests", "SharpAssert.Tests\SharpAssert.Tests.csproj", "{100B6474-F62C-472E-98D2-1935911FF4BF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.Tests", "src\SharpAssert.Tests\SharpAssert.Tests.csproj", "{100B6474-F62C-472E-98D2-1935911FF4BF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.Runtime", "SharpAssert.Runtime\SharpAssert.csproj", "{F30DA6F2-9A1F-47B1-88B8-4E533EE4A3AB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.Runtime", "src\SharpAssert.Runtime\SharpAssert.Runtime.csproj", "{F30DA6F2-9A1F-47B1-88B8-4E533EE4A3AB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.Rewriter.Tests", "SharpAssert.Rewriter.Tests\SharpAssert.Rewriter.Tests.csproj", "{5F9957C7-8219-46EC-972A-D39F60981809}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.Rewriter.Tests", "src\SharpAssert.Rewriter.Tests\SharpAssert.Rewriter.Tests.csproj", "{5F9957C7-8219-46EC-972A-D39F60981809}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert", "SharpAssert\SharpAssert.csproj", "{C9949AD0-684A-415A-A4FB-626EF50E2242}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert", "src\SharpAssert\SharpAssert.csproj", "{C9949AD0-684A-415A-A4FB-626EF50E2242}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.PackageTest", "SharpAssert.PackageTest\SharpAssert.PackageTest.csproj", "{B2178774-FB4B-4997-BEFC-A426FDC2BD13}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.PackageTest", "src\SharpAssert.PackageTest\SharpAssert.PackageTest.csproj", "{B2178774-FB4B-4997-BEFC-A426FDC2BD13}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.PowerAssertTest", "SharpAssert.PowerAssertTest\SharpAssert.PowerAssertTest.csproj", "{D6D87294-D61C-47CF-9FA6-8F1619140466}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.PowerAssertTest", "src\SharpAssert.PowerAssertTest\SharpAssert.PowerAssertTest.csproj", "{D6D87294-D61C-47CF-9FA6-8F1619140466}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.IntegrationTests", "SharpAssert.IntegrationTests\SharpAssert.IntegrationTests.csproj", "{64391C1B-BDA7-4E82-9059-41AE07792FE4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.IntegrationTests", "src\SharpAssert.IntegrationTests\SharpAssert.IntegrationTests.csproj", "{64391C1B-BDA7-4E82-9059-41AE07792FE4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -18,7 +18,7 @@ echo -e "${YELLOW}🧹 Cleaning package cache...${NC}"
 rm -rf $PACKAGE_CACHE
 
 echo -e "${YELLOW}📦 Publishing latest packages to local feed...${NC}"
-./publish-local.sh
+./scripts/publish-local.sh
 
 echo -e "${YELLOW}🔄 Restoring packages from local feed (isolated cache)...${NC}"
 dotnet restore SharpAssert.PackageTesting.sln \
@@ -36,7 +36,7 @@ echo -e "${YELLOW}🧪 Running package tests...${NC}"
 echo ""
 
 echo -e "${BLUE}📦 Running basic package tests...${NC}"
-if ! dotnet test SharpAssert.PackageTest/ \
+if ! dotnet test src/SharpAssert.PackageTest/ \
   --no-build \
   --no-restore \
   --verbosity normal; then
@@ -46,7 +46,7 @@ fi
 
 echo ""
 echo -e "${BLUE}⚡ Running PowerAssert (forced mode) tests...${NC}"
-if ! dotnet test SharpAssert.PowerAssertTest/ \
+if ! dotnet test src/SharpAssert.PowerAssertTest/ \
   --no-build \
   --no-restore \
   --verbosity normal; then

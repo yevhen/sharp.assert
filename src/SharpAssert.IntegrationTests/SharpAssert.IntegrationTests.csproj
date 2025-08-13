@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <!-- Reference SharpAssert library normally -->
-    <ProjectReference Include="..\SharpAssert.Runtime\SharpAssert.csproj" />
+    <ProjectReference Include="..\SharpAssert.Runtime\SharpAssert.Runtime.csproj" />
     
     <!-- Build the rewriter project but don't reference its assembly -->
     <ProjectReference Include="..\SharpAssert\SharpAssert.csproj"

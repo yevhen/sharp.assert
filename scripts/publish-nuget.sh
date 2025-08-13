@@ -41,13 +41,13 @@ dotnet test --configuration Release --no-build
 
 # Pack both projects
 echo -e "${BLUE}📦 Creating NuGet packages...${NC}"
-dotnet pack SharpAssert.Runtime/SharpAssert.csproj \
+dotnet pack src/SharpAssert.Runtime/SharpAssert.csproj \
     --configuration Release \
     --no-build \
     --output ./packages \
     -p:PackageVersion="$VERSION"
 
-dotnet pack SharpAssert/SharpAssert.csproj \
+dotnet pack src/SharpAssert/SharpAssert.csproj \
     --configuration Release \
     --no-build \
     --output ./packages \
@@ -55,10 +55,10 @@ dotnet pack SharpAssert/SharpAssert.csproj \
 
 # Test the package locally before publishing
 echo -e "${BLUE}🔍 Testing package locally...${NC}"
-cd SharpAssert.PackageTest
+cd src/SharpAssert.PackageTest
 chmod +x test-local-package.sh
 ./test-local-package.sh
-cd ..
+cd ../..
 
 # Show what we're about to publish
 echo -e "${YELLOW}📋 Packages to publish:${NC}"

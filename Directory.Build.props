@@ -22,10 +22,7 @@
         <Authors>Yevhen Bobrov</Authors>
         <Copyright>Copyright © $([System.DateTime]::Now.Year)</Copyright>
 
-        <!-- Package metadata -->
-        <PackageId>SharpAssert.Runtime</PackageId>
-        <Title>SharpAssert Runtime</Title>
-        <Description>Core assertion library for SharpAssert</Description>
+        <!-- Common package metadata for all projects -->
         <Authors>Yevhen Bobrov</Authors>
         <Company>Cloudrite</Company>
         <Copyright>Copyright © 2025 Yevhen Bobrov</Copyright>
@@ -35,7 +32,7 @@
         <RepositoryType>git</RepositoryType>
         <PackageTags>nunit;xunit;testing;assertions</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageIcon Condition="Exists('..\icon.png')">icon.png</PackageIcon>
+        <PackageIcon Condition="Exists('..\..\icon.png')">icon.png</PackageIcon>
 
     </PropertyGroup>
     

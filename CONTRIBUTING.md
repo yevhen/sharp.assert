@@ -25,21 +25,24 @@ dotnet test
 
 ```
 SharpAssert/
-├── SharpAssert.Runtime/            # Core assertion library with Assert methods
-├── SharpAssert/                    # MSBuild source rewriter + main package
-├── SharpAssert.Tests/              # Unit tests for main library
-├── SharpAssert.Rewriter.Tests/     # Unit tests for rewriter
-├── SharpAssert.IntegrationTests/   # ★ Integration tests (MSBuild task)
-├── SharpAssert.PackageTest/        # Package tests (local NuGet feed)
-├── SharpAssert.PowerAssertTest/    # PowerAssert forced mode tests
+├── src/
+│   ├── SharpAssert.Runtime/            # Core assertion library with Assert methods
+│   ├── SharpAssert/                    # MSBuild source rewriter + main package
+│   ├── SharpAssert.Tests/              # Unit tests for main library
+│   ├── SharpAssert.Rewriter.Tests/     # Unit tests for rewriter
+│   ├── SharpAssert.IntegrationTests/   # ★ Integration tests (MSBuild task)
+│   ├── SharpAssert.PackageTest/        # Package tests (local NuGet feed)
+│   └── SharpAssert.PowerAssertTest/    # PowerAssert forced mode tests
+├── scripts/
+│   ├── dev-test.sh                     # Fast development testing
+│   ├── publish-local.sh                # Publish to local feed
+│   ├── test-local.sh                   # Complete package validation
+│   └── publish-nuget.sh                # Publish to NuGet.org
 ├── SharpAssert.sln                 # Main development solution
 ├── SharpAssert.PackageTesting.sln  # Isolated package testing solution
 ├── local-feed/                     # Local NuGet package feed
 ├── nuget.config                    # Standard NuGet configuration
 ├── nuget.package-tests.config      # Isolated package testing configuration
-├── dev-test.sh                     # Fast development testing
-├── publish-local.sh                # Publish to local feed
-├── test-local.sh                   # Complete package validation
 └── Directory.Build.props           # Centralized versioning
 ```
 
@@ -51,14 +54,14 @@ SharpAssert uses a comprehensive **four-layer testing approach** to ensure relia
 - **SharpAssert.Tests** - Tests core assertion logic without MSBuild integration
 - **SharpAssert.Rewriter.Tests** - Tests the source rewriter components in isolation
 - **Purpose**: Fast feedback during development, tests individual methods and classes
-- **Run with**: `dotnet test SharpAssert.Tests/` or `dotnet test SharpAssert.Rewriter.Tests/`
+- **Run with**: `dotnet test src/SharpAssert.Tests/` or `dotnet test src/SharpAssert.Rewriter.Tests/`
 
 ### 2. **Integration Tests** - MSBuild Task Validation (New!)
 - **SharpAssert.IntegrationTests** - Tests the rewriter as an actual MSBuild task during development
 - **Purpose**: Validates that MSBuild integration works without requiring NuGet packages
 - **Key Innovation**: Uses project references with `ReferenceOutputAssembly="false"` and direct import of `.targets` files
 - **MSBuild Task Testing**: Overrides `SharpAssertRewriterPath` to use local build output
-- **Run with**: `dotnet test SharpAssert.IntegrationTests/`
+- **Run with**: `dotnet test src/SharpAssert.IntegrationTests/`
 
 ### 3. **Package Tests** - End-to-End NuGet Validation
 - **SharpAssert.PackageTest** - Tests basic functionality via NuGet packages
@@ -131,7 +134,7 @@ Package tests use complete isolation to prevent global NuGet cache pollution:
 
 # 🔧 Manual testing workflows
 dotnet test                                    # All tests in main solution
-dotnet test SharpAssert.IntegrationTests/     # Just MSBuild integration tests
+dotnet test src/SharpAssert.IntegrationTests/     # Just MSBuild integration tests
 ./publish-local.sh                            # Build packages to local feed
 dotnet test SharpAssert.PackageTesting.sln    # Just package tests
 ```
@@ -184,7 +187,7 @@ SharpAssert uses a **Local NuGet Feed** approach for development and testing:
 
 # Or run steps manually:
 ./publish-local.sh          # Publish packages to local-feed/
-dotnet test SharpAssert.PackageTest/  # Test with local packages
+dotnet test src/SharpAssert.PackageTest/  # Test with local packages
 ```
 
 ### Local Development Benefits
@@ -246,7 +249,7 @@ Working on the MSBuild rewriter now has **two validation approaches**:
 1. **Use Integration Tests for rapid iteration**
    ```bash
    # Fast feedback - no packaging required
-   dotnet test SharpAssert.IntegrationTests/
+   dotnet test src/SharpAssert.IntegrationTests/
    # or use the dev script
    ./dev-test.sh
    ```
@@ -254,7 +257,7 @@ Working on the MSBuild rewriter now has **two validation approaches**:
 2. **Debug integration tests**
    - Set breakpoints in `SharpLambdaRewriteTask` or `SharpAssertRewriter`
    - Integration tests use your local build output directly
-   - Inspect rewritten files in: `SharpAssert.IntegrationTests/obj/Debug/net9.0/SharpRewritten/`
+   - Inspect rewritten files in: `src/SharpAssert.IntegrationTests/obj/Debug/net9.0/SharpRewritten/`
 
 #### Complete Package Validation
 
@@ -265,7 +268,7 @@ Working on the MSBuild rewriter now has **two validation approaches**:
    ```
 
 2. **Debug package tests**
-   - Inspect rewritten code in: `SharpAssert.PackageTest/obj/Debug/net9.0/SharpRewritten/`
+   - Inspect rewritten code in: `src/SharpAssert.PackageTest/obj/Debug/net9.0/SharpRewritten/`
    - Use verbose MSBuild logging: `dotnet build -v diagnostic`
    - Check #line directives in generated files
 
@@ -293,8 +296,8 @@ Working on the MSBuild rewriter now has **two validation approaches**:
 - Verify the rewriter project builds successfully: `dotnet build SharpAssert/`
 - Check that `SharpAssertRewriterPath` points to correct assembly location
 - Ensure `.targets` file is properly imported
-- Look for rewritten files in `SharpAssert.IntegrationTests/obj/Debug/net9.0/SharpRewritten/`
-- Use `dotnet build SharpAssert.IntegrationTests/ -v diagnostic` for detailed MSBuild logging
+- Look for rewritten files in `src/SharpAssert.IntegrationTests/obj/Debug/net9.0/SharpRewritten/`
+- Use `dotnet build src/SharpAssert.IntegrationTests/ -v diagnostic` for detailed MSBuild logging
 
 **Package Tests - End-to-End Issues:**
 - **Rewriter not working**: Check `SharpAssert` package is installed (SharpAssert.Runtime comes automatically)

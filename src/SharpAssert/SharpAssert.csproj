@@ -29,19 +29,19 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="none" />
     <!-- Runtime dependency - conditional based on build scenario -->
     <!-- For local development: use ProjectReference -->
-    <ProjectReference Include="..\SharpAssert.Runtime\SharpAssert.csproj" 
-                      Condition="Exists('..\SharpAssert.Runtime\SharpAssert.csproj')" 
+    <ProjectReference Include="..\SharpAssert.Runtime\SharpAssert.Runtime.csproj" 
+                      Condition="Exists('..\SharpAssert.Runtime\SharpAssert.Runtime.csproj')" 
                       PrivateAssets="none" />
     <!-- For packaging: use PackageReference when Runtime project doesn't exist locally -->
     <PackageReference Include="SharpAssert.Runtime" Version="1.0.0-dev*" 
-                      Condition="!Exists('..\SharpAssert.Runtime\SharpAssert.csproj')" />
+                      Condition="!Exists('..\SharpAssert.Runtime\SharpAssert.Runtime.csproj')" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="build\SharpAssert.targets" Pack="true" PackagePath="build\" />
-    <None Include="..\README.md" Pack="true" PackagePath="\" />
-    <None Include="..\LICENSE" Pack="true" PackagePath="\" />
-    <None Include="..\icon.png" Pack="true" PackagePath="\" Condition="Exists('..\icon.png')" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+    <None Include="..\..\icon.png" Pack="true" PackagePath="\" Condition="Exists('..\..\icon.png')" />
   </ItemGroup>
   
   <!-- Suppress warnings specific to MSBuild task packages -->

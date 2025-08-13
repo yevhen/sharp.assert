@@ -20,14 +20,14 @@ echo -e "${YELLOW}🏗️ Building packages with version: $VERSION${NC}"
 
 # Build and pack projects in dependency order  
 echo -e "${BLUE}📦 Packing SharpAssert.Runtime...${NC}"
-dotnet pack SharpAssert.Runtime/SharpAssert.csproj \
+dotnet pack src/SharpAssert.Runtime/SharpAssert.csproj \
     --configuration Release \
     --output local-feed \
     -p:PackageVersion="$VERSION" \
     --verbosity quiet
 
 echo -e "${BLUE}📦 Packing SharpAssert (with local feed as source)...${NC}"
-dotnet pack SharpAssert/SharpAssert.csproj \
+dotnet pack src/SharpAssert/SharpAssert.csproj \
     --configuration Release \
     --output local-feed \
     -p:PackageVersion="$VERSION" \

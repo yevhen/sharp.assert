@@ -39,8 +39,8 @@ jobs:
     
     - name: Create Local Package
       run: |
-        chmod +x ./publish-local.sh
-        ./publish-local.sh
+        chmod +x ./scripts/publish-local.sh
+        ./scripts/publish-local.sh
     
     - name: Test NuGet Packages (Isolated)
       run: |
