@@ -17,7 +17,7 @@
   <ItemGroup>
     <_SharpInput Include="@(Compile)" />
     <_SharpNonSourceFiles Include="@(Compile)" Condition="$([System.String]::Copy('%(Identity)').Contains('Microsoft.NET.Test.Sdk.Program.cs')) or $([System.String]::Copy('%(Identity)').EndsWith('.AssemblyInfo.cs')) or $([System.String]::Copy('%(Identity)').EndsWith('.AssemblyAttributes.cs')) or $([System.String]::Copy('%(Identity)').EndsWith('.GlobalUsings.g.cs'))" />
-    <_SharpSourceFiles Include="@(Compile)" Exclude="@(_SharpNonSourceFiles)" />
+    <_SharpSourceFiles Include="**/*.cs" Exclude="**/bin/**/*.cs;**/obj/**/*.cs;$(IntermediateOutputPath)/**/*.cs" />
   </ItemGroup>
 
   <Target Name="SharpLambdaRewrite" BeforeTargets="CoreCompile"
@@ -36,20 +36,12 @@
         OutputDir="$(IntermediateOutputPath)SharpRewritten"
         LangVersion="$(LangVersion)"
         UsePowerAssert="$(SharpAssertUsePowerAssert)"
-        UsePowerAssertForUnsupported="$(SharpAssertUsePowerAssertForUnsupported)" />
+        UsePowerAssertForUnsupported="$(SharpAssertUsePowerAssertForUnsupported)">
+      <Output TaskParameter="GeneratedFiles" ItemName="_SharpRewrittenFiles" />
+      <Output TaskParameter="ProcessedSourceFiles" ItemName="_SharpProcessedSources" />
+    </SharpLambdaRewriteTask>
 
     <ItemGroup>
-      <!-- Track rewritten files for potential cleanup -->
-      <_SharpRewrittenFiles Include="$(IntermediateOutputPath)SharpRewritten\**\*.sharp.g.cs" />
-      
-      <!-- Identify which source files were actually rewritten -->
-      <_SharpProcessedSources Include="@(_SharpSourceFiles)" 
-        Condition="Exists('$(IntermediateOutputPath)SharpRewritten\%(RecursiveDir)%(Filename)%(Extension).sharp.g.cs')" />
-      
-      <!-- Find source files that weren't processed (no Assert calls) -->
-      <_SharpUnprocessedSources Include="@(_SharpSourceFiles)" 
-        Exclude="@(_SharpProcessedSources)" />
-      
       <!-- Only remove files that were actually rewritten -->
       <Compile Remove="@(_SharpProcessedSources)" />
       

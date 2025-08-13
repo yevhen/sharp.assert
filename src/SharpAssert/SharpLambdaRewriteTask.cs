@@ -31,6 +31,9 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
     [Output]
     public ITaskItem[] GeneratedFiles { get; set; } = [];
     
+    [Output]
+    public ITaskItem[] ProcessedSourceFiles { get; set; } = [];
+    
     public override bool Execute()
     {
         try
@@ -55,6 +58,7 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
         EnsureDirectoryExists(OutputDir);
 
         var generatedFiles = new List<ITaskItem>();
+        var processedSourceFiles = new List<ITaskItem>();
         var fileMappings = new Dictionary<string, string>();
         var processedCount = 0;
         var skippedCount = 0;
@@ -65,11 +69,15 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
             var sourcePath = sourceItem.ItemSpec;
             var result = ProcessSourceFile(sourcePath);
             
+            if (result.Status == ProcessingStatus.Processed)
+                processedSourceFiles.Add(sourceItem);
+            
             UpdateCounters(result.Status, ref processedCount, ref skippedCount, ref generatedFilesCount);
             AddToGeneratedFiles(result, sourcePath, generatedFiles, fileMappings);
         }
 
         GeneratedFiles = generatedFiles.ToArray();
+        ProcessedSourceFiles = processedSourceFiles.ToArray();
         
         Log.LogMessage(MessageImportance.Normal, $"SharpAssert: Processed {processedCount} files with rewrites");
         LogDiagnostics($"Generated {GeneratedFiles.Length} output files for MSBuild tracking");
