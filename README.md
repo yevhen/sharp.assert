@@ -4,7 +4,7 @@
 
 # SharpAssert
 
-A pytest inspired assertion library for .NET that provides detailed error reporting with no special syntax.
+A pytest inspired assertion library for .NET with no special syntax.
 
 ## Overview
 

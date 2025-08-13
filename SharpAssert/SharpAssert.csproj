@@ -11,18 +11,8 @@
     <!-- Package metadata -->
     <PackageId>SharpAssert</PackageId>
     <Title>SharpAssert</Title>
-    <Description>Pytest-style assertions for .NET - includes MSBuild source rewriter and core runtime. Simply install this package to get powerful, informative assertions with excellent IDE support.</Description>
-    <Version>1.0.0</Version>
-    <Authors>Yevhen Bobrov</Authors>
-    <Company>Cloudrite</Company>
-    <Copyright>Copyright © 2025 Yevhen Bobrov</Copyright>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <PackageProjectUrl>https://github.com/yevhen/SharpAssert</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/yevhen/SharpAssert</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageTags>msbuild;rewriter;assertions;testing</PackageTags>
-    <PackageIcon Condition="Exists('..\icon.png')">icon.png</PackageIcon>
-    <PackageReleaseNotes>Initial release of SharpAssert.Rewriter - MSBuild source rewriter that transforms Assert calls at compile time while preserving IDE experience.</PackageReleaseNotes>
+    <Description>A pytest inspired assertion library for .NET with no special syntax.</Description>
+    <PackageReleaseNotes>Initial release of SharpAssert</PackageReleaseNotes>
   </PropertyGroup>
 
   <!-- MSBuild task packages typically don't need symbol packages -->
@@ -49,6 +39,7 @@
 
   <ItemGroup>
     <None Include="build\SharpAssert.targets" Pack="true" PackagePath="build\" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
     <None Include="..\LICENSE" Pack="true" PackagePath="\" />
     <None Include="..\icon.png" Pack="true" PackagePath="\" Condition="Exists('..\icon.png')" />
   </ItemGroup>

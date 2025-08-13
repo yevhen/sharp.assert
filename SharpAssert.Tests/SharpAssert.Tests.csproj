@@ -5,7 +5,7 @@
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <IsPackable>true</IsPackable>
+        <IsPackable>false</IsPackable>
         <RootNamespace>SharpAssert</RootNamespace>
         <OutputType>Library</OutputType>
         <!-- Suppress NETSDK1206 warning from PowerAssert's Libuv dependency -->
