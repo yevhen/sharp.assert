@@ -12,7 +12,7 @@ SharpAssert provides rich assertion diagnostics by automatically transforming yo
 using MSBuild source rewriting, giving you detailed failure messages with powerful expression analysis.
 
 ```csharp
-using static Sharp;
+using static SharpAssert.Sharp;
 
 var items = new[] { 1, 2, 3 };
 var target = 4;
@@ -27,7 +27,6 @@ Assert(items.Contains(target));
 ## Features
 
 - **🔍 Detailed Expression Analysis** - See exactly why your assertions failed
-- **⚡ Zero Runtime Overhead** - No reflection, no performance penalty
 - **📦 Simple Setup** - Just add NuGet package, no MSBuild configuration needed
 - **🔄 PowerAssert Integration** - Complete support for PowerAssert (switch option)
 
@@ -42,7 +41,7 @@ dotnet add package SharpAssert
 ### 2. Using SharpAssert
 
 ```csharp
-using static Sharp;
+using static SharpAssert.Sharp;
 
 [Test]
 public void Should_be_equal()
@@ -67,7 +66,7 @@ Assert(user.IsActive, $"User {user.Name} should be active for this operation");
 ### Asserting exceptions
 
 ```csharp
-using static Sharp;
+using static SharpAssert.Sharp;
 
 [Test]
 public async Task Throws_catch_exceptions_in_exception_result()
@@ -87,8 +86,8 @@ public async Task Throws_catch_exceptions_in_exception_result()
         new ArgumentException("bar")).Message.Contains("bar")); // shortcut form to assert on exception Message
     
     // async version
-    Assert(await ThrowsAsync<ArgumentException>(async ()=> 
-        await Task.Run(() => throw ArgumentException("async")))); // shortcut form to assert on exception Message
+    Assert(await ThrowsAsync<ArgumentException>(()=> 
+        Task.Run(() => throw ArgumentException("async")))); // shortcut form to assert on exception Message
  
 }
 ```
@@ -139,14 +138,17 @@ To force PowerAssert for all assertions:
 </PropertyGroup>
 ```
 
-## Troubleshooting
+## Known issues
 
-## Warnings
-The known warning is about legacy RID used by PowerAssert (dependency). Fix by adding to project properties:
+- Warning about legacy RID used by PowerAssert (dependency). Fix by adding to project properties:
 ```xml
   <!-- Suppress NETSDK1206 warning from PowerAssert's Libuv dependency -->
   <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
 ```
+- Collection initializers could not be used in expression trees. Compiler limitation. Use `new[]{1,2,3}` instead of `[1, 2, 3]`
+
+
+## Troubleshooting
 
 ### Rewriting not working
 1. Verify `SharpAssert` package is installed (SharpAssert.Runtime comes automatically)
