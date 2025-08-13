@@ -1,6 +1,6 @@
 using Microsoft.Build.Framework;
 
-namespace SharpAssert.Rewriter;
+namespace SharpAssert;
 
 internal enum ProcessingStatus
 {
