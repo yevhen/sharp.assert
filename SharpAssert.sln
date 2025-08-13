@@ -4,8 +4,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.Tests", "src\Sh
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.Runtime", "src\SharpAssert.Runtime\SharpAssert.Runtime.csproj", "{F30DA6F2-9A1F-47B1-88B8-4E533EE4A3AB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.Rewriter.Tests", "src\SharpAssert.Rewriter.Tests\SharpAssert.Rewriter.Tests.csproj", "{5F9957C7-8219-46EC-972A-D39F60981809}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert", "src\SharpAssert\SharpAssert.csproj", "{C9949AD0-684A-415A-A4FB-626EF50E2242}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpAssert.PackageTest", "src\SharpAssert.PackageTest\SharpAssert.PackageTest.csproj", "{B2178774-FB4B-4997-BEFC-A426FDC2BD13}"
@@ -48,18 +46,6 @@ Global
 		{F30DA6F2-9A1F-47B1-88B8-4E533EE4A3AB}.Release|x64.Build.0 = Release|Any CPU
 		{F30DA6F2-9A1F-47B1-88B8-4E533EE4A3AB}.Release|x86.ActiveCfg = Release|Any CPU
 		{F30DA6F2-9A1F-47B1-88B8-4E533EE4A3AB}.Release|x86.Build.0 = Release|Any CPU
-		{5F9957C7-8219-46EC-972A-D39F60981809}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5F9957C7-8219-46EC-972A-D39F60981809}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5F9957C7-8219-46EC-972A-D39F60981809}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{5F9957C7-8219-46EC-972A-D39F60981809}.Debug|x64.Build.0 = Debug|Any CPU
-		{5F9957C7-8219-46EC-972A-D39F60981809}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{5F9957C7-8219-46EC-972A-D39F60981809}.Debug|x86.Build.0 = Debug|Any CPU
-		{5F9957C7-8219-46EC-972A-D39F60981809}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5F9957C7-8219-46EC-972A-D39F60981809}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5F9957C7-8219-46EC-972A-D39F60981809}.Release|x64.ActiveCfg = Release|Any CPU
-		{5F9957C7-8219-46EC-972A-D39F60981809}.Release|x64.Build.0 = Release|Any CPU
-		{5F9957C7-8219-46EC-972A-D39F60981809}.Release|x86.ActiveCfg = Release|Any CPU
-		{5F9957C7-8219-46EC-972A-D39F60981809}.Release|x86.Build.0 = Release|Any CPU
 		{C9949AD0-684A-415A-A4FB-626EF50E2242}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C9949AD0-684A-415A-A4FB-626EF50E2242}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C9949AD0-684A-415A-A4FB-626EF50E2242}.Debug|x64.ActiveCfg = Debug|Any CPU
