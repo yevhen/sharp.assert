@@ -76,8 +76,8 @@ public async Task Throws_catch_exceptions_in_exception_result()
     Assert(Throws<ArgumentException>(()=> new ArgumentNullException("bar"))); // will throw unexpected exception
     Assert(!Throws<ArgumentException>(()=> {})); // negative assertion via C# not syntax 
 
-    Assert(Throws<ArgumentException>(()=> 
-        new ArgumentException("baz")).Exception.ArgumentName == "baz"); // assert on any custom exception property
+    var ex = Throws<ArgumentException>(()=> new ArgumentException("baz")); // always returns ExceptionResult
+    Assert(ex.Exception.ArgumentName == "baz"); // get thrown exception and assert on any custom property
 
     Assert(Throws<ArgumentException>(()=> 
         new ArgumentException("baz")).Data == "baz"); // shortcut form to assert on exception Data property
@@ -87,8 +87,10 @@ public async Task Throws_catch_exceptions_in_exception_result()
     
     // async version
     Assert(await ThrowsAsync<ArgumentException>(()=> 
-        Task.Run(() => throw ArgumentException("async")))); // shortcut form to assert on exception Message
- 
+        Task.Run(() => throw ArgumentException("async"))));
+
+    var ex = ThrowsAsync<ArgumentException>(()=> Task.Run(() => throw ArgumentException("async"))); // always returns ExceptionResult
+    Assert(ex.Message.Contains("async")); // assert on message using shortcut on ExceptionResult 
 }
 ```
 
