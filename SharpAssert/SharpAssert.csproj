@@ -25,10 +25,9 @@
     <PackageReleaseNotes>Initial release of SharpAssert.Rewriter - MSBuild source rewriter that transforms Assert calls at compile time while preserving IDE experience.</PackageReleaseNotes>
   </PropertyGroup>
 
-  <!-- Source symbols and XML documentation for Release builds only -->
+  <!-- MSBuild task packages typically don't need symbol packages -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <IncludeSymbols>false</IncludeSymbols>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
