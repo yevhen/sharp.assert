@@ -43,12 +43,12 @@ jobs:
     - name: Create packages
       run: |
         mkdir -p ./packages
-        dotnet pack SharpAssert.Runtime/SharpAssert.Runtime.csproj \
+        dotnet pack src/SharpAssert.Runtime/SharpAssert.Runtime.csproj \
           --configuration Release \
           --no-build \
           --output ./packages \
           -p:PackageVersion=${{ steps.get_version.outputs.VERSION }}
-        dotnet pack SharpAssert/SharpAssert.csproj \
+        dotnet pack src/SharpAssert/SharpAssert.csproj \
           --configuration Release \
           --no-build \
           --output ./packages \
