@@ -9,7 +9,7 @@ public class IntegrationFixture
     public void Should_rewrite_and_execute_simple_assertion()
     {
         var source = """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -59,7 +59,7 @@ public class IntegrationFixture
     public void Should_handle_multiple_assertions_correctly()
     {
         var source = """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 

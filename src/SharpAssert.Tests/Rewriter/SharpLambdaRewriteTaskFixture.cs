@@ -29,7 +29,7 @@ public class SharpLambdaRewriteTaskFixture
     public void Should_execute_successfully_with_simple_assert_file()
     {
         var sourceFile = CreateSourceFile("Test.cs", """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -79,12 +79,12 @@ public class SharpLambdaRewriteTaskFixture
     public void Should_process_multiple_source_files()
     {
         var sourceFile1 = CreateSourceFile("Test1.cs", """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             class Test1 { void Method() { Assert(true); } }
             """);
         
         var sourceFile2 = CreateSourceFile("Test2.cs", """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             class Test2 { void Method() { Assert(1 == 1); } }
             """);
         
@@ -105,7 +105,7 @@ public class SharpLambdaRewriteTaskFixture
     public void Should_rewrite_files_with_assert_calls_and_leave_unchanged_files_unchanged()
     {
         var sourceFileWithAssert = CreateSourceFile("WithAssert.cs", """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             class TestWithAssert { void Method() { Assert(1 == 1); } }
             """);
         
@@ -137,7 +137,7 @@ public class SharpLambdaRewriteTaskFixture
         
         var sourceFile = Path.Combine(nestedDir, "Nested.cs");
         File.WriteAllText(sourceFile, """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             class Nested { void Method() { Assert(true); } }
             """);
         
@@ -158,7 +158,7 @@ public class SharpLambdaRewriteTaskFixture
     public void Should_skip_rewriting_files_with_async_assert_calls()
     {
         var sourceFile = CreateSourceFile("AsyncAssert.cs", """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             using System.Threading.Tasks;
             
             class AsyncAssert 
@@ -191,7 +191,7 @@ public class SharpLambdaRewriteTaskFixture
     public void Should_handle_completely_invalid_syntax_gracefully()
     {
         var sourceFile = CreateSourceFile("InvalidSyntax.cs", """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             this is not valid C# code at all!!!
             class @#$%^&*() { Assert(x == 1); }
@@ -225,7 +225,7 @@ public class SharpLambdaRewriteTaskFixture
     public void Should_use_default_langversion_and_nullable_context()
     {
         var sourceFile = CreateSourceFile("DefaultConfig.cs", """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             class DefaultConfig { void Method() { Assert(true); } }
             """);
         
@@ -242,7 +242,7 @@ public class SharpLambdaRewriteTaskFixture
     public void Should_accept_custom_langversion()
     {
         var sourceFile = CreateSourceFile("CustomConfig.cs", """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             class CustomConfig { void Method() { Assert(true); } }
             """);
         
@@ -259,7 +259,7 @@ public class SharpLambdaRewriteTaskFixture
     public void Should_log_processing_messages()
     {
         var sourceFile = CreateSourceFile("LogTest.cs", """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             class LogTest { void Method() { Assert(true); } }
             """);
         
@@ -277,7 +277,7 @@ public class SharpLambdaRewriteTaskFixture
     public void Should_accept_power_assert_properties()
     {
         var sourceFile = CreateSourceFile("PowerAssertTest.cs", """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             class PowerAssertTest { void Method() { Assert(true); } }
             """);
         
@@ -296,7 +296,7 @@ public class SharpLambdaRewriteTaskFixture
     public void Should_use_default_power_assert_values()
     {
         var sourceFile = CreateSourceFile("DefaultPowerAssert.cs", """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             class DefaultPowerAssert { void Method() { Assert(true); } }
             """);
         
@@ -313,7 +313,7 @@ public class SharpLambdaRewriteTaskFixture
     public void Should_generate_seven_arguments_when_power_assert_enabled()
     {
         var sourceFile = CreateSourceFile("SevenArgsTest.cs", """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             class SevenArgsTest { void Method() { Assert(x == 1); } }
             """);
         
@@ -338,7 +338,7 @@ public class SharpLambdaRewriteTaskFixture
     public void Should_generate_seven_arguments_with_default_power_assert_values()
     {
         var sourceFile = CreateSourceFile("DefaultSevenArgsTest.cs", """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             class DefaultSevenArgsTest { void Method() { Assert(x == 1); } }
             """);
         

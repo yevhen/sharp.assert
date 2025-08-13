@@ -9,7 +9,7 @@ public class DebugRewriterFixture
     public void DebugRewriterAnalysis()
     {
         var source = """
-            using static Sharp;
+            using static SharpAssert.SharpAssert.Sharp;
             
             class Test 
             { 

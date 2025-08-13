@@ -15,7 +15,7 @@
 ### 1.1 What users write
 
 ```csharp
-using static Sharp;
+using static SharpAssert.Sharp;
 
 Assert(result == expected);
 Assert(isAuth && hasPerms);

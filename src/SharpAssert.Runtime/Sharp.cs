@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Runtime.CompilerServices;
-using SharpAssert;
+
+namespace SharpAssert;
 
 /// <summary>
 /// Provides pytest-style assertions with detailed error diagnostics for .NET applications.
@@ -20,7 +21,7 @@ using SharpAssert;
 /// </remarks>
 /// <example>
 /// <code>
-/// using static Sharp;
+/// using static SharpAssert.Sharp;
 /// 
 /// // Basic assertion with detailed diagnostics
 /// var items = new[] { 1, 2, 3 };

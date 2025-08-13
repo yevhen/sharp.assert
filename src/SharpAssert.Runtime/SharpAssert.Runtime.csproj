@@ -13,6 +13,7 @@
         <PackageId>SharpAssert.Runtime</PackageId>
         <Title>SharpAssert Runtime</Title>
         <Description>Core assertion library for SharpAssert</Description>
+        <RootNamespace>SharpAssert</RootNamespace>
     </PropertyGroup>
 
     <!-- Source symbols and XML documentation for Release builds only -->

@@ -1,6 +1,5 @@
-using static Sharp;
+using static SharpAssert.Sharp;
 using FluentAssertions;
-using NUnit.Framework;
 
 namespace SharpAssert.IntegrationTests;
 

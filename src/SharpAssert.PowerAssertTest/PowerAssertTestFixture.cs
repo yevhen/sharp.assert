@@ -1,5 +1,5 @@
 using FluentAssertions;
-using static Sharp;
+using static SharpAssert.Sharp;
 
 namespace SharpAssert.PowerAssertTest;
 

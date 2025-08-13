@@ -13,7 +13,7 @@ public class RewriterFixture
     public void Should_rewrite_simple_assertion_to_lambda()
     {
         var source = """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -29,7 +29,7 @@ public class RewriterFixture
         var expected = $$"""
             #nullable restore
             #line 1 "{{absolutePath}}"
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -53,7 +53,7 @@ public class RewriterFixture
     public void Should_preserve_complex_expressions()
     {
         var source = """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -69,7 +69,7 @@ public class RewriterFixture
         var expected = $$"""
             #nullable restore
             #line 1 "{{absolutePath}}"
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -93,7 +93,7 @@ public class RewriterFixture
     public void Should_skip_rewrite_if_async_present()
     {
         var source = """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -117,7 +117,7 @@ public class RewriterFixture
     public void Should_handle_multiple_assertions_in_file()
     {
         var source = """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -135,7 +135,7 @@ public class RewriterFixture
         var expected = $$"""
             #nullable restore
             #line 1 "{{absolutePath}}"
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -164,7 +164,7 @@ public class RewriterFixture
     public void Should_rewrite_assertion_with_message()
     {
         var source = """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -180,7 +180,7 @@ public class RewriterFixture
         var expected = $$"""
             #nullable restore
             #line 1 "{{absolutePath}}"
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -204,7 +204,7 @@ public class RewriterFixture
     public void Should_handle_message_with_special_characters()
     {
         var source = """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -219,7 +219,7 @@ public class RewriterFixture
         var expected = $$"""
             #nullable restore
             #line 1 "{{absolutePath}}"
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -242,7 +242,7 @@ public class RewriterFixture
     public void Should_include_default_powerassert_flags_in_rewritten_call()
     {
         var source = """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -257,7 +257,7 @@ public class RewriterFixture
         var expected = $$"""
             #nullable restore
             #line 1 "{{absolutePath}}"
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -280,7 +280,7 @@ public class RewriterFixture
     public void Should_include_custom_powerassert_flags_when_specified()
     {
         var source = """
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
@@ -295,7 +295,7 @@ public class RewriterFixture
         var expected = $$"""
             #nullable restore
             #line 1 "{{absolutePath}}"
-            using static Sharp;
+            using static SharpAssert.Sharp;
             
             class Test 
             { 
