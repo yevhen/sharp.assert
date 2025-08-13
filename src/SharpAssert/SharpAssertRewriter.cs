@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -19,7 +20,7 @@ public static class SharpAssertRewriter
         var rewrittenRoot = rewriter.Visit(syntaxTree.GetRoot());
 
         if (!rewriter.HasRewrites)
-            return rewrittenRoot.ToFullString();
+            return source;
 
         return AddFileLineDirective(rewrittenRoot, absoluteFileName);
     }
@@ -30,7 +31,8 @@ public static class SharpAssertRewriter
         {
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
-            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)
+            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
+            MetadataReference.CreateFromFile(typeof(Sharp).Assembly.Location)
         };
 
         var compilation = CSharpCompilation.Create("RewriterAnalysis")
@@ -85,9 +87,29 @@ internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string abs
         return RewriteToLambda(node);
     }
 
-    static bool IsSharpAssertCall(InvocationExpressionSyntax node) =>
-        node.Expression is IdentifierNameSyntax identifier &&
-        identifier.Identifier.ValueText == AssertMethodName;
+    bool IsSharpAssertCall(InvocationExpressionSyntax node)
+    {
+        if (node.Expression is not IdentifierNameSyntax identifier ||
+            identifier.Identifier.ValueText != AssertMethodName)
+            return false;
+
+        var methodSymbol = GetMethodSymbol(node);
+        if (methodSymbol == null)
+            return false;
+
+        var containingType = methodSymbol.ContainingType;
+        return containingType?.Name == "Sharp" &&
+               containingType.ContainingNamespace?.ToDisplayString() == "SharpAssert";
+    }
+
+    IMethodSymbol? GetMethodSymbol(InvocationExpressionSyntax node)
+    {
+        var symbolInfo = semanticModel.GetSymbolInfo(node);
+        if (symbolInfo.Symbol is IMethodSymbol methodSymbol)
+            return methodSymbol;
+
+        return symbolInfo.CandidateSymbols is [IMethodSymbol candidateMethod] ? candidateMethod : null;
+    }
 
     static bool ContainsAwait(InvocationExpressionSyntax node) =>
         node.DescendantNodes()

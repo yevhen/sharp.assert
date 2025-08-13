@@ -192,10 +192,13 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
         LogDiagnostics($"Using absolute path for rewriter: {absoluteSourcePath}");
 
         var rewrittenContent = SharpAssertRewriter.Rewrite(sourceContent, absoluteSourcePath, UsePowerAssert, UsePowerAssertForUnsupported);
-        if (rewrittenContent != sourceContent)
-            return ProcessRewrittenContent(sourcePath, relativePath, rewrittenContent);
-            
-        return ProcessUnchangedContent(sourcePath, relativePath, sourceContent);
+        if (rewrittenContent == sourceContent)
+        {
+            LogDiagnostics($"No Assert calls found, skipping: {relativePath}");
+            return new ProcessingResult(ProcessingStatus.Skipped, string.Empty);
+        }
+
+        return ProcessRewrittenContent(sourcePath, relativePath, rewrittenContent);
     }
 
     ProcessingResult ProcessRewrittenContent(string sourcePath, string relativePath, string rewrittenContent)
@@ -204,16 +207,6 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
 
         var outputPath = GetOutputPath(sourcePath);
         WriteOutputFile(sourcePath, rewrittenContent);
-
-        return new ProcessingResult(ProcessingStatus.Processed, outputPath);
-    }
-
-    ProcessingResult ProcessUnchangedContent(string sourcePath, string relativePath, string sourceContent)
-    {
-        LogDiagnostics($"No rewrites needed, copying unchanged: {relativePath}");
-
-        var outputPath = GetOutputPath(sourcePath);
-        WriteOutputFile(sourcePath, sourceContent);
 
         return new ProcessingResult(ProcessingStatus.Processed, outputPath);
     }

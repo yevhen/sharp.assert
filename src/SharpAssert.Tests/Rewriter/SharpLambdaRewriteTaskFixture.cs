@@ -179,12 +179,7 @@ public class SharpLambdaRewriteTaskFixture
         result.Should().BeTrue();
         
         var outputFile = GetExpectedOutputPath(sourceFile);
-        File.Exists(outputFile).Should().BeTrue("file with async Assert should still be processed");
-        
-        var content = File.ReadAllText(outputFile);
-        content.Should().NotContain(ExpectedRewrittenAssert);
-        content.Should().Contain("Assert(await GetBoolAsync())",
-            "Original Assert should remain");
+        File.Exists(outputFile).Should().BeFalse("file with async Assert would not be processed");
     }
 
     [Test]
@@ -204,11 +199,7 @@ public class SharpLambdaRewriteTaskFixture
         result.Should().BeTrue("task should handle errors gracefully and return true");
         
         var outputFile = GetExpectedOutputPath(sourceFile);
-        File.Exists(outputFile).Should().BeTrue("fallback should create output file with original content");
-        
-        var content = File.ReadAllText(outputFile);
-        content.Should().Contain("this is not valid C# code at all!!!",
-            "Original content preserved in fallback");
+        File.Exists(outputFile).Should().BeFalse("should not create output file with original content");
     }
 
     [Test]
