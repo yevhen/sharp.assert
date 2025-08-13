@@ -39,7 +39,7 @@ Assert(items.Contains(target));
 dotnet add package SharpAssert
 ```
 
-### 2. Use SharpAssert in Your Tests
+### 2. Using SharpAssert
 
 ```csharp
 using static Sharp;
