@@ -8,10 +8,11 @@ A pytest inspired assertion library for .NET with no special syntax.
 
 ## Overview
 
-SharpAssert provides rich assertion diagnostics by automatically transforming your assertion expressions at compile time using MSBuild source rewriting, giving you detailed failure messages with powerful expression analysis.
+SharpAssert provides rich assertion diagnostics by automatically transforming your assertion expressions at compile time 
+using MSBuild source rewriting, giving you detailed failure messages with powerful expression analysis.
 
 ```csharp
-using static SharpAssert.Sharp;
+using static Sharp;
 
 var items = new[] { 1, 2, 3 };
 var target = 4;
@@ -41,19 +42,54 @@ dotnet add package SharpAssert
 ### 2. Use SharpAssert in Your Tests
 
 ```csharp
-using static SharpAssert.Sharp;
+using static Sharp;
 
 [Test]
-public void Should_find_matching_item()
+public void Should_be_equal()
 {
-    var users = new[] { "Alice", "Bob", "Charlie" };
-    var searchName = "David";
+    var expected = 4;
+    var actual = 5;
     
-    Assert(users.Contains(searchName));
-    // Assertion failed: users.Contains(searchName)
-    // users: ["Alice", "Bob", "Charlie"]
-    // searchName: "David"  
+    Assert(expected == actual);
+    // Assertion failed: expected == actual
+    // Left: 4
+    // Right: 5  
     // Result: false
+}
+```
+
+### Custom Error Messages
+
+```csharp
+Assert(user.IsActive, $"User {user.Name} should be active for this operation");
+```
+
+### Asserting exceptions
+
+```csharp
+using static Sharp;
+
+[Test]
+public async Task Throws_catch_exceptions_in_exception_result()
+{
+    // Thows returns ExceptionResult which allows using them as condition in Assert
+    Assert(Throws<ArgumentException>(()=> new ArgumentException("foo")));
+    Assert(Throws<ArgumentException>(()=> new ArgumentNullException("bar"))); // will throw unexpected exception
+    Assert(!Throws<ArgumentException>(()=> {})); // negative assertion via C# not syntax 
+
+    Assert(Throws<ArgumentException>(()=> 
+        new ArgumentException("baz")).Exception.ArgumentName == "baz"); // assert on any custom exception property
+
+    Assert(Throws<ArgumentException>(()=> 
+        new ArgumentException("baz")).Data == "baz"); // shortcut form to assert on exception Data property
+
+    Assert(Throws<ArgumentException>(()=> 
+        new ArgumentException("bar")).Message.Contains("bar")); // shortcut form to assert on exception Message
+    
+    // async version
+    Assert(await ThrowsAsync<ArgumentException>(async ()=> 
+        await Task.Run(() => throw ArgumentException("async")))); // shortcut form to assert on exception Message
+ 
 }
 ```
 
@@ -64,7 +100,6 @@ SharpAssert uses **MSBuild source rewriting** to automatically transform your as
 1. **You write:** `Assert(x == y)` 
 2. **MSBuild rewrites:** `global::SharpAssert.SharpInternal.Assert(() => x == y, "x == y", "file.cs", 42)`
 3. **Runtime analysis:** Expression tree provides detailed failure diagnostics when assertions fail
-4. **Dual-world design:** Original code preserved for IDE, rewritten code used for compilation
 
 ## Advanced Usage
 
@@ -83,19 +118,6 @@ Assert(order.Items.Length > 0 && order.Total == expectedTotal);
 // Result: False
 ```
 
-### Custom Error Messages
-
-```csharp
-Assert(user.IsActive, $"User {user.Name} should be active for this operation");
-```
-
-### Async-Safe Usage
-
-```csharp
-// Works with async expressions
-Assert(await GetBoolAsync()); // Rewritten to provide detailed analysis
-```
-
 ## Architecture
 
 SharpAssert is built on modern .NET technologies:
@@ -104,18 +126,12 @@ SharpAssert is built on modern .NET technologies:
 - **Roslyn Syntax Analysis** - Advanced C# code parsing and generation  
 - **Expression Trees** - Runtime expression analysis
 - **CallerArgumentExpression** - Fallback for edge cases
-- **PowerAssert Backend** - Automatic fallback for complex scenarios
 
 ### PowerAssert Integration
 
-SharpAssert includes PowerAssert as an intelligent fallback mechanism. 
-When SharpAssert encounters expressions it doesn't yet fully support, it automatically delegates to PowerAssert to ensure you always get meaningful diagnostics. 
-This happens transparently - you'll still get detailed error messages regardless of the underlying engine.
+SharpAssert includes PowerAssert integration and also uses it as a fallback mechanism for not yet implemented features. 
 
-**Note:** Async/await and dynamic expressions currently use basic diagnostics via `CallerArgumentExpression`. 
-Full support for these features is planned for future releases.
-
-To force PowerAssert for all assertions (useful for comparison or debugging):
+To force PowerAssert for all assertions:
 
 ```xml
 <PropertyGroup>
@@ -125,7 +141,7 @@ To force PowerAssert for all assertions (useful for comparison or debugging):
 
 ## Troubleshooting
 
-### Rewriter not working
+### Rewriting not working
 1. Verify `SharpAssert` package is installed (SharpAssert.Runtime comes automatically)
 2. Ensure `using static SharpAssert.Sharp;` import
 
