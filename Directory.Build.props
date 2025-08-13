@@ -15,7 +15,7 @@
         <FileVersion>$(Version)</FileVersion>
         
         <!-- Repository information -->
-        <RepositoryUrl>https://github.com/yevhen/SharpAssert</RepositoryUrl>
+        <RepositoryUrl>https://github.com/yevhen/sharp.assert</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         
         <!-- Common package metadata -->
@@ -27,8 +27,8 @@
         <Company>Cloudrite</Company>
         <Copyright>Copyright © 2025 Yevhen Bobrov</Copyright>
         <PackageLicenseFile>LICENSE</PackageLicenseFile>
-        <PackageProjectUrl>https://github.com/yevhen/SharpAssert</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/yevhen/SharpAssert</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/yevhen/sharp.assert</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/yevhen/sharp.assert</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageTags>nunit;xunit;testing;assertions</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
