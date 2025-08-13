@@ -136,7 +136,7 @@ public enum LogicalOp { And, Or }
         - `.SequenceEqual(other)` → produce diff (see 3.4).
     - **Calls, indexers, member access** that feed into the boolean → capture values as needed for a clear message.
     - **Strings vs strings:** produce inline (default) or side‑by‑side diff via DiffPlex.
-    - **Collections vs collections:** produce readable mismatch reports (index of first diff, missing/extra) using FluentAssertions or an internal LCS; include previews.
+    - **Collections vs collections:** produce readable mismatch reports (index of first diff, missing/extra) internal LCS; include previews.
     - **Objects/records/structs:** when equality fails, run a deep diff via Compare‑Net‑Objects (path‑level differences).
 - On failure, throw `SharpAssertionException` with a well‑formatted message (includes expression text, file, line).
 
@@ -306,10 +306,7 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
   ```bash
   dotnet add package DiffPlex
   ```
-- **FluentAssertions** (planned) — readable collection diffs & predicate messaging
-  ```bash
-  dotnet add package FluentAssertions
-  ```
+- 
 - **Compare‑Net‑Objects** (planned) — deep object diffs
   ```bash
   dotnet add package KellermanSoftware.CompareNetObjects
