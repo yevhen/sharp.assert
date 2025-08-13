@@ -41,12 +41,23 @@
     <ItemGroup>
       <!-- Track rewritten files for potential cleanup -->
       <_SharpRewrittenFiles Include="$(IntermediateOutputPath)SharpRewritten\**\*.sharp.g.cs" />
-      <!-- Only during actual build: swap original files with rewritten versions -->
-      <Compile Remove="@(_SharpSourceFiles)" />
+      
+      <!-- Identify which source files were actually rewritten -->
+      <_SharpProcessedSources Include="@(_SharpSourceFiles)" 
+        Condition="Exists('$(IntermediateOutputPath)SharpRewritten\%(RecursiveDir)%(Filename)%(Extension).sharp.g.cs')" />
+      
+      <!-- Find source files that weren't processed (no Assert calls) -->
+      <_SharpUnprocessedSources Include="@(_SharpSourceFiles)" 
+        Exclude="@(_SharpProcessedSources)" />
+      
+      <!-- Only remove files that were actually rewritten -->
+      <Compile Remove="@(_SharpProcessedSources)" />
+      
+      <!-- Include only rewritten files -->
       <Compile Include="@(_SharpRewrittenFiles)" />
     </ItemGroup>
     
-    <Message Text="SharpAssert: Replaced @(_SharpSourceFiles->Count()) source files with rewritten versions (actual build)" Importance="normal"
+    <Message Text="SharpAssert: Processed @(_SharpProcessedSources->Count()) of @(_SharpSourceFiles->Count()) source files, preserved @(_SharpUnprocessedSources->Count()) unmodified files" Importance="normal"
              Condition="'$(SharpAssertEmitRewriteInfo)'=='true'" />
     
   </Target>
