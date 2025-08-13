@@ -141,6 +141,13 @@ To force PowerAssert for all assertions:
 
 ## Troubleshooting
 
+## Warnings
+The known warning is about legacy RID used by PowerAssert (dependency). Fix by adding to project properties:
+```xml
+  <!-- Suppress NETSDK1206 warning from PowerAssert's Libuv dependency -->
+  <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
+```
+
 ### Rewriting not working
 1. Verify `SharpAssert` package is installed (SharpAssert.Runtime comes automatically)
 2. Ensure `using static SharpAssert.Sharp;` import
