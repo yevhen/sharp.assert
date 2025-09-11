@@ -4,8 +4,18 @@ using static System.Linq.Expressions.ExpressionType;
 
 namespace SharpAssert;
 
-internal class ExpressionAnalyzer : ExpressionVisitor
+class ExpressionAnalyzer : ExpressionVisitor
 {
+    static readonly IComparisonFormatter DefaultFormatter = new DefaultComparisonFormatter();
+
+    static readonly IComparisonFormatter[] ComparisonFormatters =
+    [
+        new StringComparisonFormatter(),
+        // Future formatters should be added here:
+        // new CollectionComparisonFormatter(),
+        // new ObjectComparisonFormatter(),
+    ];
+
     public string AnalyzeFailure(Expression<Func<bool>> expression, AssertionContext context)
     {
         switch (expression.Body)
@@ -97,36 +107,27 @@ internal class ExpressionAnalyzer : ExpressionVisitor
             ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
             : $"Assertion failed: {context.Expression}  at {locationPart}\n";
         
-        // Special handling for string comparisons
-        if (leftValue is string leftStr && rightValue is string rightStr)
-        {
-            return baseMessage + StringDiffer.FormatDiff(leftStr, rightStr);
-        }
-        
-        // Handle null string cases
-        if ((leftValue is string || leftValue is null) && (rightValue is string || rightValue is null))
-        {
-            return baseMessage + StringDiffer.FormatDiff(leftValue as string, rightValue as string);
-        }
-        
-        // Default binary comparison format
-        var leftDisplay = FormatValue(leftValue);
-        var rightDisplay = FormatValue(rightValue);
-        
-        return baseMessage + $"  Left:  {leftDisplay}\n" +
-               $"  Right: {rightDisplay}";
+        var formatter = GetComparisonFormatter(leftValue, rightValue);
+        return baseMessage + formatter.FormatComparison(leftValue, rightValue);
     }
 
-
-    static string FormatValue(object? value)
+    static IComparisonFormatter GetComparisonFormatter(object? leftValue, object? rightValue)
     {
-        return value switch
+        foreach (var formatter in ComparisonFormatters)
         {
-            null => "null",
-            string s => $"\"{s}\"",
-            _ => value.ToString()!
-        };
+            if (formatter.CanFormat(leftValue, rightValue))
+                return formatter;
+        }
+        
+        return DefaultFormatter;
     }
+
+    static string FormatValue(object? value) => value switch
+    {
+        null => "null",
+        string s => $"\"{s}\"",
+        _ => value.ToString()!
+    };
 
     static object? GetValue(Expression expression) => CompileAndEvaluate(expression);
     
