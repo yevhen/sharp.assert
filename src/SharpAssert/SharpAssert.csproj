@@ -41,7 +41,7 @@
     <None Include="build\SharpAssert.targets" Pack="true" PackagePath="build\" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
-    <None Include="..\..\icon.png" Pack="true" PackagePath="\" Condition="Exists('..\..\icon.png')" />
+    <None Include="..\..\icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
   
   <!-- Suppress warnings specific to MSBuild task packages -->

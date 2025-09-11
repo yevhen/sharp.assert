@@ -32,7 +32,7 @@
         <RepositoryType>git</RepositoryType>
         <PackageTags>nunit;xunit;testing;assertions</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageIcon Condition="Exists('..\..\icon.png')">icon.png</PackageIcon>
+        <PackageIcon>icon.png</PackageIcon>
 
     </PropertyGroup>
     
