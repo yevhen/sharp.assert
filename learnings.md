@@ -168,3 +168,14 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Fix Strategy:** Remove detection logic from UnsupportedFeatureDetector.Visit* methods when corresponding IComparisonFormatter is implemented and registered
 - **Test Impact:** Update related UnsupportedFeatureDetectorFixture tests to expect features as supported rather than unsupported
 - **Root Cause Prevention:** Always check UnsupportedFeatureDetector when implementing new comparison formatters - it's the gatekeeper that determines PowerAssert vs SharpAssert routing
+
+## Object Comparison Implementation (Increment 7)
+
+- **CompareNETObjects Package:** Use package name `CompareNETObjects` (not `KellermanSoftware.CompareNETObjects`) and namespace `KellermanSoftware.CompareNetObjects`
+- **CompareLogic Configuration:** Simple configuration approach `var logic = new CompareLogic(); logic.Config.MaxDifferences = MaxObjectDifferences;` is more reliable than complex object initializers
+- **Object Detection Strategy:** Exclude strings (handled by StringComparisonFormatter), IEnumerable (handled by CollectionComparisonFormatter), primitives, and common value types from object comparison
+- **Never Considered Unsupported:** Object comparisons were always supported via BinaryExpression path, they just used DefaultComparisonFormatter before - no UnsupportedFeatureDetector changes needed
+- **Property Path Formatting:** CompareNETObjects provides property paths like "Address.City" automatically - no need to manually construct nested paths
+- **Test Pattern Consistency:** All ObjectComparisonFixture tests should use the same `Expression<Func<bool>> expr = () => condition;` pattern with AssertExpressionThrows/DoesNotThrow from TestBase
+- **Configuration Constants:** Use hardcoded constants like `MaxObjectDifferences = 20` following same pattern as StringDiffer, rather than premature configuration system integration
+- **Custom Equals Handling:** C# `==` operator naturally respects overridden Equals methods - no special handling needed in formatter, just let binary comparison work normally

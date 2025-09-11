@@ -12,8 +12,7 @@ class ExpressionAnalyzer : ExpressionVisitor
     [
         new StringComparisonFormatter(),
         new CollectionComparisonFormatter(),
-        // Future formatters should be added here:
-        // new ObjectComparisonFormatter(),
+        new ObjectComparisonFormatter(),
     ];
 
     public string AnalyzeFailure(Expression<Func<bool>> expression, AssertionContext context)
