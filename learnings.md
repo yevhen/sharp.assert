@@ -129,3 +129,12 @@ This document is organized by topic to consolidate key learnings about the proje
 - **MSBuild Incremental Builds:** Custom targets without `Inputs`/`Outputs` attributes run on every build - proper tracking requires moving ItemGroups outside target scope for evaluation
 - **Cross-Platform Path Handling:** MSBuild path handling differences between Windows/Unix require careful attention to separators and absolute vs relative paths
 - **Package Source Discovery:** NuGet source discovery during package testing can fail silently if local feed structure is incorrect - verify with `--verbosity detailed`
+
+## String Diffing Implementation (Increment 5)
+
+- **DiffPlex Character-Level Diffs:** Use `Differ.CreateCharacterDiffs()` for single-line strings to show precise character changes like `h[-e][+a]llo`
+- **DiffPlex Line-Level Diffs:** Use `Differ.CreateLineDiffs()` for multiline strings to show `- line2` and `+ MODIFIED` format
+- **String vs Object Detection:** Check `leftValue is string && rightValue is string` for pure string-string comparisons, plus handle mixed null cases
+- **UnsupportedFeatureDetector Updates:** Remove implemented features from unsupported list - string comparisons no longer fall back to PowerAssert
+- **Test-Driven Approach:** Write failing tests first, verify they fail for right reasons (PowerAssert fallback), then implement feature and update test expectations
+- **FluentAssertions Wildcard Matching:** Use `*pattern*` in AssertExpressionThrows expectations to match partial message content flexibly

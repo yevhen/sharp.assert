@@ -8,19 +8,6 @@ namespace SharpAssert.Tests;
 public class UnsupportedFeatureDetectorFixture
 {
     [Test]
-    public void Should_detect_string_comparisons_as_unsupported()
-    {
-        var str1 = "hello";
-        var str2 = "world";
-        Expression<Func<bool>> expr = () => str1 == str2;
-        
-        var detector = new UnsupportedFeatureDetector();
-        detector.Visit(expr);
-        
-        detector.HasUnsupported.Should().BeTrue("string comparisons need DiffPlex");
-    }
-    
-    [Test]
     public void Should_detect_collection_contains_as_unsupported()
     {
         var list = new[] { 1, 2, 3 };

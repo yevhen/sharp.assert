@@ -30,6 +30,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="DiffPlex" Version="1.8.0" />
         <PackageReference Include="PowerAssert" Version="1.0.87" />
     </ItemGroup>
 

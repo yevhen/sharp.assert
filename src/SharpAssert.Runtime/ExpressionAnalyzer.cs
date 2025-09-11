@@ -91,14 +91,27 @@ internal class ExpressionAnalyzer : ExpressionVisitor
 
     static string AnalyzeBinaryFailure(object? leftValue, object? rightValue, AssertionContext context)
     {
-        var leftDisplay = FormatValue(leftValue);
-        var rightDisplay = FormatValue(rightValue);
-        
         var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
         
         var baseMessage = context.Message is not null 
             ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
             : $"Assertion failed: {context.Expression}  at {locationPart}\n";
+        
+        // Special handling for string comparisons
+        if (leftValue is string leftStr && rightValue is string rightStr)
+        {
+            return baseMessage + StringDiffer.FormatDiff(leftStr, rightStr);
+        }
+        
+        // Handle null string cases
+        if ((leftValue is string || leftValue is null) && (rightValue is string || rightValue is null))
+        {
+            return baseMessage + StringDiffer.FormatDiff(leftValue as string, rightValue as string);
+        }
+        
+        // Default binary comparison format
+        var leftDisplay = FormatValue(leftValue);
+        var rightDisplay = FormatValue(rightValue);
         
         return baseMessage + $"  Left:  {leftDisplay}\n" +
                $"  Right: {rightDisplay}";

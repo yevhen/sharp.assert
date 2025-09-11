@@ -19,10 +19,6 @@ internal class UnsupportedFeatureDetector : ExpressionVisitor
     
     protected override Expression VisitBinary(BinaryExpression node)
     {
-        // String comparisons (need DiffPlex)
-        if (node.Left.Type == typeof(string) && node.Right.Type == typeof(string))
-            HasUnsupported = true;
-        
         // Collection comparisons
         if (IsCollection(node.Left.Type) || IsCollection(node.Right.Type))
             HasUnsupported = true;
