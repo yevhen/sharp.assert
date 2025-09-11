@@ -11,8 +11,8 @@ class ExpressionAnalyzer : ExpressionVisitor
     static readonly IComparisonFormatter[] ComparisonFormatters =
     [
         new StringComparisonFormatter(),
+        new CollectionComparisonFormatter(),
         // Future formatters should be added here:
-        // new CollectionComparisonFormatter(),
         // new ObjectComparisonFormatter(),
     ];
 

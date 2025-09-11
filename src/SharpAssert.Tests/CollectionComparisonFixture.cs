@@ -1,41 +1,56 @@
+using FluentAssertions;
+using System.Linq.Expressions;
+
 namespace SharpAssert;
 
 [TestFixture]
 public class CollectionComparisonFixture : TestBase
 {
     [Test]
-    [Ignore("Feature not yet implemented - Increment 6")]
     public void Should_show_first_mismatch_index()
     {
-        // Assert([1,2,3] == [1,2,4]) should show index 2 as first mismatch
-        // Expected: "First difference at index 2: expected 3, got 4"
-        Assert.Fail("Collection first mismatch detection not yet implemented");
+        var left = new List<int> { 1, 2, 3 };
+        var right = new List<int> { 1, 2, 4 };
+        Expression<Func<bool>> expr = () => left == right;
+
+        AssertExpressionThrows<SharpAssertionException>(expr,
+            "left == right", "CollectionComparisonFixture.cs", 11,
+            "*First difference at index 2: expected 3, got 4*");
     }
 
     [Test]
-    [Ignore("Feature not yet implemented - Increment 6")]
     public void Should_show_missing_elements()
     {
-        // Assert([1,2] == [1,2,3]) should show missing element 3
-        // Expected: "Missing elements: [3]"
-        Assert.Fail("Collection missing elements detection not yet implemented");
+        var left = new List<int> { 1, 2 };
+        var right = new List<int> { 1, 2, 3 };
+        Expression<Func<bool>> expr = () => left == right;
+
+        AssertExpressionThrows<SharpAssertionException>(expr,
+            "left == right", "CollectionComparisonFixture.cs", 26,
+            "*Missing elements: [3]*");
     }
 
     [Test]
-    [Ignore("Feature not yet implemented - Increment 6")]
     public void Should_show_extra_elements()
     {
-        // Assert([1,2,3] == [1,2]) should show extra element 3
-        // Expected: "Extra elements: [3]"
-        Assert.Fail("Collection extra elements detection not yet implemented");
+        var left = new List<int> { 1, 2, 3 };
+        var right = new List<int> { 1, 2 };
+        Expression<Func<bool>> expr = () => left == right;
+
+        AssertExpressionThrows<SharpAssertionException>(expr,
+            "left == right", "CollectionComparisonFixture.cs", 43,
+            "*Extra elements: [3]*");
     }
 
     [Test]
-    [Ignore("Feature not yet implemented - Increment 6")]
     public void Should_handle_empty_collections()
     {
-        // Assert([] == [1]) should be handled correctly
-        // Expected: Clear indication of empty vs non-empty collection
-        Assert.Fail("Empty collection handling not yet implemented");
+        var left = new List<int>();
+        var right = new List<int> { 1 };
+        Expression<Func<bool>> expr = () => left == right;
+
+        AssertExpressionThrows<SharpAssertionException>(expr,
+            "left == right", "CollectionComparisonFixture.cs", 60,
+            "*Missing elements: [1]*");
     }
 }

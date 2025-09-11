@@ -138,3 +138,33 @@ This document is organized by topic to consolidate key learnings about the proje
 - **UnsupportedFeatureDetector Updates:** Remove implemented features from unsupported list - string comparisons no longer fall back to PowerAssert
 - **Test-Driven Approach:** Write failing tests first, verify they fail for right reasons (PowerAssert fallback), then implement feature and update test expectations
 - **FluentAssertions Wildcard Matching:** Use `*pattern*` in AssertExpressionThrows expectations to match partial message content flexibly
+
+## Collection Comparison Implementation (Increment 6)
+
+- **IEnumerable Detection:** Use `IsEnumerable(value) => value is IEnumerable && value is not string` to identify collections while excluding strings
+- **Materialization Strategy:** Convert IEnumerable to `List<object?>` once to avoid re-enumeration issues when analyzing differences
+- **First Difference Algorithm:** Use linear scan with index tracking to find first non-equal elements for precise error location
+- **Missing/Extra Elements Detection:** Compare collection lengths and use `Skip()` + `Take()` for efficient subset extraction
+- **Collection Preview Formatting:** Limit preview to first N elements with "... (X items)" suffix for large collections
+- **Test Isolation with usePowerAssertForUnsupported=false:** Essential for testing SharpAssert formatters directly without PowerAssert fallback
+- **List<T> Reference Equality:** List<T> uses reference equality by default, making `list1 == list2` perfect for testing collection formatter triggering
+- **Expression Type Verification:** Collections trigger BinaryExpression with NodeType.Equal, confirming proper expression tree analysis path
+- **Value Formatting Strategy:** Use pattern matching (`null => "null"`, `string s => $"\"{s}\""`, `_ => value.ToString()!`) for consistent display
+
+## Test Pattern Consistency & TestBase Utilities
+
+- **TestBase Utility Methods:** All test fixtures should inherit from TestBase and use the provided utility methods for consistency
+  - `AssertExpressionThrows<T>()` - For testing expected exception scenarios with message pattern matching
+  - `AssertExpressionDoesNotThrow()` - For testing successful assertion scenarios
+- **CollectionComparisonFixture Inconsistency:** Originally called `SharpInternal.Assert()` directly instead of using TestBase utilities, breaking the established pattern used by other fixtures like LogicalOperatorFixture, BinaryComparisonFixture, StringComparisonFixture
+- **PowerAssert Parameter Handling:** Extended TestBase with overload to support `usePowerAssertForUnsupported` parameter needed for testing specific SharpAssert features without PowerAssert fallback
+- **Expression Tree Pattern:** All test fixtures should use `Expression<Func<bool>> expr = () => condition;` pattern for proper expression tree creation in tests
+- **Parameter Order Awareness:** SharpInternal.Assert signature: (condition, expr, file, line, message=null, usePowerAssert=false, usePowerAssertForUnsupported=true) - must pass parameters in correct order
+
+## CRITICAL: UnsupportedFeatureDetector Maintenance
+
+- **Feature Implementation Dependencies:** When implementing support for new comparison types (strings, collections, objects, LINQ), MUST update UnsupportedFeatureDetector to remove the feature from unsupported list
+- **Common Bug Pattern:** Implementing formatter (e.g., CollectionComparisonFormatter) but forgetting to update UnsupportedFeatureDetector causes feature to incorrectly fall back to PowerAssert instead of using new formatter
+- **Fix Strategy:** Remove detection logic from UnsupportedFeatureDetector.Visit* methods when corresponding IComparisonFormatter is implemented and registered
+- **Test Impact:** Update related UnsupportedFeatureDetectorFixture tests to expect features as supported rather than unsupported
+- **Root Cause Prevention:** Always check UnsupportedFeatureDetector when implementing new comparison formatters - it's the gatekeeper that determines PowerAssert vs SharpAssert routing

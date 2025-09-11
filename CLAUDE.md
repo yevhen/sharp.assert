@@ -332,6 +332,7 @@ async\method: Suffix with `Async` =\> `GetDataAsync()`
 
 - NEVER use underscores for private/internal members
 - NEVER create coverage reports on top level. Always specify subfolder under ./TestResults dir
+- **CRITICAL**: When implementing new comparison formatters (strings, collections, objects, LINQ), ALWAYS update UnsupportedFeatureDetector to remove the feature from the unsupported list. Forgetting this causes the feature to incorrectly fall back to PowerAssert instead of using the new formatter.
 
 # PowerAssert Integration Strategy
 

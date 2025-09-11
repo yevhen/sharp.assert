@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Linq.Expressions;
 
 namespace SharpAssert;
@@ -15,20 +14,5 @@ internal class UnsupportedFeatureDetector : ExpressionVisitor
             HasUnsupported = true;
         }
         return base.VisitMethodCall(node);
-    }
-    
-    protected override Expression VisitBinary(BinaryExpression node)
-    {
-        // Collection comparisons
-        if (IsCollection(node.Left.Type) || IsCollection(node.Right.Type))
-            HasUnsupported = true;
-        
-        return base.VisitBinary(node);
-    }
-    
-    static bool IsCollection(Type type)
-    {
-        return type != typeof(string) && 
-               typeof(IEnumerable).IsAssignableFrom(type);
     }
 }
