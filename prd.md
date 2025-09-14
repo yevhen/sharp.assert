@@ -436,19 +436,21 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 
 ---
 
-### **Increment 8: LINQ Operations - Contains/Any/All**
+### **Increment 8: LINQ Operations - Contains/Any/All** ✅ COMPLETED
 **Outcome**: LINQ operations provide specialized diagnostic messages
 **Tests** (SharpAssert.Tests/LinqOperationsFixture.cs):
-- `Should_show_collection_when_Contains_fails()` - Shows actual collection contents
-- `Should_show_matching_items_for_Any()` - Shows which items matched predicate
-- `Should_show_failing_items_for_All()` - Shows which items failed predicate
-- `Should_handle_empty_collections_in_LINQ()` - Empty.Any() shows "empty collection"
+- ✅ `Should_show_collection_when_Contains_fails()` - Shows actual collection contents
+- ✅ `Should_show_matching_items_for_Any()` - Shows which items matched predicate
+- ✅ `Should_show_failing_items_for_All()` - Shows which items failed predicate
+- ✅ `Should_handle_empty_collections_in_LINQ()` - Empty.Any() shows "empty collection"
 
 **Implementation**:
-- Detect MethodCallExpression for Contains, Any, All
-- Materialize collection once, apply predicate
-- Show collection count, preview of elements
-- Format predicate expression if available
+- ✅ Detect MethodCallExpression for Contains, Any, All in ExpressionAnalyzer
+- ✅ Create LinqOperationFormatter for specialized diagnostic messages
+- ✅ Materialize collection once, apply predicate for All() to show failing items
+- ✅ Show collection count, preview of elements for Contains()
+- ✅ Format predicate expression for Any/All operations
+- ✅ Updated UnsupportedFeatureDetector to remove Contains/Any/All from unsupported list
 
 ---
 

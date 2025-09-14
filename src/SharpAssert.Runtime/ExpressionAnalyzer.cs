@@ -41,6 +41,18 @@ class ExpressionAnalyzer : ExpressionVisitor
                     ? string.Empty
                     : AnalyzeNotFailure(unaryExpr, context);
             }
+            case MethodCallExpression methodCall:
+            {
+                var methodName = methodCall.Method.Name;
+                if (methodName is "Contains" or "Any" or "All")
+                {
+                    var result = GetValue(methodCall);
+                    return result is true
+                        ? string.Empty
+                        : LinqOperationFormatter.FormatLinqOperation(methodCall, context);
+                }
+                break;
+            }
         }
 
         var expressionResult = GetValue(expression.Body);

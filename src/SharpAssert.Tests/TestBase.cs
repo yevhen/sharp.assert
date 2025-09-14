@@ -21,4 +21,10 @@ public abstract class TestBase
         else
             action.Should().NotThrow();
     }
+
+    protected static void AssertExpressionPasses(Expression<Func<bool>> expression)
+    {
+        var action = () => SharpInternal.Assert(expression, expression.ToString(), "TestFile.cs", 1, null);
+        action.Should().NotThrow();
+    }
 }

@@ -8,42 +8,6 @@ namespace SharpAssert.Tests;
 public class UnsupportedFeatureDetectorFixture
 {
     [Test]
-    public void Should_detect_collection_contains_as_unsupported()
-    {
-        var list = new[] { 1, 2, 3 };
-        Expression<Func<bool>> expr = () => list.Contains(2);
-        
-        var detector = new UnsupportedFeatureDetector();
-        detector.Visit(expr);
-        
-        detector.HasUnsupported.Should().BeTrue("LINQ Contains operations are not implemented");
-    }
-    
-    [Test]
-    public void Should_detect_collection_any_as_unsupported()
-    {
-        var list = new[] { 1, 2, 3 };
-        Expression<Func<bool>> expr = () => list.Any(x => x > 1);
-        
-        var detector = new UnsupportedFeatureDetector();
-        detector.Visit(expr);
-        
-        detector.HasUnsupported.Should().BeTrue("LINQ Any operations are not implemented");
-    }
-    
-    [Test]
-    public void Should_detect_collection_all_as_unsupported()
-    {
-        var list = new[] { 1, 2, 3 };
-        Expression<Func<bool>> expr = () => list.All(x => x > 0);
-        
-        var detector = new UnsupportedFeatureDetector();
-        detector.Visit(expr);
-        
-        detector.HasUnsupported.Should().BeTrue("LINQ All operations are not implemented");
-    }
-    
-    [Test]
     public void Should_detect_sequence_equal_as_unsupported()
     {
         var list1 = new[] { 1, 2, 3 };
