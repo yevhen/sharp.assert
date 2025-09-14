@@ -13,7 +13,7 @@ public class BinaryComparisonFixture : TestBase
         var right = 24;
         Expression<Func<bool>> expr = () => left == right;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "left == right", "TestFile.cs", 123, "*42*24*");
+        AssertExpressionThrows(expr, "left == right", "TestFile.cs", 123, "*42*24*");
     }
 
     [Test]
@@ -23,7 +23,7 @@ public class BinaryComparisonFixture : TestBase
         var right = 10;
         Expression<Func<bool>> expr = () => left == right;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "left == right", "TestFile.cs", 1, "*5*10*");
+        AssertExpressionThrows(expr, "left == right", "TestFile.cs", 1, "*5*10*");
     }
 
     [Test]
@@ -33,7 +33,7 @@ public class BinaryComparisonFixture : TestBase
         var right = 5;
         Expression<Func<bool>> expr = () => left != right;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "left != right", "TestFile.cs", 2, "*5*5*");
+        AssertExpressionThrows(expr, "left != right", "TestFile.cs", 2, "*5*5*");
     }
 
     [Test]
@@ -43,7 +43,7 @@ public class BinaryComparisonFixture : TestBase
         var right = 5;
         Expression<Func<bool>> expr = () => left < right;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "left < right", "TestFile.cs", 3, "*10*5*");
+        AssertExpressionThrows(expr, "left < right", "TestFile.cs", 3, "*10*5*");
     }
 
     [Test]
@@ -53,7 +53,7 @@ public class BinaryComparisonFixture : TestBase
         var right = 5;
         Expression<Func<bool>> expr = () => left <= right;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "left <= right", "TestFile.cs", 4, "*10*5*");
+        AssertExpressionThrows(expr, "left <= right", "TestFile.cs", 4, "*10*5*");
     }
 
     [Test]
@@ -63,7 +63,7 @@ public class BinaryComparisonFixture : TestBase
         var right = 10;
         Expression<Func<bool>> expr = () => left > right;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "left > right", "TestFile.cs", 5, "*5*10*");
+        AssertExpressionThrows(expr, "left > right", "TestFile.cs", 5, "*5*10*");
     }
 
     [Test]
@@ -73,7 +73,7 @@ public class BinaryComparisonFixture : TestBase
         var right = 10;
         Expression<Func<bool>> expr = () => left >= right;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "left >= right", "TestFile.cs", 6, "*5*10*");
+        AssertExpressionThrows(expr, "left >= right", "TestFile.cs", 6, "*5*10*");
     }
 
     [Test]
@@ -132,7 +132,7 @@ public class BinaryComparisonFixture : TestBase
         // ReSharper disable once EqualExpressionComparison
         Expression<Func<bool>> expr = () => GetValueAndIncrement() == GetValueAndIncrement();
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "GetValueAndIncrement() == GetValueAndIncrement()", "TestFile.cs", 200, "*");
+        AssertExpressionThrows(expr, "GetValueAndIncrement() == GetValueAndIncrement()", "TestFile.cs", 200, "*");
         
         callCount.Should().Be(2, "each operand should be evaluated exactly once");
     }
@@ -144,6 +144,6 @@ public class BinaryComparisonFixture : TestBase
         var intValue = 42;
         Expression<Func<bool>> expr = () => stringValue.Length > intValue;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "stringValue.Length > intValue", "TestFile.cs", 400, "*5*42*");
+        AssertExpressionThrows(expr, "stringValue.Length > intValue", "TestFile.cs", 400, "*5*42*");
     }
 }

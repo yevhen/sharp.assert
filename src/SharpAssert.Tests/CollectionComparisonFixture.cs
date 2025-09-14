@@ -13,7 +13,7 @@ public class CollectionComparisonFixture : TestBase
         var right = new List<int> { 1, 2, 4 };
         Expression<Func<bool>> expr = () => left == right;
 
-        AssertExpressionThrows<SharpAssertionException>(expr,
+        AssertExpressionThrows(expr,
             "left == right", "CollectionComparisonFixture.cs", 11,
             "*First difference at index 2: expected 3, got 4*");
     }
@@ -25,7 +25,7 @@ public class CollectionComparisonFixture : TestBase
         var right = new List<int> { 1, 2, 3 };
         Expression<Func<bool>> expr = () => left == right;
 
-        AssertExpressionThrows<SharpAssertionException>(expr,
+        AssertExpressionThrows(expr,
             "left == right", "CollectionComparisonFixture.cs", 26,
             "*Missing elements: [3]*");
     }
@@ -37,7 +37,7 @@ public class CollectionComparisonFixture : TestBase
         var right = new List<int> { 1, 2 };
         Expression<Func<bool>> expr = () => left == right;
 
-        AssertExpressionThrows<SharpAssertionException>(expr,
+        AssertExpressionThrows(expr,
             "left == right", "CollectionComparisonFixture.cs", 43,
             "*Extra elements: [3]*");
     }
@@ -49,7 +49,7 @@ public class CollectionComparisonFixture : TestBase
         var right = new List<int> { 1 };
         Expression<Func<bool>> expr = () => left == right;
 
-        AssertExpressionThrows<SharpAssertionException>(expr,
+        AssertExpressionThrows(expr,
             "left == right", "CollectionComparisonFixture.cs", 60,
             "*Missing elements: [1]*");
     }

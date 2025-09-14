@@ -9,7 +9,7 @@ public class StringComparisonFixture : TestBase
         var actual = "hello";
         var expected = "hallo";
         
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
             () => actual == expected,
             "actual == expected",
             "StringComparisonFixture.cs",
@@ -26,7 +26,7 @@ public class StringComparisonFixture : TestBase
         var actual = "line1\nline2\nline3";
         var expected = "line1\nMODIFIED\nline3";
         
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
             () => actual == expected,
             "actual == expected",
             "StringComparisonFixture.cs",
@@ -45,7 +45,7 @@ public class StringComparisonFixture : TestBase
         var actual = longPart + "X";
         var expected = longPart + "Y";
         
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
             () => actual == expected,
             "actual == expected",
             "StringComparisonFixture.cs", 
@@ -62,7 +62,7 @@ public class StringComparisonFixture : TestBase
         string? nullString = null;
         var emptyString = "";
         
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
             () => nullString == emptyString,
             "nullString == emptyString",
             "StringComparisonFixture.cs",

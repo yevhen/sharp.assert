@@ -12,7 +12,7 @@ public class EdgeCaseFixture : TestBase
         var value = "test";
         Expression<Func<bool>> expr = () => nullString == value;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "nullString == value", "TestFile.cs", 100, "*null*test*");
+        AssertExpressionThrows(expr, "nullString == value", "TestFile.cs", 100, "*null*test*");
     }
 
     [Test]
@@ -21,7 +21,7 @@ public class EdgeCaseFixture : TestBase
         var obj = new TestObject { IsValid = false };
         Expression<Func<bool>> expr = () => obj.IsValid;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "obj.IsValid", "TestFile.cs", 300, "Assertion failed: obj.IsValid  at TestFile.cs:300");
+        AssertExpressionThrows(expr, "obj.IsValid", "TestFile.cs", 300, "Assertion failed: obj.IsValid  at TestFile.cs:300");
     }
 
     [Test]
@@ -30,7 +30,7 @@ public class EdgeCaseFixture : TestBase
         var obj = new TestObject { IsValid = false };
         Expression<Func<bool>> expr = () => obj.GetValidationResult();
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "obj.GetValidationResult()", "TestFile.cs", 301, "Assertion failed: obj.GetValidationResult()  at TestFile.cs:301");
+        AssertExpressionThrows(expr, "obj.GetValidationResult()", "TestFile.cs", 301, "Assertion failed: obj.GetValidationResult()  at TestFile.cs:301");
     }
 
     [Test]
@@ -38,7 +38,7 @@ public class EdgeCaseFixture : TestBase
     {
         Expression<Func<bool>> expr = () => false;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "false", "TestFile.cs", 302, "Assertion failed: false  at TestFile.cs:302");
+        AssertExpressionThrows(expr, "false", "TestFile.cs", 302, "Assertion failed: false  at TestFile.cs:302");
     }
 
     [Test]
@@ -47,7 +47,7 @@ public class EdgeCaseFixture : TestBase
         var obj = new TestObject { IsValid = true };
         Expression<Func<bool>> expr = () => obj.IsValid;
 
-        AssertExpressionDoesNotThrow(expr, "obj.IsValid", "TestFile.cs", 303);
+        AssertExpressionPasses(expr);
     }
 
     [Test]
@@ -55,7 +55,7 @@ public class EdgeCaseFixture : TestBase
     {
         Expression<Func<bool>> expr = () => true;
 
-        AssertExpressionDoesNotThrow(expr, "true", "TestFile.cs", 304);
+        AssertExpressionPasses(expr);
     }
 
     [Test]
@@ -67,6 +67,6 @@ public class EdgeCaseFixture : TestBase
         // ReSharper disable once ConditionIsAlwaysTrueOrFalse
         Expression<Func<bool>> expr = () => ReferenceEquals(objA, objB);
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "ReferenceEquals(objA, objB)", "TestFile.cs", 401, "*");
+        AssertExpressionThrows(expr, "ReferenceEquals(objA, objB)", "TestFile.cs", 401, "*");
     }
 }

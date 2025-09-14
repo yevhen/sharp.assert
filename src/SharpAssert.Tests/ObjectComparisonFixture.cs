@@ -39,7 +39,7 @@ public class ObjectComparisonFixture : TestBase
         
         Expression<Func<bool>> expr = () => obj1 == obj2;
         
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
             expr, "obj1 == obj2", "test.cs", 42,
             "*Property differences*Name*Alice*Bob*Age*25*30*");
     }
@@ -52,7 +52,7 @@ public class ObjectComparisonFixture : TestBase
         
         Expression<Func<bool>> expr = () => obj1 == obj2;
         
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
             expr, "obj1 == obj2", "test.cs", 42,
             "*Address.City*NYC*LA*");
     }
@@ -65,7 +65,7 @@ public class ObjectComparisonFixture : TestBase
         
         Expression<Func<bool>> expr = () => obj1 == obj2;
         
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
             expr, "obj1 == obj2", "test.cs", 42,
             "*Left*null*Right*Person*");
     }
@@ -78,7 +78,6 @@ public class ObjectComparisonFixture : TestBase
         
         Expression<Func<bool>> expr = () => obj1 == obj2;
         
-        AssertExpressionDoesNotThrow(expr, "obj1 == obj2", "test.cs", 42,
-            "because objects with same name should be considered equal via custom Equals");
+        AssertExpressionPasses(expr);
     }
 }

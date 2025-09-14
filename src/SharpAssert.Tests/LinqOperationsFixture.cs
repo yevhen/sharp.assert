@@ -43,7 +43,7 @@ public class LinqOperationsFixture : TestBase
         {
             var items = new[] { 1, 2, 3 };
             
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
                 () => items.Contains(999),
                 "items.Contains(999)",
                 "LinqOperationsFixture.cs",
@@ -56,7 +56,7 @@ public class LinqOperationsFixture : TestBase
         {
             var items = new[] { 1, 2, 3 };
             
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
                 () => items.Any(x => x > 10),
                 "items.Any(x => x > 10)",
                 "LinqOperationsFixture.cs",
@@ -82,7 +82,7 @@ public class LinqOperationsFixture : TestBase
         {
             var empty = Array.Empty<int>();
             
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
                 () => empty.Any(),
                 "empty.Any()",
                 "LinqOperationsFixture.cs",
@@ -98,7 +98,7 @@ public class LinqOperationsFixture : TestBase
         public void Should_truncate_large_collections_in_Contains()
         {
             var items = Enumerable.Range(1, 15).ToArray(); // > 10 items
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
                 () => items.Contains(999),
                 "items.Contains(999)",
                 "LinqOperationsFixture.cs",
@@ -110,7 +110,7 @@ public class LinqOperationsFixture : TestBase
         public void Should_truncate_large_collections_in_Any()
         {
             var items = Enumerable.Range(1, 15).ToArray();
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
                 () => items.Any(x => x > 20),
                 "items.Any(x => x > 20)",
                 "LinqOperationsFixture.cs",
@@ -138,7 +138,7 @@ public class LinqOperationsFixture : TestBase
         public void Should_handle_IEnumerable_without_ICollection_Contains()
         {
             IEnumerable<int> enumerable = GetEnumerableOnly(); // LINQ query, not ICollection
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
                 () => enumerable.Contains(999),
                 "enumerable.Contains(999)",
                 "LinqOperationsFixture.cs",
@@ -150,7 +150,7 @@ public class LinqOperationsFixture : TestBase
         public void Should_handle_IEnumerable_without_ICollection_Any()
         {
             IEnumerable<int> enumerable = GetEnumerableOnly();
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
                 () => enumerable.Any(x => x > 10),
                 "enumerable.Any(x => x > 10)",
                 "LinqOperationsFixture.cs",
@@ -169,7 +169,7 @@ public class LinqOperationsFixture : TestBase
         public void Should_format_custom_objects_in_Contains()
         {
             var items = new[] { new CustomObject("test") };
-            AssertExpressionThrows<SharpAssertionException>(
+            AssertExpressionThrows(
                 () => items.Contains(new CustomObject("missing")),
                 "items.Contains(new CustomObject(\\\"missing\\\"))",
                 "LinqOperationsFixture.cs",
@@ -181,7 +181,7 @@ public class LinqOperationsFixture : TestBase
         public void Should_format_custom_objects_in_Any()
         {
             var items = new[] { new CustomObject("test1"), new CustomObject("test2") };
-            AssertExpressionThrows<SharpAssertionException>(
+            AssertExpressionThrows(
                 () => items.Any(x => x.Name == "missing"),
                 "items.Any(x => x.Name == \\\"missing\\\")",
                 "LinqOperationsFixture.cs",
@@ -193,7 +193,7 @@ public class LinqOperationsFixture : TestBase
         public void Should_format_custom_objects_in_All()
         {
             var items = new[] { new CustomObject("pass"), new CustomObject("fail") };
-            AssertExpressionThrows<SharpAssertionException>(
+            AssertExpressionThrows(
                 () => items.All(x => x.Name == "pass"),
                 "items.All(x => x.Name == \\\"pass\\\")",
                 "LinqOperationsFixture.cs",
@@ -215,7 +215,7 @@ public class LinqOperationsFixture : TestBase
         {
             var items = new[] { 1, 2, 3 };
             // Test case where all items fail the predicate
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
                 () => items.All(x => x == 0), // All fail the predicate
                 "items.All(x => x == 0)",
                 "LinqOperationsFixture.cs",
@@ -231,7 +231,7 @@ public class LinqOperationsFixture : TestBase
         public void Should_handle_static_extension_method_syntax()
         {
             var items = new[] { 1, 2, 3 };
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
                 () => Enumerable.Contains(items, 999),
                 "Enumerable.Contains(items, 999)",
                 "LinqOperationsFixture.cs",
@@ -243,7 +243,7 @@ public class LinqOperationsFixture : TestBase
         public void Should_handle_static_Any_syntax()
         {
             var items = new[] { 1, 2, 3 };
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
                 () => Enumerable.Any(items, x => x > 10),
                 "Enumerable.Any(items, x => x > 10)",
                 "LinqOperationsFixture.cs",
@@ -255,7 +255,7 @@ public class LinqOperationsFixture : TestBase
         public void Should_handle_static_All_syntax()
         {
             var items = new[] { -1, 0, 1, 2 };
-        AssertExpressionThrows<SharpAssertionException>(
+        AssertExpressionThrows(
                 () => Enumerable.All(items, x => x > 0),
                 "Enumerable.All(items, x => x > 0)",
                 "LinqOperationsFixture.cs",

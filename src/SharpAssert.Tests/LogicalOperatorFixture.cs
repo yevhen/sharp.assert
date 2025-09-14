@@ -13,7 +13,7 @@ public class LogicalOperatorFixture : TestBase
         var right = false;
         Expression<Func<bool>> expr = () => left && right;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "left && right", "TestFile.cs", 10, "*&&*true*false*");
+        AssertExpressionThrows(expr, "left && right", "TestFile.cs", 10, "*&&*true*false*");
     }
 
     [Test]
@@ -22,7 +22,7 @@ public class LogicalOperatorFixture : TestBase
         var left = false;
         Expression<Func<bool>> expr = () => left && ThrowException();
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "left && ThrowException()", "TestFile.cs", 20, "*&&*false*");
+        AssertExpressionThrows(expr, "left && ThrowException()", "TestFile.cs", 20, "*&&*false*");
     }
 
     [Test]
@@ -32,7 +32,7 @@ public class LogicalOperatorFixture : TestBase
         var right = false;
         Expression<Func<bool>> expr = () => left || right;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "left || right", "TestFile.cs", 30, "*||*false*false*");
+        AssertExpressionThrows(expr, "left || right", "TestFile.cs", 30, "*||*false*false*");
     }
 
     [Test]
@@ -72,7 +72,7 @@ public class LogicalOperatorFixture : TestBase
         var operand = true;
         Expression<Func<bool>> expr = () => !operand;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "!operand", "TestFile.cs", 40, "*!*true*");
+        AssertExpressionThrows(expr, "!operand", "TestFile.cs", 40, "*!*true*");
     }
 
     [Test]
@@ -83,7 +83,7 @@ public class LogicalOperatorFixture : TestBase
         
         Expression<Func<bool>> expr = () => leftTrue || rightFalse;
 
-        AssertExpressionDoesNotThrow(expr, "leftTrue || rightFalse", "TestFile.cs", 600);
+        AssertExpressionPasses(expr);
     }
 
     [Test]
@@ -94,7 +94,7 @@ public class LogicalOperatorFixture : TestBase
         
         Expression<Func<bool>> expr = () => leftFalse || rightTrue;
 
-        AssertExpressionDoesNotThrow(expr, "leftFalse || rightTrue", "TestFile.cs", 602);
+        AssertExpressionPasses(expr);
     }
 
     [Test]
@@ -105,7 +105,7 @@ public class LogicalOperatorFixture : TestBase
         
         Expression<Func<bool>> expr = () => leftFalse && rightTrue;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "leftFalse && rightTrue", "TestFile.cs", 604, "*&&*false*");
+        AssertExpressionThrows(expr, "leftFalse && rightTrue", "TestFile.cs", 604, "*&&*false*");
     }
 
     [Test]
@@ -116,7 +116,7 @@ public class LogicalOperatorFixture : TestBase
         
         Expression<Func<bool>> expr = () => leftTrue && rightFalse;
 
-        AssertExpressionThrows<SharpAssertionException>(expr, "leftTrue && rightFalse", "TestFile.cs", 605, "*&&*true*false*");
+        AssertExpressionThrows(expr, "leftTrue && rightFalse", "TestFile.cs", 605, "*&&*true*false*");
     }
 
     static bool ThrowException() => throw new InvalidOperationException("This should not be called due to short-circuit evaluation");
