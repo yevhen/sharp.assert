@@ -473,35 +473,35 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 
 ---
 
-### **Increment 10: Async Support - Basic AssertAsync**
+### **Increment 10: Async Support - Basic AssertAsync** ✅ COMPLETED
 **Outcome**: Can assert on expressions containing await
 **Tests** (SharpAssert.Tests/AsyncAssertionFixture.cs):
-- `Should_handle_await_in_condition()` - Assert(await GetBool()) works
-- `Should_show_false_for_failed_async()` - Shows expression and False
-- `Should_preserve_async_context()` - Maintains SynchronizationContext
-- `Should_handle_exceptions_in_async()` - Async exceptions bubble correctly
+- ✅ `Should_handle_await_in_condition()` - Assert(await GetBool()) works
+- ✅ `Should_show_false_for_failed_async()` - Shows expression and False
+- ✅ `Should_preserve_async_context()` - Maintains SynchronizationContext
+- ✅ `Should_handle_exceptions_in_async()` - Async exceptions bubble correctly
 
 **Implementation**:
-- Create `SharpInternal.AssertAsync(Func<Task<bool>>, ...)`
-- Rewriter detects await keyword via SemanticModel
-- Emits AssertAsync for general await cases
-- Await result and provide basic diagnostics
+- ✅ Create `SharpInternal.AssertAsync(Func<Task<bool>>, ...)`
+- ✅ Rewriter detects await keyword via SemanticModel
+- ✅ Emits AssertAsync for general await cases
+- ✅ Await result and provide basic diagnostics
 
 ---
 
-### **Increment 11: Async Binary Comparisons**
+### **Increment 11: Async Binary Comparisons** ✅ COMPLETED
 **Outcome**: Binary comparisons with await show both operand values
 **Tests** (SharpAssert.Tests/AsyncBinaryFixture.cs):
-- `Should_show_both_async_values()` - await Left() == await Right() shows values
-- `Should_handle_mixed_async_sync()` - await X() == 5 works correctly
-- `Should_evaluate_in_source_order()` - Left evaluated before right
-- `Should_apply_diffs_to_async_strings()` - String diff works with async
+- ✅ `Should_show_both_async_values()` - await Left() == await Right() shows values
+- ✅ `Should_handle_mixed_async_sync()` - await X() == 5 works correctly
+- ✅ `Should_evaluate_in_source_order()` - Left evaluated before right
+- ✅ `Should_apply_diffs_to_async_strings()` - String diff works with async
 
 **Implementation**:
-- Create `SharpInternal.AssertAsyncBinary(Func<Task<object?>>, Func<Task<object?>>, BinaryOp, ...)`
-- Rewriter detects binary with await, generates thunks
-- Wrap sync operands in Task.FromResult
-- Apply same diff logic as sync path
+- ✅ Create `SharpInternal.AssertAsyncBinary(Func<Task<object?>>, Func<Task<object?>>, BinaryOp, ...)`
+- ✅ Rewriter detects binary with await, generates thunks
+- ✅ Wrap sync operands in Task.FromResult
+- ✅ Apply same diff logic as sync path
 
 ---
 

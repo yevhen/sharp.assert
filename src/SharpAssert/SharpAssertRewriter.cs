@@ -79,8 +79,26 @@ internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string abs
 
     public override SyntaxNode? VisitInvocationExpression(InvocationExpressionSyntax node)
     {
-        if (!IsSharpAssertCall(node) || ContainsAwait(node))
+        if (!IsSharpAssertCall(node))
             return base.VisitInvocationExpression(node);
+
+        var containsAwait = ContainsAwait(node);
+        if (containsAwait)
+        {
+            var conditionArgument = node.ArgumentList.Arguments[0];
+            var isBinaryOperation = IsBinaryOperation(conditionArgument.Expression);
+            
+            if (isBinaryOperation)
+            {
+                HasRewrites = true;
+                return RewriteToAsyncBinary(node);
+            }
+            else
+            {
+                // General await case - skip rewriting for now (will be handled by AssertAsync in future)
+                return base.VisitInvocationExpression(node);
+            }
+        }
 
         HasRewrites = true;
         return RewriteToLambda(node);
@@ -115,11 +133,33 @@ internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string abs
             .OfType<AwaitExpressionSyntax>()
             .Any();
 
+    static bool IsBinaryOperation(ExpressionSyntax expression) =>
+        expression is BinaryExpressionSyntax binaryExpr &&
+        (binaryExpr.OperatorToken.IsKind(SyntaxKind.EqualsEqualsToken) ||
+         binaryExpr.OperatorToken.IsKind(SyntaxKind.ExclamationEqualsToken) ||
+         binaryExpr.OperatorToken.IsKind(SyntaxKind.LessThanToken) ||
+         binaryExpr.OperatorToken.IsKind(SyntaxKind.LessThanEqualsToken) ||
+         binaryExpr.OperatorToken.IsKind(SyntaxKind.GreaterThanToken) ||
+         binaryExpr.OperatorToken.IsKind(SyntaxKind.GreaterThanEqualsToken));
+
     InvocationExpressionSyntax RewriteToLambda(InvocationExpressionSyntax node)
     {
         var rewriteData = ExtractRewriteData(node);
         var lambdaExpression = CreateLambdaExpression(rewriteData.Expression);
         var newInvocation = CreateSharpInternalInvocation(lambdaExpression, rewriteData);
+        return AddLineDirectives(newInvocation, node, rewriteData.LineNumber);
+    }
+
+    InvocationExpressionSyntax RewriteToAsyncBinary(InvocationExpressionSyntax node)
+    {
+        var rewriteData = ExtractRewriteData(node);
+        var binaryExpr = (BinaryExpressionSyntax)rewriteData.Expression;
+        
+        var leftThunk = CreateAsyncThunk(binaryExpr.Left);
+        var rightThunk = CreateAsyncThunk(binaryExpr.Right);
+        var binaryOp = GetBinaryOpFromToken(binaryExpr.OperatorToken);
+        
+        var newInvocation = CreateAsyncBinaryInvocation(leftThunk, rightThunk, binaryOp, rewriteData);
         return AddLineDirectives(newInvocation, node, rewriteData.LineNumber);
     }
 
@@ -208,6 +248,80 @@ internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string abs
             SharpAssertRewriter.CreateDefaultLineDirective(),
             SyntaxFactory.EndOfLine(NewLine))
         .AddRange(originalNode.GetTrailingTrivia());
+
+    ParenthesizedLambdaExpressionSyntax CreateAsyncThunk(ExpressionSyntax operand)
+    {
+        var containsAwait = operand.DescendantNodes().OfType<AwaitExpressionSyntax>().Any();
+        
+        if (containsAwait)
+        {
+            // Create async () => operand
+            return SyntaxFactory.ParenthesizedLambdaExpression()
+                .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
+                .WithParameterList(SyntaxFactory.ParameterList())
+                .WithExpressionBody(operand);
+        }
+        else
+        {
+            // Wrap sync operand: () => Task.FromResult<object?>(operand)
+            var objectType = SyntaxFactory.NullableType(
+                SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)));
+                
+            var taskFromResult = SyntaxFactory.InvocationExpression(
+                SyntaxFactory.MemberAccessExpression(
+                    SyntaxKind.SimpleMemberAccessExpression,
+                    SyntaxFactory.IdentifierName("Task"),
+                    SyntaxFactory.GenericName("FromResult")
+                        .WithTypeArgumentList(SyntaxFactory.TypeArgumentList(
+                            SyntaxFactory.SingletonSeparatedList<TypeSyntax>(objectType)))))
+                .WithArgumentList(SyntaxFactory.ArgumentList(
+                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(operand))));
+            
+            return SyntaxFactory.ParenthesizedLambdaExpression()
+                .WithParameterList(SyntaxFactory.ParameterList())
+                .WithExpressionBody(taskFromResult);
+        }
+    }
+
+    static string GetBinaryOpFromToken(SyntaxToken operatorToken) => operatorToken.Kind() switch
+    {
+        SyntaxKind.EqualsEqualsToken => "Eq",
+        SyntaxKind.ExclamationEqualsToken => "Ne", 
+        SyntaxKind.LessThanToken => "Lt",
+        SyntaxKind.LessThanEqualsToken => "Le",
+        SyntaxKind.GreaterThanToken => "Gt",
+        SyntaxKind.GreaterThanEqualsToken => "Ge",
+        _ => "Eq" // fallback
+    };
+
+    InvocationExpressionSyntax CreateAsyncBinaryInvocation(
+        ParenthesizedLambdaExpressionSyntax leftThunk, 
+        ParenthesizedLambdaExpressionSyntax rightThunk, 
+        string binaryOp,
+        RewriteData data)
+    {
+        var targetMethod = SyntaxFactory.MemberAccessExpression(
+            SyntaxKind.SimpleMemberAccessExpression,
+            SyntaxFactory.IdentifierName(SharpInternalNamespace),
+            SyntaxFactory.IdentifierName("AssertAsyncBinary"));
+        
+        var binaryOpAccess = SyntaxFactory.MemberAccessExpression(
+            SyntaxKind.SimpleMemberAccessExpression,
+            SyntaxFactory.IdentifierName("BinaryOp"),
+            SyntaxFactory.IdentifierName(binaryOp));
+        
+        var arguments = SyntaxFactory.SeparatedList([
+            SyntaxFactory.Argument(leftThunk),
+            SyntaxFactory.Argument(rightThunk),
+            SyntaxFactory.Argument(binaryOpAccess),
+            CreateStringLiteralArgument(data.ExpressionText),
+            CreateStringLiteralArgument(fileName),
+            CreateNumericLiteralArgument(data.LineNumber)
+        ]);
+        
+        return SyntaxFactory.InvocationExpression(targetMethod)
+            .WithArgumentList(SyntaxFactory.ArgumentList(arguments));
+    }
 
     record RewriteData(ExpressionSyntax Expression, string ExpressionText, int LineNumber, ExpressionSyntax? MessageExpression);
 }

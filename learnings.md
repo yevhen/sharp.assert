@@ -192,3 +192,26 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Static Extension Support:** Works with both instance method syntax (`seq1.SequenceEqual(seq2)`) and static syntax (`Enumerable.SequenceEqual(seq1, seq2)`)
 - **Test Structure Consistency:** Used same pattern as LinqOperationsFixture with nested TestFixture classes (PositiveTestCases, FailureFormatting, StaticExtensionMethods)
 - **UnsupportedFeatureDetector Maintenance:** Critical to update test expectations when features move from unsupported to supported status
+
+## Async Support Implementation (Increment 10)
+
+- **AssertAsync Method Design:** Create async method with signature `AssertAsync(Func<Task<bool>>, string, string, int)` for basic async support
+- **Minimal Diagnostics Philosophy:** For async cases, provide basic failure information (expression text and "Result: False") rather than complex expression tree analysis
+- **Exception Propagation Strategy:** Let async exceptions bubble up naturally - don't catch and wrap them unless necessary
+- **BinaryOp Enum Addition:** Required for future async binary comparison support (Increment 11), defines comparison operators: Eq, Ne, Lt, Le, Gt, Ge
+- **Test Migration Strategy:** Convert ignored placeholder tests to real async tests using FluentAssertions async assertion patterns (`await action.Should().NotThrowAsync()`)
+- **Async Context Preservation:** AssertAsync naturally preserves SynchronizationContext through proper async/await usage - no special handling needed
+- **No UnsupportedFeatureDetector Changes:** Basic async support doesn't require rewriter detection yet - that's for Increment 11 (async binary comparisons)
+- **Async Test Patterns:** Use `async Task` test methods with `await` for assertions, test both success and failure paths with appropriate exception expectations
+
+## Async Binary Comparison Implementation (Increment 11)
+
+- **Rewriter Architecture:** Async binary comparisons are handled at the rewriter level, not as unsupported features, since they are rewritten before becoming expression trees
+- **Binary Operation Detection:** Use `IsBinaryOperation()` to detect comparison operators: ==, !=, <, <=, >, >= - requires proper parentheses grouping for operator precedence
+- **SyntaxKind Token Names:** Use correct Roslyn token names: `LessThanEqualsToken` and `GreaterThanEqualsToken` (not the incorrect `LessThanOrEqualToken`)
+- **Async Thunk Generation:** Generate thunks for both operands - `async () => operand` for await expressions, `() => Task.FromResult<object?>(operand)` for sync
+- **Source Order Evaluation:** AssertAsyncBinary evaluates left operand first, then right operand (`await leftAsync(); await rightAsync()`) preserving source order as required
+- **Formatter Reuse:** Async binary formatting reuses existing IComparisonFormatter infrastructure (StringComparisonFormatter, CollectionComparisonFormatter, etc.)
+- **Type System Integration:** Cast nullable types properly with `SingletonSeparatedList<TypeSyntax>(objectType)` for SyntaxFactory TypeArgumentList
+- **BinaryOp Enum Mapping:** Map SyntaxKind tokens to BinaryOp enum values for runtime evaluation: EqualsEqualsToken => "Eq", etc.
+- **Test Strategy:** Use FluentAssertions `.Where(ex => ex.Message.Contains(...))` pattern for async exception testing with complex message validation
