@@ -51,6 +51,13 @@ class ExpressionAnalyzer : ExpressionVisitor
                         ? string.Empty
                         : LinqOperationFormatter.FormatLinqOperation(methodCall, context);
                 }
+                if (methodName is "SequenceEqual")
+                {
+                    var result = GetValue(methodCall);
+                    return result is true
+                        ? string.Empty
+                        : SequenceEqualFormatter.FormatSequenceEqual(methodCall, context);
+                }
                 break;
             }
         }

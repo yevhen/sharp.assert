@@ -29,7 +29,7 @@ static class LinqOperationFormatter
         var collectionStr = FormatCollection(collection);
         var count = GetCount(collection);
         
-        return $"{baseMessage}  Contains failed: searched for {FormatValue(item)} in {collectionStr} (Count: {count})";
+        return $"{baseMessage}  Contains failed: searched for {FormatValue(item)} in {collectionStr}\n  Count: {count}";
     }
     
     static string FormatAnyFailure(MethodCallExpression methodCall, object? collection, AssertionContext context)

@@ -179,3 +179,16 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Test Pattern Consistency:** All ObjectComparisonFixture tests should use the same `Expression<Func<bool>> expr = () => condition;` pattern with AssertExpressionThrows/DoesNotThrow from TestBase
 - **Configuration Constants:** Use hardcoded constants like `MaxObjectDifferences = 20` following same pattern as StringDiffer, rather than premature configuration system integration
 - **Custom Equals Handling:** C# `==` operator naturally respects overridden Equals methods - no special handling needed in formatter, just let binary comparison work normally
+
+## SequenceEqual Implementation (Increment 9)
+
+- **DiffPlex Import Requirements:** Need both `using DiffPlex.Model;` and the qualified `DiffResult` type for proper compilation
+- **SequenceEqual Method Detection:** Added to ExpressionAnalyzer MethodCallExpression handling alongside Contains/Any/All for LINQ operations
+- **Unified Diff Strategy:** Use DiffPlex `Differ.CreateLineDiffs()` for sequence comparison, treating each element as a "line"
+- **Materialization Pattern:** Convert IEnumerable to List<object?> once to avoid multiple enumeration issues during analysis
+- **Length Mismatch Handling:** Special case formatting when sequences have different lengths vs different content
+- **Custom Comparer Detection:** Check `methodCall.Arguments.Count` to detect when custom IEqualityComparer is provided
+- **Truncation Logic:** Apply MaxDiffLines limit to unified diff output with "truncated" message for large diffs
+- **Static Extension Support:** Works with both instance method syntax (`seq1.SequenceEqual(seq2)`) and static syntax (`Enumerable.SequenceEqual(seq1, seq2)`)
+- **Test Structure Consistency:** Used same pattern as LinqOperationsFixture with nested TestFixture classes (PositiveTestCases, FailureFormatting, StaticExtensionMethods)
+- **UnsupportedFeatureDetector Maintenance:** Critical to update test expectations when features move from unsupported to supported status

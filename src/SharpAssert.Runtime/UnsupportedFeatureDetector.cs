@@ -8,11 +8,7 @@ internal class UnsupportedFeatureDetector : ExpressionVisitor
     
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
-        var methodName = node.Method.Name;
-        if (methodName is "SequenceEqual")
-        {
-            HasUnsupported = true;
-        }
+        // SequenceEqual is now supported as of Increment 9
         return base.VisitMethodCall(node);
     }
 }

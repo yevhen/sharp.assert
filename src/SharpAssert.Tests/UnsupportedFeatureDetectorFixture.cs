@@ -8,7 +8,7 @@ namespace SharpAssert.Tests;
 public class UnsupportedFeatureDetectorFixture
 {
     [Test]
-    public void Should_detect_sequence_equal_as_unsupported()
+    public void Should_not_detect_sequence_equal_as_unsupported()
     {
         var list1 = new[] { 1, 2, 3 };
         var list2 = new[] { 1, 2, 3 };
@@ -17,7 +17,7 @@ public class UnsupportedFeatureDetectorFixture
         var detector = new UnsupportedFeatureDetector();
         detector.Visit(expr);
         
-        detector.HasUnsupported.Should().BeTrue("LINQ SequenceEqual operations are not implemented");
+        detector.HasUnsupported.Should().BeFalse("LINQ SequenceEqual operations are now supported as of Increment 9");
     }
 
     [Test]
