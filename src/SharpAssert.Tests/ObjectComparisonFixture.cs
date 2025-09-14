@@ -21,6 +21,17 @@ public class ObjectComparisonFixture : TestBase
     }
 
     [Test]
+    public void Should_pass_when_objects_are_equal()
+    {
+        var obj1 = new Person("Alice", 25);
+        var obj2 = new Person("Alice", 25);
+
+        Expression<Func<bool>> expr = () => obj1 == obj2;
+
+        AssertExpressionPasses(expr);
+    }
+
+    [Test]
     public void Should_show_property_differences()
     {
         var obj1 = new Person("Alice", 25);
