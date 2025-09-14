@@ -15,6 +15,9 @@ class ExpressionAnalyzer : ExpressionVisitor
         new ObjectComparisonFormatter(),
     ];
 
+    static readonly string[] LinqOperationMethods = ["Contains", "Any", "All"];
+    const string SequenceEqualMethod = "SequenceEqual";
+
     public string AnalyzeFailure(Expression<Func<bool>> expression, AssertionContext context)
     {
         switch (expression.Body)
@@ -22,11 +25,7 @@ class ExpressionAnalyzer : ExpressionVisitor
             case BinaryExpression binaryExpr:
             {
                 if (binaryExpr.NodeType is AndAlso or OrElse)
-                {
-                    return GetValue(binaryExpr) is true
-                        ? string.Empty
-                        : AnalyzeLogicalBinaryFailure(binaryExpr, context);
-                }
+                    return FormatIfFailed(binaryExpr, () => AnalyzeLogicalBinaryFailure(binaryExpr, context));
 
                 var leftValue = GetValue(binaryExpr.Left);
                 var rightValue = GetValue(binaryExpr.Right);
@@ -37,81 +36,76 @@ class ExpressionAnalyzer : ExpressionVisitor
             }
             case UnaryExpression { NodeType: Not } unaryExpr:
             {
-                return GetValue(unaryExpr) is true
-                    ? string.Empty
-                    : AnalyzeNotFailure(unaryExpr, context);
+                return FormatIfFailed(unaryExpr, () => AnalyzeNotFailure(unaryExpr, context));
             }
             case MethodCallExpression methodCall:
             {
                 var methodName = methodCall.Method.Name;
-                if (methodName is "Contains" or "Any" or "All")
-                {
-                    var result = GetValue(methodCall);
-                    return result is true
-                        ? string.Empty
-                        : LinqOperationFormatter.FormatLinqOperation(methodCall, context);
-                }
-                if (methodName is "SequenceEqual")
-                {
-                    var result = GetValue(methodCall);
-                    return result is true
-                        ? string.Empty
-                        : SequenceEqualFormatter.FormatSequenceEqual(methodCall, context);
-                }
+
+                if (LinqOperationMethods.Contains(methodName))
+                    return FormatIfFailed(methodCall, () => LinqOperationFormatter.FormatLinqOperation(methodCall, context));
+
+                if (methodName == SequenceEqualMethod)
+                    return FormatIfFailed(methodCall, () => SequenceEqualFormatter.FormatSequenceEqual(methodCall, context));
+
                 break;
             }
         }
 
-        var expressionResult = GetValue(expression.Body);
-        return expressionResult is true
-            ? string.Empty :
-            AssertionFormatter.FormatAssertionFailure(context);
+        return FormatIfFailed(expression.Body, () => AssertionFormatter.FormatAssertionFailure(context));
     }
 
-    string AnalyzeLogicalBinaryFailure(BinaryExpression binaryExpr, AssertionContext context)
+    static string AnalyzeLogicalBinaryFailure(BinaryExpression binaryExpr, AssertionContext context)
     {
-        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
+        var locationPart = GetLocationPart(context);
         
         var leftValue = GetValue(binaryExpr.Left);
         var leftBool = (bool)leftValue!;
         
-        if (binaryExpr.NodeType == AndAlso)
+        if (binaryExpr.NodeType != AndAlso)
         {
-            if (!leftBool)
-                return FormatLogicalFailure(context, locationPart, leftValue, null, "&&: Left operand was false", true);
-            
-            var rightValue = GetValue(binaryExpr.Right);
-            return FormatLogicalFailure(context, locationPart, leftValue, rightValue, "&&: Right operand was false", false);
+            var rightValueOrElse = GetValue(binaryExpr.Right);
+            return FormatLogicalFailure(context, locationPart, leftValue, rightValueOrElse, "||: Both operands were false", false);
         }
-        
-        var rightValueOrElse = GetValue(binaryExpr.Right);
 
-        return FormatLogicalFailure(context, locationPart, leftValue, rightValueOrElse, "||: Both operands were false", false);
+        if (!leftBool)
+            return FormatLogicalFailure(context, locationPart, leftValue, null, "&&: Left operand was false", true);
+
+        var rightValue = GetValue(binaryExpr.Right);
+        return FormatLogicalFailure(context, locationPart, leftValue, rightValue, "&&: Right operand was false", false);
     }
+
+    static string GetLocationPart(AssertionContext context) => 
+        AssertionFormatter.FormatLocation(context.File, context.Line);
+
+    static string FormatIfFailed(Expression expression, Func<string> formatter) =>
+        GetValue(expression) is true ? string.Empty : formatter();
+
+    static string FormatBaseMessage(AssertionContext context, string locationPart) =>
+        context.Message is not null
+            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
+            : $"Assertion failed: {context.Expression}  at {locationPart}\n";
 
     static string FormatLogicalFailure(AssertionContext context, string locationPart, object? leftValue, object? rightValue, string explanation, bool isShortCircuit)
     {
-        var baseMessage = context.Message is not null 
-            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
-            : $"Assertion failed: {context.Expression}  at {locationPart}\n";
+        var baseMessage = FormatBaseMessage(context, locationPart);
             
         var result = baseMessage + $"  Left:  {FormatValue(leftValue)}{(isShortCircuit ? " (short-circuit)" : "")}";
         
-        if (rightValue != null)
+        if (rightValue is not null)
             result += $"\n  Right: {FormatValue(rightValue)}";
             
         result += $"\n  {explanation}";
+
         return result;
     }
 
-    string AnalyzeNotFailure(UnaryExpression unaryExpr, AssertionContext context)
+    static string AnalyzeNotFailure(UnaryExpression unaryExpr, AssertionContext context)
     {
         var operandValue = GetValue(unaryExpr.Operand);
-        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
+        var locationPart = GetLocationPart(context);
         
-        var baseMessage = context.Message is not null 
-            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
-            : $"Assertion failed: {context.Expression}  at {locationPart}\n";
+        var baseMessage = FormatBaseMessage(context, locationPart);
         
         return baseMessage + $"  Operand: {FormatValue(operandValue)}\n" +
                $"  !: Operand was {FormatValue(operandValue)}";
@@ -119,11 +113,9 @@ class ExpressionAnalyzer : ExpressionVisitor
 
     static string AnalyzeBinaryFailure(object? leftValue, object? rightValue, AssertionContext context)
     {
-        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
+        var locationPart = GetLocationPart(context);
         
-        var baseMessage = context.Message is not null 
-            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
-            : $"Assertion failed: {context.Expression}  at {locationPart}\n";
+        var baseMessage = FormatBaseMessage(context, locationPart);
         
         var formatter = GetComparisonFormatter(leftValue, rightValue);
         return baseMessage + formatter.FormatComparison(leftValue, rightValue);
