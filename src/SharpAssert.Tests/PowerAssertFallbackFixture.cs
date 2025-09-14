@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace SharpAssert.Tests;
 
 [TestFixture]
-public class PowerAssertFallbackFixture
+public class PowerAssertFallbackFixture : TestBase
 {
     [Test]
     public void Should_use_powerassert_when_force_flag_is_true()
@@ -87,5 +87,26 @@ public class PowerAssertFallbackFixture
         ex.Message.Should().Contain("Left:  \"hello\"");
         ex.Message.Should().Contain("Right: \"world\"");
         ex.Message.Should().Contain("Assertion failed: str1 == str2");
+    }
+    
+    [Test]
+    public void Should_pass_when_powerassert_condition_is_true_with_force_flag()
+    {
+        var x = 5;
+        var y = 5;
+        Expression<Func<bool>> expr = () => x == y;
+        
+        var action = () => SharpInternal.Assert(expr, "x == y", "test.cs", 42, null, usePowerAssert: true, usePowerAssertForUnsupported: false);
+        action.Should().NotThrow();
+    }
+    
+    [Test]
+    public void Should_pass_when_fallback_to_powerassert_succeeds_for_unsupported_feature()
+    {
+        var list = new[] { 1, 2, 3 };
+        Expression<Func<bool>> expr = () => list.Contains(2);
+        
+        var action = () => SharpInternal.Assert(expr, "list.Contains(2)", "test.cs", 42, null, usePowerAssert: false, usePowerAssertForUnsupported: true);
+        action.Should().NotThrow();
     }
 }

@@ -71,4 +71,28 @@ public class StringComparisonFixture : TestBase
             "*Left:  null*" +
             "*Right: \"\"*"); // Should clearly distinguish null from empty
     }
+
+    [Test]
+    public void Should_pass_when_identical_strings_compared()
+    {
+        var str1 = "hello world";
+        var str2 = "hello world";
+        AssertExpressionPasses(() => str1 == str2);
+    }
+
+    [Test]
+    public void Should_pass_when_both_strings_are_null()
+    {
+        string? str1 = null;
+        string? str2 = null;
+        AssertExpressionPasses(() => str1 == str2);
+    }
+
+    [Test]
+    public void Should_pass_when_both_strings_are_empty()
+    {
+        var str1 = "";
+        var str2 = string.Empty;
+        AssertExpressionPasses(() => str1 == str2);
+    }
 }

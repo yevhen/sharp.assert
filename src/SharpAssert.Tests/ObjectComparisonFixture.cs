@@ -80,4 +80,26 @@ public class ObjectComparisonFixture : TestBase
         
         AssertExpressionPasses(expr);
     }
+
+    [Test]
+    public void Should_pass_when_nested_objects_are_equal()
+    {
+        var obj1 = new PersonWithAddress("Alice", new Address("123 Main St", "NYC"));
+        var obj2 = new PersonWithAddress("Alice", new Address("123 Main St", "NYC"));
+        
+        Expression<Func<bool>> expr = () => obj1 == obj2;
+        
+        AssertExpressionPasses(expr);
+    }
+
+    [Test]
+    public void Should_pass_when_both_objects_are_null()
+    {
+        Person? obj1 = null;
+        Person? obj2 = null;
+        
+        Expression<Func<bool>> expr = () => obj1 == obj2;
+        
+        AssertExpressionPasses(expr);
+    }
 }

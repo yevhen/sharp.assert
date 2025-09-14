@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 namespace SharpAssert;
 
 [TestFixture]
-public class SharpInternalAssertionFixture
+public class SharpInternalAssertionFixture : TestBase
 {
     [Test]
     public void Should_pass_when_expression_evaluates_to_true()
@@ -58,5 +58,56 @@ public class SharpInternalAssertionFixture
         var action = () => SharpInternal.Assert(expr, "true", "TestFile.cs", 10, "   ");
         action.Should().Throw<ArgumentException>()
               .WithMessage("*Message must be either null or non-empty*");
+    }
+
+    [Test]
+    public void Should_pass_when_complex_logical_expression_succeeds()
+    {
+        var x = 5;
+        var y = 10;
+        var z = 15;
+        AssertExpressionPasses(() => x < y && y < z && (x + y) == z);
+    }
+
+    [Test]
+    public void Should_pass_when_method_chain_assertion_succeeds()
+    {
+        var text = "Hello World";
+        AssertExpressionPasses(() => text.ToLower().Contains("hello") && text.Length > 5);
+    }
+
+    [Test]
+    public void Should_pass_when_nested_expression_succeeds()
+    {
+        var items = new List<string> { "apple", "banana", "cherry" };
+        AssertExpressionPasses(() => items.Where(x => x.StartsWith("a")).Count() == 1);
+    }
+
+    [Test]
+    public void Should_pass_when_mixed_type_expression_succeeds()
+    {
+        var number = 42;
+        var text = "42";
+        AssertExpressionPasses(() => number.ToString() == text && int.Parse(text) == number);
+    }
+
+    [Test]
+    public void Should_pass_with_powerassert_integration_when_forced()
+    {
+        var x = 5;
+        var y = 5;
+        Expression<Func<bool>> expr = () => x == y;
+        var action = () => SharpInternal.Assert(expr, "x == y", "TestFile.cs", 42, null, usePowerAssert: true, usePowerAssertForUnsupported: false);
+        action.Should().NotThrow();
+    }
+
+    [Test]
+    public void Should_pass_with_powerassert_fallback_for_unsupported_feature()
+    {
+        var x = 10;
+        var y = 5;
+        Expression<Func<bool>> expr = () => x > y;
+        var action = () => SharpInternal.Assert(expr, "x > y", "TestFile.cs", 42, null, usePowerAssert: false, usePowerAssertForUnsupported: true);
+        action.Should().NotThrow();
     }
 }

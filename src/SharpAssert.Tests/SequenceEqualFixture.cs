@@ -3,6 +3,58 @@ namespace SharpAssert;
 [TestFixture]
 public class SequenceEqualFixture : TestBase
 {
+    #region Positive Test Cases - Future Implementation Guide
+    
+    [Test]
+    [Ignore("Feature not yet implemented - Increment 9")]
+    public void Should_pass_when_sequences_are_equal()
+    {
+        var seq1 = new List<int> { 1, 2, 3, 4, 5 };
+        var seq2 = new List<int> { 1, 2, 3, 4, 5 };
+        AssertExpressionPasses(() => seq1.SequenceEqual(seq2));
+    }
+
+    [Test]
+    [Ignore("Feature not yet implemented - Increment 9")]
+    public void Should_pass_when_both_sequences_are_empty()
+    {
+        var seq1 = new List<string>();
+        var seq2 = new string[0];
+        AssertExpressionPasses(() => seq1.SequenceEqual(seq2));
+    }
+
+    [Test]
+    [Ignore("Feature not yet implemented - Increment 9")]
+    public void Should_pass_with_different_collection_types()
+    {
+        var list = new List<int> { 1, 2, 3 };
+        var array = new[] { 1, 2, 3 };
+        AssertExpressionPasses(() => list.SequenceEqual(array));
+    }
+
+    [Test]
+    [Ignore("Feature not yet implemented - Increment 9")]
+    public void Should_pass_with_custom_comparer()
+    {
+        var seq1 = new[] { "Hello", "World" };
+        var seq2 = new[] { "hello", "world" };
+        var comparer = StringComparer.OrdinalIgnoreCase;
+        AssertExpressionPasses(() => seq1.SequenceEqual(seq2, comparer));
+    }
+
+    [Test]
+    [Ignore("Feature not yet implemented - Increment 9")]
+    public void Should_pass_with_single_element_sequences()
+    {
+        var seq1 = new[] { 42 };
+        var seq2 = new[] { 42 };
+        AssertExpressionPasses(() => seq1.SequenceEqual(seq2));
+    }
+
+    #endregion
+
+    #region Failure Formatting Tests
+
     [Test]
     [Ignore("Feature not yet implemented - Increment 9")]
     public void Should_show_unified_diff()
@@ -38,4 +90,6 @@ public class SequenceEqualFixture : TestBase
         // Expected: Custom comparison logic used in diff
         Assert.Fail("SequenceEqual custom comparer support not yet implemented");
     }
+
+    #endregion
 }

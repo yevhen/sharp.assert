@@ -53,4 +53,28 @@ public class CollectionComparisonFixture : TestBase
             "left == right", "CollectionComparisonFixture.cs", 60,
             "*Missing elements: [1]*");
     }
+
+    [Test]
+    public void Should_pass_when_collections_are_equal()
+    {
+        var left = new List<int> { 1, 2, 3 };
+        var right = new List<int> { 1, 2, 3 };
+        AssertExpressionPasses(() => left.SequenceEqual(right));
+    }
+
+    [Test]
+    public void Should_pass_when_empty_collections_are_equal()
+    {
+        var left = new List<int>();
+        var right = new List<int>();
+        AssertExpressionPasses(() => left.SequenceEqual(right));
+    }
+
+    [Test]
+    public void Should_pass_with_different_collection_types()
+    {
+        var list = new List<int> { 1, 2, 3 };
+        var array = new[] { 1, 2, 3 };
+        AssertExpressionPasses(() => list.SequenceEqual(array));
+    }
 }
