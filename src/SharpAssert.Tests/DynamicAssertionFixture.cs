@@ -1,3 +1,5 @@
+using FluentAssertions;
+
 namespace SharpAssert;
 
 [TestFixture]
@@ -73,12 +75,19 @@ public class DynamicAssertionFixture : TestBase
     #region Failure Formatting Tests
 
     [Test]
-    [Ignore("Feature not yet implemented - Increment 12")]
     public void Should_handle_dynamic_binary()
     {
-        // Assert(dynamic == 5) should show both values using DLR
-        // Expected: Dynamic operand values displayed correctly
-        Assert.Fail("Dynamic binary comparison not yet implemented");
+        // Act & Assert - Should use AssertDynamicBinary for dynamic == static comparison
+        var action = () => SharpInternal.AssertDynamicBinary(
+            () => (object?)(dynamic)42,
+            () => (object?)5,
+            BinaryOp.Eq,
+            "dynamic == 5",
+            "TestFile.cs",
+            10);
+
+        action.Should().Throw<SharpAssertionException>()
+            .WithMessage("*42*5*");
     }
 
     [Test]
@@ -91,21 +100,32 @@ public class DynamicAssertionFixture : TestBase
     }
 
     [Test]
-    [Ignore("Feature not yet implemented - Increment 12")]
     public void Should_apply_dynamic_operator_semantics()
     {
-        // Assert(dynamic == other) should use DLR for comparison
-        // Expected: Dynamic Language Runtime operator semantics used
-        Assert.Fail("Dynamic operator semantics not yet implemented");
+        // Test that dynamic comparison works correctly for success case
+        var action = () => SharpInternal.AssertDynamicBinary(
+            () => (object?)(dynamic)42,
+            () => (object?)42,
+            BinaryOp.Eq,
+            "dynamic == 42",
+            "TestFile.cs",
+            10);
+
+        action.Should().NotThrow();
     }
 
     [Test]
-    [Ignore("Feature not yet implemented - Increment 12")]
     public void Should_show_minimal_diagnostics_for_complex_dynamic()
     {
         // Complex dynamic expressions should fall back gracefully
-        // Expected: Basic failure message when rich diagnostics not possible
-        Assert.Fail("Dynamic fallback diagnostics not yet implemented");
+        var action = () => SharpInternal.AssertDynamic(
+            () => (dynamic)false,
+            "dynamic false expression",
+            "TestFile.cs",
+            20);
+
+        action.Should().Throw<SharpAssertionException>()
+            .WithMessage("*dynamic false expression*TestFile.cs*Result: False*");
     }
 
     #endregion

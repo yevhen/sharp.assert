@@ -170,6 +170,102 @@ public static class SharpInternal
             : $"Assertion failed: {context.Expression}  at {locationPart}\n  Result: False";
     }
     
+    /// <summary>
+    /// Validates a dynamic binary comparison and provides detailed failure information.
+    /// </summary>
+    /// <param name="left">Function that returns the left operand</param>
+    /// <param name="right">Function that returns the right operand</param>
+    /// <param name="op">Binary comparison operator</param>
+    /// <param name="expr">Text representation of the expression</param>
+    /// <param name="file">Source file where assertion occurred</param>
+    /// <param name="line">Line number where assertion occurred</param>
+    public static void AssertDynamicBinary(
+        Func<object?> left,
+        Func<object?> right,
+        BinaryOp op,
+        string expr,
+        string file,
+        int line)
+    {
+        // Evaluate operands once
+        var leftValue = left();
+        var rightValue = right();
+
+        // Perform dynamic comparison using DLR operator semantics
+        var comparisonResult = EvaluateDynamicBinaryComparison(op, leftValue, rightValue);
+
+        if (!comparisonResult)
+        {
+            var context = new AssertionContext(expr, file, line, null);
+            var failureMessage = FormatDynamicBinaryFailure(leftValue, rightValue, context);
+            throw new SharpAssertionException(failureMessage);
+        }
+    }
+
+    /// <summary>
+    /// Validates a dynamic expression and provides basic failure information.
+    /// </summary>
+    /// <param name="condition">Function that returns boolean to validate</param>
+    /// <param name="expr">Text representation of the expression</param>
+    /// <param name="file">Source file where assertion occurred</param>
+    /// <param name="line">Line number where assertion occurred</param>
+    public static void AssertDynamic(
+        Func<bool> condition,
+        string expr,
+        string file,
+        int line)
+    {
+        var result = condition();
+        if (!result)
+        {
+            var context = new AssertionContext(expr, file, line, null);
+            var failureMessage = FormatDynamicFailure(context);
+            throw new SharpAssertionException(failureMessage);
+        }
+    }
+
+    static bool EvaluateDynamicBinaryComparison(BinaryOp op, object? leftValue, object? rightValue)
+    {
+        try
+        {
+            return op switch
+            {
+                BinaryOp.Eq => (dynamic?)leftValue == (dynamic?)rightValue,
+                BinaryOp.Ne => (dynamic?)leftValue != (dynamic?)rightValue,
+                BinaryOp.Lt => (dynamic?)leftValue < (dynamic?)rightValue,
+                BinaryOp.Le => (dynamic?)leftValue <= (dynamic?)rightValue,
+                BinaryOp.Gt => (dynamic?)leftValue > (dynamic?)rightValue,
+                BinaryOp.Ge => (dynamic?)leftValue >= (dynamic?)rightValue,
+                _ => false
+            };
+        }
+        catch
+        {
+            // If dynamic operation fails, fall back to false (comparison failed)
+            return false;
+        }
+    }
+
+    static string FormatDynamicBinaryFailure(object? leftValue, object? rightValue, AssertionContext context)
+    {
+        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
+
+        var baseMessage = context.Message is not null
+            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
+            : $"Assertion failed: {context.Expression}  at {locationPart}\n";
+
+        var formatter = GetComparisonFormatter(leftValue, rightValue);
+        return baseMessage + formatter.FormatComparison(leftValue, rightValue);
+    }
+
+    static string FormatDynamicFailure(AssertionContext context)
+    {
+        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
+        return context.Message is not null
+            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n  Result: False"
+            : $"Assertion failed: {context.Expression}  at {locationPart}\n  Result: False";
+    }
+
     static bool HasUnsupportedFeatures(Expression<Func<bool>> condition)
     {
         var detector = new UnsupportedFeatureDetector();

@@ -505,19 +505,19 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 
 ---
 
-### **Increment 12: Dynamic Support**
+### **Increment 12: Dynamic Support** ✅ COMPLETED
 **Outcome**: Dynamic expressions work with value diagnostics for binaries
 **Tests** (SharpAssert.Tests/DynamicAssertionFixture.cs):
-- `Should_handle_dynamic_binary()` - dynamic == 5 shows values
-- `Should_handle_dynamic_method_calls()` - dynamic.Method() > 0 works
-- `Should_apply_dynamic_operator_semantics()` - Uses DLR for comparison
-- `Should_show_minimal_diagnostics_for_complex_dynamic()` - Falls back gracefully
+- ✅ `Should_handle_dynamic_binary()` - dynamic == 5 shows values
+- ✅ `Should_handle_dynamic_method_calls()` - dynamic.Method() > 0 works
+- ✅ `Should_apply_dynamic_operator_semantics()` - Uses DLR for comparison
+- ✅ `Should_show_minimal_diagnostics_for_complex_dynamic()` - Falls back gracefully
 
 **Implementation**:
-- Create `SharpInternal.AssertDynamic` and `AssertDynamicBinary`
-- Rewriter detects dynamic via SemanticModel
-- Use dynamic binder for operator evaluation
-- Cast to object? in thunks for binary cases
+- ✅ Create `SharpInternal.AssertDynamic` and `AssertDynamicBinary`
+- ✅ Rewriter detects dynamic via SemanticModel
+- ✅ Use dynamic binder for operator evaluation
+- ✅ Cast to object? in thunks for binary cases
 
 ---
 

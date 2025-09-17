@@ -215,3 +215,13 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Type System Integration:** Cast nullable types properly with `SingletonSeparatedList<TypeSyntax>(objectType)` for SyntaxFactory TypeArgumentList
 - **BinaryOp Enum Mapping:** Map SyntaxKind tokens to BinaryOp enum values for runtime evaluation: EqualsEqualsToken => "Eq", etc.
 - **Test Strategy:** Use FluentAssertions `.Where(ex => ex.Message.Contains(...))` pattern for async exception testing with complex message validation
+
+## Dynamic Support Implementation (Increment 12)
+
+- **Dynamic Language Runtime (DLR) Integration:** Use `(dynamic?)leftValue == (dynamic?)rightValue` pattern for dynamic operator semantics in `EvaluateDynamicBinaryComparison`
+- **Exception Handling Strategy:** Wrap dynamic operations in try-catch blocks and return false on failure - let comparison fail gracefully rather than propagate exceptions
+- **Formatter Reuse:** Dynamic binary comparisons reuse existing `IComparisonFormatter` infrastructure (StringComparisonFormatter, CollectionComparisonFormatter, etc.) for consistent diff output
+- **Minimal Diagnostics Philosophy:** For general dynamic expressions, provide basic failure information (expression text + "Result: False") following same pattern as async support
+- **Method Signature Consistency:** Both `AssertDynamic` and `AssertDynamicBinary` follow same parameter pattern as async counterparts for consistency
+- **Test Pattern Migration:** Convert ignored placeholder tests to real implementation tests using FluentAssertions `.Should().Throw<T>()` and `.Should().NotThrow()` patterns
+- **Object Type Casting:** Dynamic thunks cast to `object?` for compatibility with comparison formatter system that expects object references
