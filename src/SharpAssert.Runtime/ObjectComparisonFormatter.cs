@@ -15,12 +15,12 @@ class ObjectComparisonFormatter : IComparisonFormatter
 
     public string FormatComparison(object? leftValue, object? rightValue)
     {
-        if (leftValue == null && rightValue == null) 
+        if (leftValue == null && rightValue == null)
             return string.Empty;
-        if (leftValue == null) 
-            return "  Left:  null\n  Right: " + FormatObjectType(rightValue);
-        if (rightValue == null) 
-            return "  Left:  " + FormatObjectType(leftValue) + "\n  Right: null";
+        if (leftValue == null)
+            return "  Left:  null\n  Right: " + FormatObjectValue(rightValue);
+        if (rightValue == null)
+            return "  Left:  " + FormatObjectValue(leftValue) + "\n  Right: null";
 
         // Use CompareLogic to get detailed differences
         var compareLogic = new CompareLogic();
@@ -49,6 +49,45 @@ class ObjectComparisonFormatter : IComparisonFormatter
     {
         if (value == null) return "null";
         return value.GetType().Name;
+    }
+
+    static string FormatObjectValue(object? value)
+    {
+        if (value == null) return "null";
+
+        // For anonymous types, use ToString() which should give a reasonable representation
+        var str = value.ToString();
+
+        // If ToString() just returns the type name, it's not useful, so format it differently
+        if (str == value.GetType().ToString() || str == value.GetType().Name)
+        {
+            // For anonymous types or objects without useful ToString, try to format properties
+            return FormatObjectProperties(value);
+        }
+
+        return str;
+    }
+
+    static string FormatObjectProperties(object obj)
+    {
+        try
+        {
+            var properties = obj.GetType().GetProperties();
+            if (properties.Length == 0)
+                return obj.GetType().Name;
+
+            var props = properties
+                .Where(p => p.CanRead && p.GetIndexParameters().Length == 0)
+                .Take(5) // Limit to first 5 properties
+                .Select(p => $"{p.Name} = {p.GetValue(obj)}")
+                .ToArray();
+
+            return props.Length > 0 ? "{ " + string.Join(", ", props) + " }" : obj.GetType().Name;
+        }
+        catch
+        {
+            return obj.GetType().Name;
+        }
     }
 
     static string FormatObjectDifferences(IList<Difference> differences)

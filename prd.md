@@ -521,23 +521,25 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 
 ---
 
-### **Increment 13: Thread-Safe Configuration**
-**Outcome**: Tests can override configuration without affecting parallel tests
-**Tests** (SharpAssert.Tests/ConfigurationFixture.cs):
-- `Should_use_default_options()` - Default values applied
-- `Should_override_with_scoped_options()` - using block changes settings
-- `Should_restore_after_scope()` - Original settings restored
-- `Should_isolate_parallel_test_configs()` - Parallel tests don't interfere
-
+### **Increment 14: Nullable Type Support** ✅ COMPLETED
+**Outcome**: Nullable value types and reference types display clear null state diagnostics
+**Tests** (SharpAssert.Tests/NullableTypeFixture.cs):
+- ✅ `Should_show_null_state_for_nullable_int()` - int? null shows "HasValue: false"
+- ✅ `Should_show_value_state_for_nullable_int()` - int? with value shows "HasValue: true, Value: 42"
+- ✅ `Should_show_null_state_for_nullable_bool()` - bool? null comparison
+- ✅ `Should_show_null_state_for_nullable_DateTime()` - DateTime? null comparison
+- ✅ `Should_handle_nullable_reference_types()` - string?, object? null comparison
+- ✅ `Should_show_HasValue_information_in_detailed_diagnostics()` - Full nullable state
+- ✅ `Should_handle_null_comparison_edge_cases()` - nullable == null cases
 **Implementation**:
-- Create SharpOptions record with settings
-- Implement SharpConfig with AsyncLocal<SharpOptions>
-- WithOptions returns IDisposable for scoping
-- All formatters read from SharpConfig.Current
+- ✅ Create `NullableComparisonFormatterWithTypes` for nullable value types
+- ✅ Enhance `ExpressionAnalyzer` to detect nullable types at expression level
+- ✅ Improve `ObjectComparisonFormatter` for better reference type display
+- ✅ Support both nullable value types (int?, bool?) and reference types (string?, object?)
 
 ---
 
-### **Increment 14: Rewriter Robustness & Fallback**
+### **Increment 15: Rewriter Robustness & Fallback**
 **Outcome**: Complex/invalid expressions gracefully fall back to original Assert
 **Tests** (SharpAssert.Rewriter.Tests/FallbackFixture.cs):
 - `Should_leave_invalid_syntax_unchanged()` - Malformed code not rewritten
@@ -553,20 +555,19 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 
 ---
 
-### **Increment 15: Integration & Polish**
-**Outcome**: Complete integration with test frameworks and external tools
-**Tests** (SharpAssert.Integration.Tests/*):
-- `Should_work_with_xunit()` - Full xUnit integration test
-- `Should_work_with_nunit()` - Full NUnit integration test  
-- `Should_attach_files_to_test_context()` - NUnit/MSTest file attachments
-- `Should_respect_all_config_options()` - Verify all settings work
+### **Increment 16: Thread-Safe Configuration**
+**Outcome**: Tests can override configuration without affecting parallel tests
+**Tests** (SharpAssert.Tests/ConfigurationFixture.cs):
+- `Should_use_default_options()` - Default values applied
+- `Should_override_with_scoped_options()` - using block changes settings
+- `Should_restore_after_scope()` - Original settings restored
+- `Should_isolate_parallel_test_configs()` - Parallel tests don't interfere
 
 **Implementation**:
-- Create example projects for each test framework
-- Add Verify.* integration (optional)
-- Polish error message formatting
-- Create NuGet package with .targets file
-- Documentation and samples
+- Create SharpOptions record with settings
+- Implement SharpConfig with AsyncLocal<SharpOptions>
+- WithOptions returns IDisposable for scoping
+- All formatters read from SharpConfig.Current
 
 ---
 

@@ -4,21 +4,12 @@ using static System.Linq.Expressions.ExpressionType;
 
 namespace SharpAssert;
 
-class ExpressionAnalyzer : ExpressionVisitor
+abstract class ExpressionAnalyzer : ExpressionVisitor
 {
-    static readonly IComparisonFormatter DefaultFormatter = new DefaultComparisonFormatter();
-
-    static readonly IComparisonFormatter[] ComparisonFormatters =
-    [
-        new StringComparisonFormatter(),
-        new CollectionComparisonFormatter(),
-        new ObjectComparisonFormatter(),
-    ];
-
     static readonly string[] LinqOperationMethods = ["Contains", "Any", "All"];
     const string SequenceEqualMethod = "SequenceEqual";
 
-    public string AnalyzeFailure(Expression<Func<bool>> expression, AssertionContext context)
+    public static string AnalyzeFailure(Expression<Func<bool>> expression, AssertionContext context)
     {
         switch (expression.Body)
         {
@@ -32,7 +23,7 @@ class ExpressionAnalyzer : ExpressionVisitor
 
                 return EvaluateBinaryExpression(binaryExpr.NodeType, leftValue, rightValue)
                     ? string.Empty
-                    : AnalyzeBinaryFailure(leftValue, rightValue, context);
+                    : AnalyzeBinaryFailure(leftValue, rightValue, binaryExpr.Left.Type, binaryExpr.Right.Type, context);
             }
             case UnaryExpression { NodeType: Not } unaryExpr:
             {
@@ -111,25 +102,17 @@ class ExpressionAnalyzer : ExpressionVisitor
                $"  !: Operand was {FormatValue(operandValue)}";
     }
 
-    static string AnalyzeBinaryFailure(object? leftValue, object? rightValue, AssertionContext context)
+    static string AnalyzeBinaryFailure(object? leftValue, object? rightValue, Type leftType, Type rightType, AssertionContext context)
     {
         var locationPart = GetLocationPart(context);
-        
         var baseMessage = FormatBaseMessage(context, locationPart);
-        
-        var formatter = GetComparisonFormatter(leftValue, rightValue);
-        return baseMessage + formatter.FormatComparison(leftValue, rightValue);
-    }
 
-    static IComparisonFormatter GetComparisonFormatter(object? leftValue, object? rightValue)
-    {
-        foreach (var formatter in ComparisonFormatters)
-        {
-            if (formatter.CanFormat(leftValue, rightValue))
-                return formatter;
-        }
-        
-        return DefaultFormatter;
+        var left = new AssertionOperand(leftValue, leftType);
+        var right = new AssertionOperand(rightValue, rightType);
+
+        var formatter = ComparisonFormatterService.GetComparisonFormatter(left, right);
+
+        return $"{baseMessage}{formatter.FormatComparison(left, right)}";
     }
 
     static string FormatValue(object? value) => value switch

@@ -37,32 +37,13 @@ public static class SharpInternal
             return;
         }
 
-        var analyzer = new ExpressionAnalyzer();
         var context = new AssertionContext(expr, file, line, message);
-        var failureMessage = analyzer.AnalyzeFailure(condition, context);
+        var failureMessage = ExpressionAnalyzer.AnalyzeFailure(condition, context);
         
         if (string.IsNullOrEmpty(failureMessage))
             return;
             
         throw new SharpAssertionException(failureMessage);
-    }
-    
-    static void UsePowerAssert(Expression<Func<bool>> condition, string? message)
-    {
-        try
-        {
-            PowerAssert.PAssert.IsTrue(condition);
-        }
-        catch (Exception ex)
-        {
-            var failureMessage = message is not null 
-                ? $"{message}\n{ex.Message}"
-                : ex.Message;
-
-            var finalMessage = failureMessage.Replace("IsTrue", "Assert");
-
-            throw new SharpAssertionException(finalMessage);
-        }
     }
     
     /// <summary>
@@ -78,13 +59,11 @@ public static class SharpInternal
         string file,
         int line)
     {
-        var result = await conditionAsync();
-        if (!result)
-        {
-            var context = new AssertionContext(expr, file, line, null);
-            var failureMessage = FormatAsyncFailure(context);
+        var context = new AssertionContext(expr, file, line, null);
+        var failureMessage = await AsyncExpressionAnalyzer.AnalyzeSimpleAsyncFailure(conditionAsync, context);
+
+        if (!string.IsNullOrEmpty(failureMessage))
             throw new SharpAssertionException(failureMessage);
-        }
     }
     
     /// <summary>
@@ -104,71 +83,13 @@ public static class SharpInternal
         string file,
         int line)
     {
-        // Evaluate operands in source order (left then right)
-        var leftValue = await leftAsync();
-        var rightValue = await rightAsync();
-        
-        // Perform comparison using same logic as sync binary expressions
-        var comparisonResult = EvaluateBinaryComparison(op, leftValue, rightValue);
-        
-        if (!comparisonResult)
-        {
-            var context = new AssertionContext(expr, file, line, null);
-            var failureMessage = FormatAsyncBinaryFailure(leftValue, rightValue, context);
-            throw new SharpAssertionException(failureMessage);
-        }
-    }
-    
-    static bool EvaluateBinaryComparison(BinaryOp op, object? leftValue, object? rightValue) => op switch
-    {
-        BinaryOp.Eq => Equals(leftValue, rightValue),
-        BinaryOp.Ne => !Equals(leftValue, rightValue),
-        BinaryOp.Lt => Comparer.Default.Compare(leftValue, rightValue) < 0,
-        BinaryOp.Le => Comparer.Default.Compare(leftValue, rightValue) <= 0,
-        BinaryOp.Gt => Comparer.Default.Compare(leftValue, rightValue) > 0,
-        BinaryOp.Ge => Comparer.Default.Compare(leftValue, rightValue) >= 0,
-        _ => false
-    };
-    
-    static string FormatAsyncBinaryFailure(object? leftValue, object? rightValue, AssertionContext context)
-    {
-        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
-        
-        var baseMessage = context.Message is not null
-            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
-            : $"Assertion failed: {context.Expression}  at {locationPart}\n";
-        
-        var formatter = GetComparisonFormatter(leftValue, rightValue);
-        return baseMessage + formatter.FormatComparison(leftValue, rightValue);
-    }
-    
-    static IComparisonFormatter GetComparisonFormatter(object? leftValue, object? rightValue)
-    {
-        foreach (var formatter in ComparisonFormatters)
-        {
-            if (formatter.CanFormat(leftValue, rightValue))
-                return formatter;
-        }
-        
-        return DefaultFormatter;
-    }
-    
-    static readonly IComparisonFormatter DefaultFormatter = new DefaultComparisonFormatter();
+        var context = new AssertionContext(expr, file, line, null);
+        var failureMessage = await AsyncExpressionAnalyzer.AnalyzeAsyncBinaryFailure(leftAsync, rightAsync, op, context);
 
-    static readonly IComparisonFormatter[] ComparisonFormatters =
-    [
-        new StringComparisonFormatter(),
-        new CollectionComparisonFormatter(),
-        new ObjectComparisonFormatter(),
-    ];
-    
-    static string FormatAsyncFailure(AssertionContext context)
-    {
-        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
-        return context.Message is not null
-            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n  Result: False"
-            : $"Assertion failed: {context.Expression}  at {locationPart}\n  Result: False";
+        if (!string.IsNullOrEmpty(failureMessage))
+            throw new SharpAssertionException(failureMessage);
     }
+    
     
     /// <summary>
     /// Validates a dynamic binary comparison and provides detailed failure information.
@@ -187,19 +108,11 @@ public static class SharpInternal
         string file,
         int line)
     {
-        // Evaluate operands once
-        var leftValue = left();
-        var rightValue = right();
+        var context = new AssertionContext(expr, file, line, null);
+        var failureMessage = DynamicExpressionAnalyzer.AnalyzeDynamicBinaryFailure(left, right, op, context);
 
-        // Perform dynamic comparison using DLR operator semantics
-        var comparisonResult = EvaluateDynamicBinaryComparison(op, leftValue, rightValue);
-
-        if (!comparisonResult)
-        {
-            var context = new AssertionContext(expr, file, line, null);
-            var failureMessage = FormatDynamicBinaryFailure(leftValue, rightValue, context);
+        if (!string.IsNullOrEmpty(failureMessage))
             throw new SharpAssertionException(failureMessage);
-        }
     }
 
     /// <summary>
@@ -215,55 +128,29 @@ public static class SharpInternal
         string file,
         int line)
     {
-        var result = condition();
-        if (!result)
-        {
-            var context = new AssertionContext(expr, file, line, null);
-            var failureMessage = FormatDynamicFailure(context);
+        var context = new AssertionContext(expr, file, line, null);
+        var failureMessage = DynamicExpressionAnalyzer.AnalyzeSimpleDynamicFailure(condition, context);
+
+        if (!string.IsNullOrEmpty(failureMessage))
             throw new SharpAssertionException(failureMessage);
-        }
     }
 
-    static bool EvaluateDynamicBinaryComparison(BinaryOp op, object? leftValue, object? rightValue)
+    static void UsePowerAssert(Expression<Func<bool>> condition, string? message)
     {
         try
         {
-            return op switch
-            {
-                BinaryOp.Eq => (dynamic?)leftValue == (dynamic?)rightValue,
-                BinaryOp.Ne => (dynamic?)leftValue != (dynamic?)rightValue,
-                BinaryOp.Lt => (dynamic?)leftValue < (dynamic?)rightValue,
-                BinaryOp.Le => (dynamic?)leftValue <= (dynamic?)rightValue,
-                BinaryOp.Gt => (dynamic?)leftValue > (dynamic?)rightValue,
-                BinaryOp.Ge => (dynamic?)leftValue >= (dynamic?)rightValue,
-                _ => false
-            };
+            PowerAssert.PAssert.IsTrue(condition);
         }
-        catch
+        catch (Exception ex)
         {
-            // If dynamic operation fails, fall back to false (comparison failed)
-            return false;
+            var failureMessage = message is not null
+                ? $"{message}\n{ex.Message}"
+                : ex.Message;
+
+            var finalMessage = failureMessage.Replace("IsTrue", "Assert");
+
+            throw new SharpAssertionException(finalMessage);
         }
-    }
-
-    static string FormatDynamicBinaryFailure(object? leftValue, object? rightValue, AssertionContext context)
-    {
-        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
-
-        var baseMessage = context.Message is not null
-            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
-            : $"Assertion failed: {context.Expression}  at {locationPart}\n";
-
-        var formatter = GetComparisonFormatter(leftValue, rightValue);
-        return baseMessage + formatter.FormatComparison(leftValue, rightValue);
-    }
-
-    static string FormatDynamicFailure(AssertionContext context)
-    {
-        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
-        return context.Message is not null
-            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n  Result: False"
-            : $"Assertion failed: {context.Expression}  at {locationPart}\n  Result: False";
     }
 
     static bool HasUnsupportedFeatures(Expression<Func<bool>> condition)
@@ -272,4 +159,6 @@ public static class SharpInternal
         detector.Visit(condition);
         return detector.HasUnsupported;
     }
+
+
 }
