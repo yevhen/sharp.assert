@@ -46,7 +46,7 @@
   
   <!-- Suppress warnings specific to MSBuild task packages -->
   <PropertyGroup>
-    <NoWarn>$(NoWarn);NU5128;NETSDK1206</NoWarn>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
   </PropertyGroup>
 
   <!-- Include all necessary assemblies for the MSBuild task -->

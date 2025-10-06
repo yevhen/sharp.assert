@@ -6,9 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <RootNamespace>SharpAssert.IntegrationTests</RootNamespace>
-    <!-- Suppress PowerAssert warning -->
-    <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
-    
+
     <!-- Override the rewriter assembly path for local development -->
     <SharpAssertRewriterPath>$(MSBuildThisFileDirectory)..\SharpAssert\bin\$(Configuration)\net9.0\SharpAssert.dll</SharpAssertRewriterPath>
   </PropertyGroup>

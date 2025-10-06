@@ -141,12 +141,7 @@ To force PowerAssert for all assertions:
 ```
 
 ## Known issues
-
-- Warning about legacy RID used by PowerAssert (dependency). Fix by adding to project properties:
-```xml
-  <!-- Suppress NETSDK1206 warning from PowerAssert's Libuv dependency -->
-  <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
-```
+- 
 - Collection initializers could not be used in expression trees. Compiler limitation. Use `new[]{1,2,3}` instead of `[1, 2, 3]`
 
 
