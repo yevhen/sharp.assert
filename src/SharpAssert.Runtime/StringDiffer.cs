@@ -11,19 +11,25 @@ static class StringDiffer
     
     public static string FormatDiff(string? left, string? right)
     {
-        if (left == null && right == null) return string.Empty;
-        if (left == null) return $"  Left:  null\n  Right: {FormatStringValue(right)}";
-        if (right == null) return $"  Left:  {FormatStringValue(left)}\n  Right: null";
-        
+        if (left == null || right == null)
+            return FormatNullComparison(left, right);
+
         var leftTruncated = TruncateString(left);
         var rightTruncated = TruncateString(right);
-        
+
         var basic = $"  Left:  {FormatStringValue(leftTruncated)}\n  Right: {FormatStringValue(rightTruncated)}";
-        
+
         if (IsMultiline(left) || IsMultiline(right))
             return basic + "\n" + GenerateMultilineDiff(leftTruncated, rightTruncated);
-        
+
         return basic + "\n" + GenerateInlineDiff(leftTruncated, rightTruncated);
+    }
+
+    static string FormatNullComparison(string? left, string? right)
+    {
+        if (left == null && right == null) return string.Empty;
+        if (left == null) return $"  Left:  null\n  Right: {FormatStringValue(right)}";
+        return $"  Left:  {FormatStringValue(left)}\n  Right: null";
     }
     
     static string FormatStringValue(string? value)
@@ -42,104 +48,100 @@ static class StringDiffer
     
     static string GenerateInlineDiff(string left, string right)
     {
-        // For single-line strings, use character-level diff
         var differ = new Differ();
         var diffResult = differ.CreateCharacterDiffs(left, right, ignoreWhitespace: false);
-        
-        var result = "  Diff: ";
-        foreach (var piece in diffResult.DiffBlocks)
-        {
-            if (piece.DeleteCountA > 0)
-            {
-                var deleted = left.Substring(piece.DeleteStartA, piece.DeleteCountA);
-                result += $"[-{deleted}]";
-            }
-            if (piece.InsertCountB > 0)
-            {
-                var inserted = right.Substring(piece.InsertStartB, piece.InsertCountB);
-                result += $"[+{inserted}]";
-            }
-        }
-        
-        // Add unchanged parts
+
         var leftPos = 0;
-        var rightPos = 0;
         var resultBuilder = new System.Text.StringBuilder("  Diff: ");
-        
+
         foreach (var block in diffResult.DiffBlocks)
         {
-            // Add unchanged text before this block
-            if (block.DeleteStartA > leftPos)
-            {
-                resultBuilder.Append(left.Substring(leftPos, block.DeleteStartA - leftPos));
-            }
-            
-            // Add the changes
-            if (block.DeleteCountA > 0)
-            {
-                var deleted = left.Substring(block.DeleteStartA, block.DeleteCountA);
-                resultBuilder.Append($"[-{deleted}]");
-            }
-            if (block.InsertCountB > 0)
-            {
-                var inserted = right.Substring(block.InsertStartB, block.InsertCountB);
-                resultBuilder.Append($"[+{inserted}]");
-            }
-            
+            AppendUnchangedText(resultBuilder, left, leftPos, block.DeleteStartA);
+            AppendDeletedText(resultBuilder, left, block.DeleteStartA, block.DeleteCountA);
+            AppendInsertedText(resultBuilder, right, block.InsertStartB, block.InsertCountB);
+
             leftPos = block.DeleteStartA + block.DeleteCountA;
-            rightPos = block.InsertStartB + block.InsertCountB;
         }
-        
-        // Add any remaining unchanged text
-        if (leftPos < left.Length)
-        {
-            resultBuilder.Append(left.Substring(leftPos));
-        }
-        
+
+        AppendRemainingText(resultBuilder, left, leftPos);
         return resultBuilder.ToString();
+    }
+
+    static void AppendUnchangedText(System.Text.StringBuilder builder, string source, int start, int end)
+    {
+        if (end > start)
+            builder.Append(source.Substring(start, end - start));
+    }
+
+    static void AppendDeletedText(System.Text.StringBuilder builder, string source, int start, int count)
+    {
+        if (count <= 0) return;
+
+        var deleted = source.Substring(start, count);
+        builder.Append($"[-{deleted}]");
+    }
+
+    static void AppendInsertedText(System.Text.StringBuilder builder, string source, int start, int count)
+    {
+        if (count <= 0) return;
+
+        var inserted = source.Substring(start, count);
+        builder.Append($"[+{inserted}]");
+    }
+
+    static void AppendRemainingText(System.Text.StringBuilder builder, string source, int position)
+    {
+        if (position < source.Length)
+            builder.Append(source.Substring(position));
     }
     
     static string GenerateMultilineDiff(string left, string right)
     {
         var differ = new Differ();
         var diffResult = differ.CreateLineDiffs(left, right, ignoreWhitespace: false);
-        
+
         var result = new List<string>();
         var leftLines = left.Split('\n');
         var rightLines = right.Split('\n');
-        
+
         foreach (var block in diffResult.DiffBlocks)
         {
-            // Show deleted lines
-            for (var i = 0; i < block.DeleteCountA; i++)
-            {
-                var lineIndex = block.DeleteStartA + i;
-                if (lineIndex < leftLines.Length)
-                {
-                    result.Add($"  - {leftLines[lineIndex]}");
-                }
-            }
-            
-            // Show inserted lines
-            for (var i = 0; i < block.InsertCountB; i++)
-            {
-                var lineIndex = block.InsertStartB + i;
-                if (lineIndex < rightLines.Length)
-                {
-                    result.Add($"  + {rightLines[lineIndex]}");
-                }
-            }
+            AppendDeletedLines(result, leftLines, block.DeleteStartA, block.DeleteCountA);
+            AppendInsertedLines(result, rightLines, block.InsertStartB, block.InsertCountB);
         }
-        
+
         if (result.Count == 0)
             result.Add("  (No specific line differences found)");
-        
-        if (result.Count > MaxDiffLines)
-        {
-            result = result.Take(MaxDiffLines).ToList();
-            result.Add("  ... (output truncated)");
-        }
-        
+
+        TruncateResultIfNeeded(result);
         return string.Join("\n", result);
+    }
+
+    static void AppendDeletedLines(List<string> output, string[] lines, int start, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            var lineIndex = start + i;
+            if (lineIndex < lines.Length)
+                output.Add($"  - {lines[lineIndex]}");
+        }
+    }
+
+    static void AppendInsertedLines(List<string> output, string[] lines, int start, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            var lineIndex = start + i;
+            if (lineIndex < lines.Length)
+                output.Add($"  + {lines[lineIndex]}");
+        }
+    }
+
+    static void TruncateResultIfNeeded(List<string> result)
+    {
+        if (result.Count <= MaxDiffLines) return;
+
+        result.RemoveRange(MaxDiffLines, result.Count - MaxDiffLines);
+        result.Add("  ... (output truncated)");
     }
 }

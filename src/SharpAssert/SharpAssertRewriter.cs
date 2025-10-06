@@ -82,26 +82,18 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         if (!IsSharpAssertCall(node))
             return base.VisitInvocationExpression(node);
 
-        var containsAwait = ContainsAwait(node);
-        if (containsAwait)
+        if (!ContainsAwait(node))
         {
-            var conditionArgument = node.ArgumentList.Arguments[0];
-            var isBinaryOperation = IsBinaryOperation(conditionArgument.Expression);
-            
-            if (isBinaryOperation)
-            {
-                HasRewrites = true;
-                return RewriteToAsyncBinary(node);
-            }
-            else
-            {
-                // General await case - skip rewriting for now (will be handled by AssertAsync in future)
-                return base.VisitInvocationExpression(node);
-            }
+            HasRewrites = true;
+            return RewriteToLambda(node);
         }
 
+        var conditionArgument = node.ArgumentList.Arguments[0];
+        if (!IsBinaryOperation(conditionArgument.Expression))
+            return base.VisitInvocationExpression(node);
+
         HasRewrites = true;
-        return RewriteToLambda(node);
+        return RewriteToAsyncBinary(node);
     }
 
     bool IsSharpAssertCall(InvocationExpressionSyntax node)
@@ -115,8 +107,10 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
             return false;
 
         var containingType = methodSymbol.ContainingType;
-        return containingType?.Name == "Sharp" &&
-               containingType.ContainingNamespace?.ToDisplayString() == "SharpAssert";
+        if (containingType?.Name != "Sharp")
+            return false;
+
+        return containingType.ContainingNamespace?.ToDisplayString() == "SharpAssert";
     }
 
     IMethodSymbol? GetMethodSymbol(InvocationExpressionSyntax node)
@@ -168,12 +162,13 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         var conditionArgument = node.ArgumentList.Arguments[0];
         var expression = conditionArgument.Expression;
         var expressionText = expression.ToString();
-        var lineNumber = semanticModel.SyntaxTree.GetLineSpan(node.Span).StartLinePosition.Line + LineNumberOffset;
-        
+        var lineSpan = semanticModel.SyntaxTree.GetLineSpan(node.Span);
+        var lineNumber = lineSpan.StartLinePosition.Line + LineNumberOffset;
+
         var messageExpression = node.ArgumentList.Arguments.Count > 1
             ? node.ArgumentList.Arguments[1].Expression
             : null;
-        
+
         return new RewriteData(expression, expressionText, lineNumber, messageExpression);
     }
 
@@ -219,17 +214,17 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
                 SyntaxKind.NumericLiteralExpression,
                 SyntaxFactory.Literal(value)));
 
-    static ArgumentSyntax CreateMessageArgument(ExpressionSyntax? messageExpression) =>
-        SyntaxFactory.Argument(
-            messageExpression ?? SyntaxFactory.LiteralExpression(
-                SyntaxKind.NullLiteralExpression,
-                SyntaxFactory.Token(SyntaxKind.NullKeyword)));
-
     static ArgumentSyntax CreateBooleanLiteralArgument(bool value) =>
         SyntaxFactory.Argument(
             SyntaxFactory.LiteralExpression(
                 value ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression,
                 SyntaxFactory.Token(value ? SyntaxKind.TrueKeyword : SyntaxKind.FalseKeyword)));
+
+    static ArgumentSyntax CreateMessageArgument(ExpressionSyntax? messageExpression) =>
+        SyntaxFactory.Argument(
+            messageExpression ?? SyntaxFactory.LiteralExpression(
+                SyntaxKind.NullLiteralExpression,
+                SyntaxFactory.Token(SyntaxKind.NullKeyword)));
 
     InvocationExpressionSyntax AddLineDirectives(InvocationExpressionSyntax invocation, InvocationExpressionSyntax originalNode, int lineNumber) =>
         invocation
@@ -251,35 +246,33 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
     ParenthesizedLambdaExpressionSyntax CreateAsyncThunk(ExpressionSyntax operand)
     {
         var containsAwait = operand.DescendantNodes().OfType<AwaitExpressionSyntax>().Any();
-        
-        if (containsAwait)
-        {
-            // Create async () => operand
-            return SyntaxFactory.ParenthesizedLambdaExpression()
-                .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
-                .WithParameterList(SyntaxFactory.ParameterList())
-                .WithExpressionBody(operand);
-        }
-        else
-        {
-            // Wrap sync operand: () => Task.FromResult<object?>(operand)
-            var objectType = SyntaxFactory.NullableType(
-                SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)));
-                
-            var taskFromResult = SyntaxFactory.InvocationExpression(
-                SyntaxFactory.MemberAccessExpression(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    SyntaxFactory.IdentifierName("Task"),
-                    SyntaxFactory.GenericName("FromResult")
-                        .WithTypeArgumentList(SyntaxFactory.TypeArgumentList(
-                            SyntaxFactory.SingletonSeparatedList<TypeSyntax>(objectType)))))
-                .WithArgumentList(SyntaxFactory.ArgumentList(
-                    SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(operand))));
-            
-            return SyntaxFactory.ParenthesizedLambdaExpression()
-                .WithParameterList(SyntaxFactory.ParameterList())
-                .WithExpressionBody(taskFromResult);
-        }
+        return containsAwait ? CreateAsyncLambda(operand) : WrapInTaskFromResult(operand);
+    }
+
+    static ParenthesizedLambdaExpressionSyntax CreateAsyncLambda(ExpressionSyntax operand) =>
+        SyntaxFactory.ParenthesizedLambdaExpression()
+            .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
+            .WithParameterList(SyntaxFactory.ParameterList())
+            .WithExpressionBody(operand);
+
+    static ParenthesizedLambdaExpressionSyntax WrapInTaskFromResult(ExpressionSyntax operand)
+    {
+        var objectType = SyntaxFactory.NullableType(
+            SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ObjectKeyword)));
+
+        var taskFromResult = SyntaxFactory.InvocationExpression(
+            SyntaxFactory.MemberAccessExpression(
+                SyntaxKind.SimpleMemberAccessExpression,
+                SyntaxFactory.IdentifierName("Task"),
+                SyntaxFactory.GenericName("FromResult")
+                    .WithTypeArgumentList(SyntaxFactory.TypeArgumentList(
+                        SyntaxFactory.SingletonSeparatedList<TypeSyntax>(objectType)))))
+            .WithArgumentList(SyntaxFactory.ArgumentList(
+                SyntaxFactory.SingletonSeparatedList(SyntaxFactory.Argument(operand))));
+
+        return SyntaxFactory.ParenthesizedLambdaExpression()
+            .WithParameterList(SyntaxFactory.ParameterList())
+            .WithExpressionBody(taskFromResult);
     }
 
     static string GetBinaryOpFromToken(SyntaxToken operatorToken) => operatorToken.Kind() switch

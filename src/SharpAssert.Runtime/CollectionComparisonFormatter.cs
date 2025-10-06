@@ -31,46 +31,60 @@ class CollectionComparisonFormatter : IComparisonFormatter
 
     static string AnalyzeCollectionDifferences(List<object?> left, List<object?> right)
     {
-        var result = new List<string>();
-        
-        // Basic left/right display
-        result.Add($"  Left:  {FormatCollectionPreview(left)}");
-        result.Add($"  Right: {FormatCollectionPreview(right)}");
-        
-        // Find first difference
+        var result = new List<string>
+        {
+            $"  Left:  {FormatCollectionPreview(left)}",
+            $"  Right: {FormatCollectionPreview(right)}"
+        };
+
+        var differenceMessage = FindFirstDifference(left, right);
+        if (differenceMessage != null)
+        {
+            result.Add(differenceMessage);
+            return string.Join("\n", result);
+        }
+
+        var lengthDifferenceMessage = DescribeLengthDifference(left, right);
+        if (lengthDifferenceMessage != null)
+            result.Add(lengthDifferenceMessage);
+
+        return string.Join("\n", result);
+    }
+
+    static string? FindFirstDifference(List<object?> left, List<object?> right)
+    {
         var minLength = Math.Min(left.Count, right.Count);
         for (var i = 0; i < minLength; i++)
         {
             if (!Equals(left[i], right[i]))
-            {
-                result.Add($"  First difference at index {i}: expected {FormatValue(left[i])}, got {FormatValue(right[i])}");
-                return string.Join("\n", result);
-            }
+                return $"  First difference at index {i}: expected {FormatValue(left[i])}, got {FormatValue(right[i])}";
         }
-        
-        // Handle length differences
+        return null;
+    }
+
+    static string? DescribeLengthDifference(List<object?> left, List<object?> right)
+    {
         if (left.Count > right.Count)
         {
             var extraElements = left.Skip(right.Count).Take(5).ToList();
-            result.Add($"  Extra elements: [{string.Join(", ", extraElements.Select(FormatValue))}]");
+            return $"  Extra elements: [{string.Join(", ", extraElements.Select(FormatValue))}]";
         }
-        else if (right.Count > left.Count)
+
+        if (right.Count > left.Count)
         {
             var missingElements = right.Skip(left.Count).Take(5).ToList();
-            result.Add($"  Missing elements: [{string.Join(", ", missingElements.Select(FormatValue))}]");
+            return $"  Missing elements: [{string.Join(", ", missingElements.Select(FormatValue))}]";
         }
-        
-        return string.Join("\n", result);
+
+        return null;
     }
 
     static string FormatCollectionPreview(List<object?> items)
     {
         const int maxPreview = 10;
         if (items.Count <= maxPreview)
-        {
             return $"[{string.Join(", ", items.Select(FormatValue))}]";
-        }
-        
+
         var preview = items.Take(maxPreview - 1).Select(FormatValue);
         return $"[{string.Join(", ", preview)}, ... ({items.Count} items)]";
     }
