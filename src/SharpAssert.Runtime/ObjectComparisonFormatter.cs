@@ -51,7 +51,7 @@ class ObjectComparisonFormatter : IComparisonFormatter
         return value.GetType().Name;
     }
 
-    static string FormatObjectValue(object? value)
+    static string? FormatObjectValue(object? value)
     {
         if (value == null) return "null";
 
