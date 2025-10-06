@@ -1,23 +1,12 @@
+#pragma warning disable CS1591
 using System.Linq.Expressions;
 
 namespace SharpAssert;
 
-/// <summary>Binary comparison operations for rewriter use.</summary>
 public enum BinaryOp { Eq, Ne, Lt, Le, Gt, Ge }
 
-/// <summary>Advanced assertion methods with detailed error reporting.</summary>
 public static class SharpInternal
 {
-    /// <summary>
-    /// Validates a boolean expression and provides detailed failure information.
-    /// </summary>
-    /// <param name="condition">Boolean expression to validate</param>
-    /// <param name="expr">Text representation of the expression</param>
-    /// <param name="file">Source file where assertion occurred</param>
-    /// <param name="line">Line number where assertion occurred</param>
-    /// <param name="message">Optional custom error message</param>
-    /// <param name="usePowerAssert">Force PowerAssert for all assertions</param>
-    /// <param name="usePowerAssertForUnsupported">Use PowerAssert for unsupported features</param>
     public static void Assert(
         Expression<Func<bool>> condition,
         string expr,
@@ -43,14 +32,7 @@ public static class SharpInternal
             
         throw new SharpAssertionException(failureMessage);
     }
-    
-    /// <summary>
-    /// Validates an async boolean expression and provides basic failure information.
-    /// </summary>
-    /// <param name="conditionAsync">Async function that returns boolean to validate</param>
-    /// <param name="expr">Text representation of the expression</param>
-    /// <param name="file">Source file where assertion occurred</param>
-    /// <param name="line">Line number where assertion occurred</param>
+
     public static async Task AssertAsync(
         Func<Task<bool>> conditionAsync,
         string expr,
@@ -63,16 +45,7 @@ public static class SharpInternal
         if (!string.IsNullOrEmpty(failureMessage))
             throw new SharpAssertionException(failureMessage);
     }
-    
-    /// <summary>
-    /// Validates an async binary comparison and provides detailed failure information.
-    /// </summary>
-    /// <param name="leftAsync">Async function that returns the left operand</param>
-    /// <param name="rightAsync">Async function that returns the right operand</param>
-    /// <param name="op">Binary comparison operator</param>
-    /// <param name="expr">Text representation of the expression</param>
-    /// <param name="file">Source file where assertion occurred</param>
-    /// <param name="line">Line number where assertion occurred</param>
+
     public static async Task AssertAsyncBinary(
         Func<Task<object?>> leftAsync,
         Func<Task<object?>> rightAsync,
@@ -87,17 +60,7 @@ public static class SharpInternal
         if (!string.IsNullOrEmpty(failureMessage))
             throw new SharpAssertionException(failureMessage);
     }
-    
-    
-    /// <summary>
-    /// Validates a dynamic binary comparison and provides detailed failure information.
-    /// </summary>
-    /// <param name="left">Function that returns the left operand</param>
-    /// <param name="right">Function that returns the right operand</param>
-    /// <param name="op">Binary comparison operator</param>
-    /// <param name="expr">Text representation of the expression</param>
-    /// <param name="file">Source file where assertion occurred</param>
-    /// <param name="line">Line number where assertion occurred</param>
+
     public static void AssertDynamicBinary(
         Func<object?> left,
         Func<object?> right,
@@ -113,13 +76,6 @@ public static class SharpInternal
             throw new SharpAssertionException(failureMessage);
     }
 
-    /// <summary>
-    /// Validates a dynamic expression and provides basic failure information.
-    /// </summary>
-    /// <param name="condition">Function that returns boolean to validate</param>
-    /// <param name="expr">Text representation of the expression</param>
-    /// <param name="file">Source file where assertion occurred</param>
-    /// <param name="line">Line number where assertion occurred</param>
     public static void AssertDynamic(
         Func<bool> condition,
         string expr,

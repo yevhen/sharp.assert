@@ -5,15 +5,27 @@ namespace SharpAssert;
 
 class ObjectComparisonFormatter : IComparisonFormatter
 {
-    const int MaxObjectDifferences = 20; // Limit property differences shown
+    const int MaxObjectDifferences = 20;
+    const int MaxPropertiesDisplayed = 5;
     
-    public bool CanFormat(object? leftValue, object? rightValue)
-    {
-        // Only handle objects that are not strings or collections (already handled by other formatters)
-        return IsObject(leftValue) || IsObject(rightValue);
-    }
+    public bool CanFormat(object? leftValue, object? rightValue) =>
+        IsObject(leftValue) || IsObject(rightValue);
 
     public string FormatComparison(object? leftValue, object? rightValue)
+    {
+        var nullResult = FormatNullComparison(leftValue, rightValue);
+        if (nullResult != null)
+            return nullResult;
+
+        var compareLogic = new CompareLogic();
+        compareLogic.Config.MaxDifferences = MaxObjectDifferences;
+
+        var result = compareLogic.Compare(leftValue, rightValue);
+
+        return result.AreEqual ? string.Empty : FormatObjectDifferences(result.Differences);
+    }
+
+    static string? FormatNullComparison(object? leftValue, object? rightValue)
     {
         if (leftValue == null && rightValue == null)
             return string.Empty;
@@ -21,52 +33,31 @@ class ObjectComparisonFormatter : IComparisonFormatter
             return "  Left:  null\n  Right: " + FormatObjectValue(rightValue);
         if (rightValue == null)
             return "  Left:  " + FormatObjectValue(leftValue) + "\n  Right: null";
-
-        // Use CompareLogic to get detailed differences
-        var compareLogic = new CompareLogic();
-        compareLogic.Config.MaxDifferences = MaxObjectDifferences;
-
-        var result = compareLogic.Compare(leftValue, rightValue);
-        
-        if (result.AreEqual)
-            return string.Empty; // Objects are equal, should not have gotten here
-
-        return FormatObjectDifferences(result.Differences);
+        return null;
     }
 
     static bool IsObject(object? value)
     {
-        if (value == null) return true; // null can be compared to objects
-        if (value is string) return false; // handled by StringComparisonFormatter
-        if (value is IEnumerable) return false; // handled by CollectionComparisonFormatter
-        if (value.GetType().IsPrimitive) return false; // primitives handled by DefaultComparisonFormatter
-        if (value is DateTime or TimeSpan or DateTimeOffset or Guid or Enum) return false; // common value types
-        
-        return true; // Everything else is considered an object
-    }
+        if (value == null) return true;
+        if (value is string) return false;
+        if (value is IEnumerable) return false;
+        if (value.GetType().IsPrimitive) return false;
+        if (value is DateTime or TimeSpan or DateTimeOffset or Guid or Enum) return false;
 
-    static string FormatObjectType(object? value)
-    {
-        if (value == null) return "null";
-        return value.GetType().Name;
+        return true;
     }
 
     static string? FormatObjectValue(object? value)
     {
         if (value == null) return "null";
 
-        // For anonymous types, use ToString() which should give a reasonable representation
         var str = value.ToString();
 
-        // If ToString() just returns the type name, it's not useful, so format it differently
-        if (str == value.GetType().ToString() || str == value.GetType().Name)
-        {
-            // For anonymous types or objects without useful ToString, try to format properties
-            return FormatObjectProperties(value);
-        }
-
-        return str;
+        return IsDefaultToString(value, str) ? FormatObjectProperties(value) : str;
     }
+
+    static bool IsDefaultToString(object value, string? str) =>
+        str == value.GetType().ToString() || str == value.GetType().Name;
 
     static string FormatObjectProperties(object obj)
     {
@@ -78,7 +69,7 @@ class ObjectComparisonFormatter : IComparisonFormatter
 
             var props = properties
                 .Where(p => p.CanRead && p.GetIndexParameters().Length == 0)
-                .Take(5) // Limit to first 5 properties
+                .Take(MaxPropertiesDisplayed)
                 .Select(p => $"{p.Name} = {p.GetValue(obj)}")
                 .ToArray();
 
@@ -97,19 +88,15 @@ class ObjectComparisonFormatter : IComparisonFormatter
             "  Property differences:"
         };
 
-        foreach (var diff in differences.Take(MaxObjectDifferences))
-        {
-            var propertyPath = diff.PropertyName;
-            var expectedValue = FormatValue(diff.Object1Value);
-            var actualValue = FormatValue(diff.Object2Value);
-            
-            lines.Add($"    {propertyPath}: expected {expectedValue}, got {actualValue}");
-        }
+        lines.AddRange(
+            from diff in differences.Take(MaxObjectDifferences)
+            let propertyPath = diff.PropertyName
+            let expectedValue = FormatValue(diff.Object1Value)
+            let actualValue = FormatValue(diff.Object2Value)
+            select $"    {propertyPath}: expected {expectedValue}, got {actualValue}");
 
         if (differences.Count > MaxObjectDifferences)
-        {
             lines.Add($"    ... ({differences.Count - MaxObjectDifferences} more differences)");
-        }
 
         return string.Join("\n", lines);
     }
