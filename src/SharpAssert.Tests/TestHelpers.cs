@@ -1,6 +1,6 @@
 namespace SharpAssert;
 
-internal class TestObject
+class TestObject
 {
     public bool IsValid { get; set; }
     
@@ -10,14 +10,14 @@ internal class TestObject
     }
 }
 
-internal class NonComparableClass
+class NonComparableClass
 {
     public string Name { get; set; } = "";
     
     public override string ToString() => Name;
 }
 
-internal class DifferentNonComparableClass
+class DifferentNonComparableClass
 {
     public int Value { get; set; }
     

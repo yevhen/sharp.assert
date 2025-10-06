@@ -2,14 +2,14 @@ using Microsoft.Build.Framework;
 
 namespace SharpAssert;
 
-internal enum ProcessingStatus
+enum ProcessingStatus
 {
     Skipped,      // File contains no Assert calls or is a generated file
     Processed,    // File contained Assert calls and was rewritten
     Generated     // File was copied unchanged but needs to be in output
 }
 
-internal record ProcessingResult(ProcessingStatus Status, string OutputPath);
+record ProcessingResult(ProcessingStatus Status, string OutputPath);
 
 public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
 {

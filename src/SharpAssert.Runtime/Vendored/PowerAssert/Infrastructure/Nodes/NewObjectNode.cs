@@ -1,4 +1,4 @@
-#nullable disable
+﻿#nullable disable
 ﻿using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
@@ -81,7 +81,7 @@ namespace PowerAssert.Infrastructure.Nodes
             walker("}");
         }
 
-        private void WalkParameter(NodeWalker walker, int depth, MemberAssignmentNode node)
+        void WalkParameter(NodeWalker walker, int depth, MemberAssignmentNode node)
         {
             var constant = node.Value as ConstantNode;
             if (constant != null && constant.Text == node.MemberName)

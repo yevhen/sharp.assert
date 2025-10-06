@@ -4,7 +4,7 @@ using DiffPlex.DiffBuilder.Model;
 
 namespace SharpAssert;
 
-internal static class StringDiffer
+static class StringDiffer
 {
     const int MaxStringLength = 1000;
     const int MaxDiffLines = 50;

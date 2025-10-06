@@ -37,7 +37,7 @@ public class RewriterFixture
                 { 
                     var x = 1;
                     #line 8 "{{absolutePath}}"
-            global::SharpAssert.SharpInternal.Assert(()=>x == 1,"x == 1","TestFile.cs",8,null,false,true)
+            global::SharpAssert.SharpInternal.Assert(()=>x == 1,"x == 1","TestFile.cs",8,null,false)
             #line default
             ; 
                 } 
@@ -77,7 +77,7 @@ public class RewriterFixture
                 { 
                     var items = new[] { 1, 2, 3 };
                     #line 8 "{{absolutePath}}"
-            global::SharpAssert.SharpInternal.Assert(()=>items.Contains(2) && items.Length > 0,"items.Contains(2) && items.Length > 0","TestFile.cs",8,null,false,true)
+            global::SharpAssert.SharpInternal.Assert(()=>items.Contains(2) && items.Length > 0,"items.Contains(2) && items.Length > 0","TestFile.cs",8,null,false)
             #line default
             ; 
                 } 
@@ -144,11 +144,11 @@ public class RewriterFixture
                     var x = 1;
                     var y = 2;
                     #line 9 "{{absolutePath}}"
-            global::SharpAssert.SharpInternal.Assert(()=>x == 1,"x == 1","TestFile.cs",9,null,false,true)
+            global::SharpAssert.SharpInternal.Assert(()=>x == 1,"x == 1","TestFile.cs",9,null,false)
             #line default
             ;
                     #line 10 "{{absolutePath}}"
-            global::SharpAssert.SharpInternal.Assert(()=>y > x,"y > x","TestFile.cs",10,null,false,true)
+            global::SharpAssert.SharpInternal.Assert(()=>y > x,"y > x","TestFile.cs",10,null,false)
             #line default
             ; 
                 } 
@@ -188,7 +188,7 @@ public class RewriterFixture
                 { 
                     var x = 1;
                     #line 8 "{{absolutePath}}"
-            global::SharpAssert.SharpInternal.Assert(()=>x == 2,"x == 2","TestFile.cs",8,"x should equal 2",false,true)
+            global::SharpAssert.SharpInternal.Assert(()=>x == 2,"x == 2","TestFile.cs",8,"x should equal 2",false)
             #line default
             ; 
                 } 
@@ -226,7 +226,7 @@ public class RewriterFixture
                 void Method() 
                 { 
                     #line 7 "{{absolutePath}}"
-            global::SharpAssert.SharpInternal.Assert(()=>false,"false","TestFile.cs",7,"Error: \"quoted\" text",false,true)
+            global::SharpAssert.SharpInternal.Assert(()=>false,"false","TestFile.cs",7,"Error: \"quoted\" text",false)
             #line default
             ; 
                 } 
@@ -264,7 +264,7 @@ public class RewriterFixture
                 void Method() 
                 { 
                     #line 7 "{{absolutePath}}"
-            global::SharpAssert.SharpInternal.Assert(()=>true,"true","TestFile.cs",7,null,false,true)
+            global::SharpAssert.SharpInternal.Assert(()=>true,"true","TestFile.cs",7,null,false)
             #line default
             ; 
                 } 
@@ -302,7 +302,7 @@ public class RewriterFixture
                 void Method() 
                 { 
                     #line 7 "{{absolutePath}}"
-            global::SharpAssert.SharpInternal.Assert(()=>true,"true","TestFile.cs",7,null,true,false)
+            global::SharpAssert.SharpInternal.Assert(()=>true,"true","TestFile.cs",7,null,true)
             #line default
             ; 
                 } 

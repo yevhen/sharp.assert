@@ -116,7 +116,7 @@ public class BinaryComparisonFixture : TestBase
         action.Should().NotThrow("string comparison should pass when strings are equal");
     }
 
-    int callCount = 0;
+    int callCount;
     
     int GetValueAndIncrement()
     {

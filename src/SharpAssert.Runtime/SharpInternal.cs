@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Linq.Expressions;
 
 namespace SharpAssert;
@@ -25,13 +24,12 @@ public static class SharpInternal
         string file,
         int line,
         string? message = null,
-        bool usePowerAssert = false,
-        bool usePowerAssertForUnsupported = true)
+        bool usePowerAssert = false)
     {
         if (message is not null && string.IsNullOrWhiteSpace(message))
             throw new ArgumentException("Message must be either null or non-empty", nameof(message));
 
-        if (usePowerAssert || usePowerAssertForUnsupported && HasUnsupportedFeatures(condition))
+        if (usePowerAssert)
         {
             UsePowerAssert(condition, message);
             return;
@@ -152,13 +150,4 @@ public static class SharpInternal
             throw new SharpAssertionException(finalMessage);
         }
     }
-
-    static bool HasUnsupportedFeatures(Expression<Func<bool>> condition)
-    {
-        var detector = new UnsupportedFeatureDetector();
-        detector.Visit(condition);
-        return detector.HasUnsupported;
-    }
-
-
 }

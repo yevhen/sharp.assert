@@ -28,13 +28,13 @@ public class AsyncIntegrationFixture
     }
     
     // Helper methods for testing async scenarios
-    private static async Task<bool> GetTrueAsync()
+    static async Task<bool> GetTrueAsync()
     {
         await Task.Delay(1);
         return true;
     }
-    
-    private static async Task<bool> GetFalseAsync()
+
+    static async Task<bool> GetFalseAsync()
     {
         await Task.Delay(1);
         return false;

@@ -232,7 +232,7 @@ public class LinqOperationsFixture : TestBase
         {
             var items = new[] { 1, 2, 3 };
         AssertExpressionThrows(
-                () => Enumerable.Contains(items, 999),
+                () => items.Contains(999),
                 "Enumerable.Contains(items, 999)",
                 "LinqOperationsFixture.cs",
                 42,
@@ -244,7 +244,7 @@ public class LinqOperationsFixture : TestBase
         {
             var items = new[] { 1, 2, 3 };
         AssertExpressionThrows(
-                () => Enumerable.Any(items, x => x > 10),
+                () => items.Any(x => x > 10),
                 "Enumerable.Any(items, x => x > 10)",
                 "LinqOperationsFixture.cs",
                 42,
@@ -256,7 +256,7 @@ public class LinqOperationsFixture : TestBase
         {
             var items = new[] { -1, 0, 1, 2 };
         AssertExpressionThrows(
-                () => Enumerable.All(items, x => x > 0),
+                () => items.All(x => x > 0),
                 "Enumerable.All(items, x => x > 0)",
                 "LinqOperationsFixture.cs",
                 42,

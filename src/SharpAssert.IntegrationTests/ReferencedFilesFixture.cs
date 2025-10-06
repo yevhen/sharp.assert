@@ -1,3 +1,4 @@
+using NUnit.Framework;
 using static SharpAssert.Sharp;
 
 namespace SharpAssert.IntegrationTests;

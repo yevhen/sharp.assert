@@ -1,3 +1,4 @@
+using System.Collections;
 using FluentAssertions;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -301,52 +302,51 @@ public class SharpLambdaRewriteTaskFixture
     }
 
     [Test]
-    public void Should_generate_seven_arguments_when_power_assert_enabled()
+    public void Should_generate_six_arguments_when_power_assert_enabled()
     {
-        var sourceFile = CreateSourceFile("SevenArgsTest.cs", """
+        var sourceFile = CreateSourceFile("SixArgsTest.cs", """
             using static SharpAssert.Sharp;
-            class SevenArgsTest { void Method() { Assert(x == 1); } }
+            class SixArgsTest { void Method() { Assert(x == 1); } }
             """);
-        
+
         var task = CreateTask(sourceFile);
         task.UsePowerAssert = true;
-        task.UsePowerAssertForUnsupported = false;
-        
+
         var result = task.Execute();
-        
+
         result.Should().BeTrue();
-        
+
         var outputFile = GetExpectedOutputPath(sourceFile);
         var content = File.ReadAllText(outputFile);
-        
-        // Should contain 7 arguments: lambda, expression, file, line, message, usePowerAssert=true, usePowerAssertForUnsupported=false
+
+        // Should contain 6 arguments: lambda, expression, file, line, message, usePowerAssert=true
         content.Should().Contain("global::SharpAssert.SharpInternal.Assert(()=>");
         content.Should().Contain("\"x == 1\"");
-        content.Should().Contain(",null,true,false)");
+        content.Should().Contain(",null,true)");
     }
 
     [Test]
-    public void Should_generate_seven_arguments_with_default_power_assert_values()
+    public void Should_generate_six_arguments_with_default_power_assert_values()
     {
-        var sourceFile = CreateSourceFile("DefaultSevenArgsTest.cs", """
+        var sourceFile = CreateSourceFile("DefaultSixArgsTest.cs", """
             using static SharpAssert.Sharp;
-            class DefaultSevenArgsTest { void Method() { Assert(x == 1); } }
+            class DefaultSixArgsTest { void Method() { Assert(x == 1); } }
             """);
-        
+
         var task = CreateTask(sourceFile);
-        // Use defaults: UsePowerAssert = false, UsePowerAssertForUnsupported = true
-        
+        // Use defaults: UsePowerAssert = false
+
         var result = task.Execute();
-        
+
         result.Should().BeTrue();
-        
+
         var outputFile = GetExpectedOutputPath(sourceFile);
         var content = File.ReadAllText(outputFile);
-        
-        // Should contain 7 arguments with default values: usePowerAssert=false, usePowerAssertForUnsupported=true
+
+        // Should contain 6 arguments with default values: usePowerAssert=false
         content.Should().Contain("global::SharpAssert.SharpInternal.Assert(()=>");
         content.Should().Contain("\"x == 1\"");
-        content.Should().Contain(",null,false,true)");
+        content.Should().Contain(",null,false)");
     }
 
     static string CreateTempDirectory()
@@ -410,7 +410,7 @@ public class MockBuildEngine : IBuildEngine
     public int ColumnNumberOfTaskNode => 0;
     public string ProjectFileOfTaskNode => "";
 
-    public bool BuildProjectFile(string projectFileName, string[] targetNames, System.Collections.IDictionary globalProperties, System.Collections.IDictionary targetOutputs) => true;
+    public bool BuildProjectFile(string projectFileName, string[] targetNames, IDictionary globalProperties, IDictionary targetOutputs) => true;
     public void LogCustomEvent(CustomBuildEventArgs e) { }
     public void LogErrorEvent(BuildErrorEventArgs e) { Errors.Add(e.Message ?? ""); }
     public void LogMessageEvent(BuildMessageEventArgs e) { Messages.Add(e.Message ?? ""); }

@@ -1,6 +1,5 @@
 using System.Linq.Expressions;
 using FluentAssertions;
-using NUnit.Framework;
 
 namespace SharpAssert.Tests;
 
@@ -15,7 +14,7 @@ public class PowerAssertFallbackFixture : TestBase
         Expression<Func<bool>> expr = () => x == y;
         
         var ex = Assert.Throws<SharpAssertionException>(() =>
-            SharpInternal.Assert(expr, "x == y", "test.cs", 42, null, usePowerAssert: true, usePowerAssertForUnsupported: false));
+            SharpInternal.Assert(expr, "x == y", "test.cs", 42, usePowerAssert: true));
         
         ex.Message.Should().Contain("Assert failed, expression was:", "PowerAssert should generate failure message");
     }
@@ -28,7 +27,7 @@ public class PowerAssertFallbackFixture : TestBase
         Expression<Func<bool>> expr = () => str1 == str2;
         
         var ex = Assert.Throws<SharpAssertionException>(() =>
-            SharpInternal.Assert(expr, "str1 == str2", "test.cs", 42, null, usePowerAssert: false, usePowerAssertForUnsupported: true));
+            SharpInternal.Assert(expr, "str1 == str2", "test.cs", 42));
         
         ex.Message.Should().Contain("str1 == str2", "PowerAssert should handle string comparisons");
     }
@@ -40,7 +39,7 @@ public class PowerAssertFallbackFixture : TestBase
         Expression<Func<bool>> expr = () => list.Contains(5);
         
         var ex = Assert.Throws<SharpAssertionException>(() =>
-            SharpInternal.Assert(expr, "list.Contains(5)", "test.cs", 42, null, usePowerAssert: false, usePowerAssertForUnsupported: true));
+            SharpInternal.Assert(expr, "list.Contains(5)", "test.cs", 42));
         
         ex.Message.Should().Contain("list.Contains(5)", "PowerAssert should handle LINQ Contains");
     }
@@ -53,7 +52,7 @@ public class PowerAssertFallbackFixture : TestBase
         Expression<Func<bool>> expr = () => x == y;
         
         var ex = Assert.Throws<SharpAssertionException>(() =>
-            SharpInternal.Assert(expr, "x == y", "test.cs", 42, null, usePowerAssert: false, usePowerAssertForUnsupported: false));
+            SharpInternal.Assert(expr, "x == y", "test.cs", 42, usePowerAssert: false));
         
         ex.Message.Should().Contain("Left:  5");
         ex.Message.Should().Contain("Right: 10");
@@ -68,7 +67,7 @@ public class PowerAssertFallbackFixture : TestBase
         Expression<Func<bool>> expr = () => x == y;
         
         var ex = Assert.Throws<SharpAssertionException>(() =>
-            SharpInternal.Assert(expr, "x == y", "test.cs", 42, "Custom error", usePowerAssert: true, usePowerAssertForUnsupported: false));
+            SharpInternal.Assert(expr, "x == y", "test.cs", 42, "Custom error", usePowerAssert: true));
         
         ex.Message.Should().Contain("Custom error");
     }
@@ -81,7 +80,7 @@ public class PowerAssertFallbackFixture : TestBase
         Expression<Func<bool>> expr = () => str1 == str2;
         
         var ex = Assert.Throws<SharpAssertionException>(() =>
-            SharpInternal.Assert(expr, "str1 == str2", "test.cs", 42, null, usePowerAssert: false, usePowerAssertForUnsupported: false));
+            SharpInternal.Assert(expr, "str1 == str2", "test.cs", 42, usePowerAssert: false));
         
         // Should use SharpAssert's binary comparison format
         ex.Message.Should().Contain("Left:  \"hello\"");
@@ -96,7 +95,7 @@ public class PowerAssertFallbackFixture : TestBase
         var y = 5;
         Expression<Func<bool>> expr = () => x == y;
         
-        var action = () => SharpInternal.Assert(expr, "x == y", "test.cs", 42, null, usePowerAssert: true, usePowerAssertForUnsupported: false);
+        var action = () => SharpInternal.Assert(expr, "x == y", "test.cs", 42, usePowerAssert: true);
         action.Should().NotThrow();
     }
     
@@ -106,7 +105,7 @@ public class PowerAssertFallbackFixture : TestBase
         var list = new[] { 1, 2, 3 };
         Expression<Func<bool>> expr = () => list.Contains(2);
         
-        var action = () => SharpInternal.Assert(expr, "list.Contains(2)", "test.cs", 42, null, usePowerAssert: false, usePowerAssertForUnsupported: true);
+        var action = () => SharpInternal.Assert(expr, "list.Contains(2)", "test.cs", 42);
         action.Should().NotThrow();
     }
 }

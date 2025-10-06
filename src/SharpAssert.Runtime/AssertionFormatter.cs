@@ -1,6 +1,6 @@
 namespace SharpAssert;
 
-internal static class AssertionFormatter
+static class AssertionFormatter
 {
     public static string FormatAssertionFailure(AssertionContext context)
     {

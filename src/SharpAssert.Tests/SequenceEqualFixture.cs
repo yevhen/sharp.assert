@@ -18,7 +18,7 @@ public class SequenceEqualFixture : TestBase
         public void Should_pass_when_both_sequences_are_empty()
         {
             var seq1 = new List<string>();
-            var seq2 = new string[0];
+            var seq2 = Array.Empty<string>();
             AssertExpressionPasses(() => seq1.SequenceEqual(seq2));
         }
 
@@ -111,7 +111,7 @@ public class SequenceEqualFixture : TestBase
         [Test]
         public void Should_handle_empty_vs_non_empty_sequences()
         {
-            var empty = new int[0];
+            var empty = Array.Empty<int>();
             var nonEmpty = new[] { 1, 2, 3 };
             
             AssertExpressionThrows(
@@ -147,7 +147,7 @@ public class SequenceEqualFixture : TestBase
             var seq2 = new[] { 1, 2, 4 };
             
             AssertExpressionThrows(
-                () => Enumerable.SequenceEqual(seq1, seq2),
+                () => seq1.SequenceEqual(seq2),
                 "Enumerable.SequenceEqual(seq1, seq2)",
                 "SequenceEqualFixture.cs",
                 42,

@@ -15,7 +15,7 @@ public static class SharpAssertRewriter
         var semanticModel = CreateSemanticModel(syntaxTree);
         var absoluteFileName = GetAbsolutePath(fileName);
         
-        var rewriter = new SharpAssertSyntaxRewriter(semanticModel, absoluteFileName, fileName, usePowerAssert, usePowerAssertForUnsupported);
+        var rewriter = new SharpAssertSyntaxRewriter(semanticModel, absoluteFileName, fileName, usePowerAssert);
         var rewrittenRoot = rewriter.Visit(syntaxTree.GetRoot());
 
         if (!rewriter.HasRewrites)
@@ -68,7 +68,7 @@ public static class SharpAssertRewriter
         filePath.Replace("\\", "\\\\").Replace("\"", "\\\"");
 }
 
-internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFileName, string fileName, bool usePowerAssert, bool usePowerAssertForUnsupported) : CSharpSyntaxRewriter
+class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFileName, string fileName, bool usePowerAssert) : CSharpSyntaxRewriter
 {
     const string SharpInternalNamespace = "global::SharpAssert.SharpInternal";
     const string AssertMethodName = "Assert";
@@ -204,8 +204,7 @@ internal class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string abs
             CreateStringLiteralArgument(fileName),
             CreateNumericLiteralArgument(data.LineNumber),
             CreateMessageArgument(data.MessageExpression),
-            CreateBooleanLiteralArgument(usePowerAssert),
-            CreateBooleanLiteralArgument(usePowerAssertForUnsupported)
+            CreateBooleanLiteralArgument(usePowerAssert)
         ]);
 
     static ArgumentSyntax CreateStringLiteralArgument(string value) =>

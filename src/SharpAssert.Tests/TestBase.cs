@@ -1,5 +1,5 @@
-using FluentAssertions;
 using System.Linq.Expressions;
+using FluentAssertions;
 
 namespace SharpAssert;
 
@@ -8,7 +8,7 @@ public abstract class TestBase
     protected static void AssertExpressionThrows(Expression<Func<bool>> expression, string originalExpr, string file,
         int line, string expectedMessagePattern)
     {
-        var action = () => SharpInternal.Assert(expression, originalExpr, file, line, null);
+        var action = () => SharpInternal.Assert(expression, originalExpr, file, line);
         action.Should().Throw<SharpAssertionException>().WithMessage(expectedMessagePattern);
     }
 

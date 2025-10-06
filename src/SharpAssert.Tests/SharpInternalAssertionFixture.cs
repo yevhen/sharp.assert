@@ -1,5 +1,5 @@
-using FluentAssertions;
 using System.Linq.Expressions;
+using FluentAssertions;
 
 namespace SharpAssert;
 
@@ -10,7 +10,7 @@ public class SharpInternalAssertionFixture : TestBase
     public void Should_pass_when_expression_evaluates_to_true()
     {
         Expression<Func<bool>> expr = () => 1 == 1;
-        var action = () => SharpInternal.Assert(expr, "1 == 1", "TestFile.cs", 10, null);
+        var action = () => SharpInternal.Assert(expr, "1 == 1", "TestFile.cs", 10);
         action.Should().NotThrow();
     }
 
@@ -97,17 +97,7 @@ public class SharpInternalAssertionFixture : TestBase
         var x = 5;
         var y = 5;
         Expression<Func<bool>> expr = () => x == y;
-        var action = () => SharpInternal.Assert(expr, "x == y", "TestFile.cs", 42, null, usePowerAssert: true, usePowerAssertForUnsupported: false);
-        action.Should().NotThrow();
-    }
-
-    [Test]
-    public void Should_pass_with_powerassert_fallback_for_unsupported_feature()
-    {
-        var x = 10;
-        var y = 5;
-        Expression<Func<bool>> expr = () => x > y;
-        var action = () => SharpInternal.Assert(expr, "x > y", "TestFile.cs", 42, null, usePowerAssert: false, usePowerAssertForUnsupported: true);
+        var action = () => SharpInternal.Assert(expr, "x == y", "TestFile.cs", 42, usePowerAssert: true);
         action.Should().NotThrow();
     }
 }
