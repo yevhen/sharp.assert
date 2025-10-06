@@ -129,6 +129,7 @@ This document is organized by topic to consolidate key learnings about the proje
 - **MSBuild Incremental Builds:** Custom targets without `Inputs`/`Outputs` attributes run on every build - proper tracking requires moving ItemGroups outside target scope for evaluation
 - **Cross-Platform Path Handling:** MSBuild path handling differences between Windows/Unix require careful attention to separators and absolute vs relative paths
 - **Package Source Discovery:** NuGet source discovery during package testing can fail silently if local feed structure is incorrect - verify with `--verbosity detailed`
+- **DateTime Culture-Dependent Formatting:** DateTime.ToString() produces different output across platforms (macOS: "1/1/2023", Linux: "01/01/2023 00:00:00") - use `dt.ToString("M/d/yyyy", CultureInfo.InvariantCulture)` for consistent cross-platform formatting in error messages
 
 ## String Diffing Implementation (Increment 5)
 

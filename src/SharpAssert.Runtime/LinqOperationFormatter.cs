@@ -127,6 +127,7 @@ static class LinqOperationFormatter
     {
         null => "null",
         string s => $"\"{s}\"",
+        DateTime dt => dt.ToString("M/d/yyyy", System.Globalization.CultureInfo.InvariantCulture),
         _ => value.ToString()!
     };
     
