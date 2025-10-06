@@ -10,7 +10,7 @@ using PowerAssert.MultipleAssertions;
 
 namespace PowerAssert
 {
-    public static class PAssert
+    static class PAssert
     {
         static readonly string CRLF = Environment.NewLine;
 

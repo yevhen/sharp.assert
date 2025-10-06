@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace PowerAssert.MultipleAssertions
 {
-    public class Error
+    class Error
     {
 #if NETCOREAPP1_1
         static Assembly MyAssembly = typeof(Error).GetTypeInfo().Assembly;

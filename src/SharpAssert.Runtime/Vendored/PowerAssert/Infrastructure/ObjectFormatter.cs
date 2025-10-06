@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace PowerAssert.Infrastructure
 {
-    public class ObjectFormatter
+    class ObjectFormatter
     {
         internal static string FormatTargetInvocationException(TargetInvocationException exception)
         {

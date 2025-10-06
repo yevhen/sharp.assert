@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace PowerAssert.MultipleAssertions
 {
-    public class PolyAssertException : Exception
+    class PolyAssertException : Exception
     {
         public List<Error> Errors { get; set; }
 

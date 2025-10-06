@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace PowerAssert.MultipleAssertions
 {
-    public class PolyAssert : IDisposable
+    class PolyAssert : IDisposable
     {
         readonly List<Error> _errors = new List<Error>();
 
