@@ -17,11 +17,10 @@ static class StringDiffer
         var leftTruncated = TruncateString(left);
         var rightTruncated = TruncateString(right);
 
-        var basic = $"  Left:  {FormatStringValue(leftTruncated)}\n  Right: {FormatStringValue(rightTruncated)}";
-
         if (IsMultiline(left) || IsMultiline(right))
-            return basic + "\n" + GenerateMultilineDiff(leftTruncated, rightTruncated);
+            return FormatMultilineComparison(leftTruncated, rightTruncated);
 
+        var basic = $"  Left:  {FormatStringValue(leftTruncated)}\n  Right: {FormatStringValue(rightTruncated)}";
         return basic + "\n" + GenerateInlineDiff(leftTruncated, rightTruncated);
     }
 
@@ -31,7 +30,22 @@ static class StringDiffer
         if (left == null) return $"  Left:  null\n  Right: {FormatStringValue(right)}";
         return $"  Left:  {FormatStringValue(left)}\n  Right: null";
     }
-    
+
+    static string FormatMultilineComparison(string left, string right)
+    {
+        var result = new System.Text.StringBuilder();
+        result.AppendLine("  Left:");
+        foreach (var line in left.Split('\n'))
+            result.AppendLine(line);
+
+        result.AppendLine("  Right:");
+        foreach (var line in right.Split('\n'))
+            result.AppendLine(line);
+
+        result.Append(GenerateMultilineDiff(left, right));
+        return result.ToString();
+    }
+
     static string FormatStringValue(string? value)
     {
         if (value == null) return "null";
@@ -97,44 +111,36 @@ static class StringDiffer
     
     static string GenerateMultilineDiff(string left, string right)
     {
-        var differ = new Differ();
-        var diffResult = differ.CreateLineDiffs(left, right, ignoreWhitespace: false);
+        var diffBuilder = new InlineDiffBuilder(new Differ());
+        var diff = diffBuilder.BuildDiffModel(left, right, ignoreWhitespace: false);
 
         var result = new List<string>();
-        var leftLines = left.Split('\n');
-        var rightLines = right.Split('\n');
+        result.Add("  Diff:");
 
-        foreach (var block in diffResult.DiffBlocks)
+        foreach (var line in diff.Lines)
         {
-            AppendDeletedLines(result, leftLines, block.DeleteStartA, block.DeleteCountA);
-            AppendInsertedLines(result, rightLines, block.InsertStartB, block.InsertCountB);
+            switch (line.Type)
+            {
+                case ChangeType.Unchanged:
+                    result.Add(line.Text);
+                    break;
+                case ChangeType.Deleted:
+                    result.Add($"- {line.Text}");
+                    break;
+                case ChangeType.Inserted:
+                    result.Add($"+ {line.Text}");
+                    break;
+                case ChangeType.Modified:
+                    result.Add($"~ {line.Text}");
+                    break;
+            }
         }
 
-        if (result.Count == 0)
-            result.Add("  (No specific line differences found)");
+        if (result.Count == 1)
+            result.Add("(No specific line differences found)");
 
         TruncateResultIfNeeded(result);
         return string.Join("\n", result);
-    }
-
-    static void AppendDeletedLines(List<string> output, string[] lines, int start, int count)
-    {
-        for (var i = 0; i < count; i++)
-        {
-            var lineIndex = start + i;
-            if (lineIndex < lines.Length)
-                output.Add($"  - {lines[lineIndex]}");
-        }
-    }
-
-    static void AppendInsertedLines(List<string> output, string[] lines, int start, int count)
-    {
-        for (var i = 0; i < count; i++)
-        {
-            var lineIndex = start + i;
-            if (lineIndex < lines.Length)
-                output.Add($"  + {lines[lineIndex]}");
-        }
     }
 
     static void TruncateResultIfNeeded(List<string> result)

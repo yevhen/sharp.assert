@@ -25,17 +25,26 @@ public class StringComparisonFixture : TestBase
     {
         var actual = "line1\nline2\nline3";
         var expected = "line1\nMODIFIED\nline3";
-        
+
         AssertExpressionThrows(
             () => actual == expected,
             "actual == expected",
             "StringComparisonFixture.cs",
             30,
             "*Assertion failed: actual == expected*" +
-            "*Left:  \"line1*line2*line3\"*" +
-            "*Right: \"line1*MODIFIED*line3\"*" +
+            "*Left:*" +
+            "*line1*" +
+            "*line2*" +
+            "*line3*" +
+            "*Right:*" +
+            "*line1*" +
+            "*MODIFIED*" +
+            "*line3*" +
+            "*Diff:*" +
+            "*line1*" +
             "*- line2*" +
-            "*+ MODIFIED*");
+            "*+ MODIFIED*" +
+            "*line3*");
     }
 
     [Test]

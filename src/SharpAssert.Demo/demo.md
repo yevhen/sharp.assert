@@ -317,14 +317,19 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/04_StringComparisonDemos.cs:32
-  Left:  "Line 1: Introduction
+  Left:
+Line 1: Introduction
 Line 2: Body content
-Line 3: Conclusion"
-  Right: "Line 1: Introduction
+Line 3: Conclusion
+  Right:
+Line 1: Introduction
 Line 2: Different content
-Line 3: Conclusion"
-  - Line 2: Body content
-  + Line 2: Different content
+Line 3: Conclusion
+  Diff:
+Line 1: Introduction
+- Line 2: Body content
++ Line 2: Different content
+Line 3: Conclusion
 ```
 
 ---
