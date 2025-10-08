@@ -156,31 +156,35 @@ public class SharpLambdaRewriteTaskFixture
     }
 
     [Test]
-    public void Should_skip_rewriting_files_with_async_assert_calls()
+    public void Should_rewrite_files_with_async_assert_calls()
     {
         var sourceFile = CreateSourceFile("AsyncAssert.cs", """
             using static SharpAssert.Sharp;
             using System.Threading.Tasks;
-            
-            class AsyncAssert 
-            { 
-                async Task Method() 
-                { 
-                    Assert(await GetBoolAsync()); 
-                } 
-                
+
+            class AsyncAssert
+            {
+                async Task Method()
+                {
+                    Assert(await GetBoolAsync());
+                }
+
                 Task<bool> GetBoolAsync() => Task.FromResult(true);
             }
             """);
-        
+
         var task = CreateTask(sourceFile);
-        
+
         var result = task.Execute();
-        
+
         result.Should().BeTrue();
-        
+
         var outputFile = GetExpectedOutputPath(sourceFile);
-        File.Exists(outputFile).Should().BeFalse("file with async Assert would not be processed");
+        File.Exists(outputFile).Should().BeTrue("file with async Assert should be rewritten to AssertAsync");
+
+        var rewrittenCode = File.ReadAllText(outputFile);
+        rewrittenCode.Should().Contain("AssertAsync");
+        rewrittenCode.Should().Contain("await GetBoolAsync()");
     }
 
     [Test]

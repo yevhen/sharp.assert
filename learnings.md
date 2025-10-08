@@ -226,3 +226,14 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Method Signature Consistency:** Both `AssertDynamic` and `AssertDynamicBinary` follow same parameter pattern as async counterparts for consistency
 - **Test Pattern Migration:** Convert ignored placeholder tests to real implementation tests using FluentAssertions `.Should().Throw<T>()` and `.Should().NotThrow()` patterns
 - **Object Type Casting:** Dynamic thunks cast to `object?` for compatibility with comparison formatter system that expects object references
+
+## Roslyn Syntax Trivia Patterns
+
+- **Await Expression Construction:** Must use explicit token with spacing to avoid concatenation - `SyntaxFactory.Token(TriviaList(), SyntaxKind.AwaitKeyword, TriviaList(Space))` prevents `awaitglobal::` bug
+- **Line Directive Placement:** Preprocessor directives must appear as first non-whitespace on line - attach to outer expression (AwaitExpression) not inner (InvocationExpression)
+- **Trivia Attachment Strategy:** Use `WithLeadingTrivia()` and `WithTrailingTrivia()` on the outermost rewritten node to ensure directives wrap entire statement correctly
+- **Spacing Between Tokens:** Always use `SyntaxFactory.Space` in trailing trivia of keywords when followed by identifiers/expressions
+- **Return Type Changes:** Changing rewrite method return types (e.g., InvocationExpression to AwaitExpression) requires new trivia attachment methods to handle different node types
+- **Line Directive Format:** Use `SyntaxFactory.PreprocessingMessage($"#line {lineNumber} \"{escapedPath}\"")` for file/line mapping, `PreprocessingMessage("#line default")` to reset
+- **Trivia Ordering:** Leading trivia order: original trivia → line directive → newline; Trailing trivia order: newline → default directive → newline → original trivia
+- **Expression Wrapping:** When wrapping expressions (e.g., adding await), construct inner expression first, then wrap with factory methods, then attach trivia to outer node

@@ -90,23 +90,41 @@ public class RewriterFixture
     }
 
     [Test]
-    public void Should_skip_rewrite_if_async_present()
+    public void Should_rewrite_async_assertion_to_AssertAsync()
     {
         var source = """
             using static SharpAssert.Sharp;
-            
-            class Test 
-            { 
-                async Task Method() 
-                { 
-                    Assert(await GetBoolAsync()); 
-                } 
-                
+
+            class Test
+            {
+                async Task Method()
+                {
+                    Assert(await GetBoolAsync());
+                }
+
                 Task<bool> GetBoolAsync() => Task.FromResult(true);
             }
             """;
 
-        var expected = source; // No rewrites should happen for async, so output == input
+        var absolutePath = GetExpectedAbsolutePath("TestFile.cs");
+        var expected = $$"""
+            #nullable restore
+            #line 1 "{{absolutePath}}"
+            using static SharpAssert.Sharp;
+
+            class Test
+            {
+                async Task Method()
+                {
+                    #line 7 "{{absolutePath}}"
+            await global::SharpAssert.SharpInternal.AssertAsync(async()=>await GetBoolAsync(),"await GetBoolAsync()","TestFile.cs",7)
+            #line default
+            ;
+                }
+
+                Task<bool> GetBoolAsync() => Task.FromResult(true);
+            }
+            """;
 
         var result = SharpAssertRewriter.Rewrite(source, "TestFile.cs");
 
