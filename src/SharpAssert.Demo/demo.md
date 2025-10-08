@@ -934,8 +934,8 @@ Assert(value == 42);
 **Output:**
 ```
 Assertion failed: value == 42  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/11_NullableTypeDemos.cs:13
-  Left:  HasValue: false
-  Right: HasValue: true, Value: 42
+  Left:  null
+  Right: 42
 ```
 
 ---
@@ -952,8 +952,8 @@ Assert(value == 100);
 **Output:**
 ```
 Assertion failed: value == 100  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/11_NullableTypeDemos.cs:22
-  Left:  HasValue: true, Value: 42
-  Right: HasValue: true, Value: 100
+  Left:  42
+  Right: 100
 ```
 
 ---
@@ -970,8 +970,8 @@ Assert(value == true);
 **Output:**
 ```
 Assertion failed: value == true  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/11_NullableTypeDemos.cs:31
-  Left:  HasValue: true, Value: False
-  Right: HasValue: true, Value: True
+  Left:  False
+  Right: True
 ```
 
 ---
@@ -989,8 +989,8 @@ Assert(value == expected);
 **Output:**
 ```
 Assertion failed: value == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/11_NullableTypeDemos.cs:41
-  Left:  HasValue: false
-  Right: HasValue: true, Value: 10/8/2025
+  Left:  null
+  Right: 10/8/2025
 ```
 
 ---
@@ -1026,8 +1026,8 @@ Assert(value == null);
 **Output:**
 ```
 Assertion failed: value == null  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/11_NullableTypeDemos.cs:60
-  Left:  HasValue: true, Value: 42
-  Right: HasValue: false
+  Left:  42
+  Right: null
 ```
 
 ---

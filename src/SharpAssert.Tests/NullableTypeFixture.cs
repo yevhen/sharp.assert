@@ -132,7 +132,7 @@ public class NullableTypeFixture : TestBase
         Expression<Func<bool>> expr = () => nullableWithoutValue == nullableWithValue;
 
         AssertExpressionThrows(expr, "nullableWithoutValue == nullableWithValue", "TestFile.cs", 123,
-            "*HasValue: false*HasValue: true, Value: 42*");
+            "*null*42*");
     }
 
     [Test]
@@ -142,6 +142,6 @@ public class NullableTypeFixture : TestBase
         Expression<Func<bool>> expr = () => nullable == null;
 
         AssertExpressionThrows(expr, "nullable == null", "TestFile.cs", 123,
-            "*HasValue: true, Value: 42*HasValue: false*");
+            "*42*null*");
     }
 }

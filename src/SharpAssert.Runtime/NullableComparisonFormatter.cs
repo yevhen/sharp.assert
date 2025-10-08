@@ -44,9 +44,7 @@ class NullableComparisonFormatter : IComparisonFormatter
         if (!IsNullableType(expressionType))
             return FormatActualValue(value);
 
-        return value == null
-            ? "HasValue: false"
-            : $"HasValue: true, Value: {FormatActualValue(value)}";
+        return value == null ? "null" : $"{FormatActualValue(value)}";
     }
 
     static string FormatRuntimeValue(object? value)
@@ -55,22 +53,21 @@ class NullableComparisonFormatter : IComparisonFormatter
             return "null";
 
         var type = value.GetType();
-        if (IsNullableType(type))
-        {
-            var hasValueProperty = type.GetProperty("HasValue");
-            var valueProperty = type.GetProperty("Value");
+        if (!IsNullableType(type))
+            return FormatActualValue(value);
 
-            if (hasValueProperty?.GetValue(value) is bool hasValue)
-            {
-                if (!hasValue)
-                    return "HasValue: false";
+        var hasValueProperty = type.GetProperty("HasValue");
+        var valueProperty = type.GetProperty("Value");
 
-                var actualValue = valueProperty?.GetValue(value);
-                return $"HasValue: true, Value: {FormatActualValue(actualValue)}";
-            }
-        }
+        if (hasValueProperty?.GetValue(value) is not bool hasValue)
+            return FormatActualValue(value);
 
-        return FormatActualValue(value);
+        if (!hasValue)
+            return "null";
+
+        var actualValue = valueProperty?.GetValue(value);
+        return $"{FormatActualValue(actualValue)}";
+
     }
 
     static bool IsNullableType(Type? type)
