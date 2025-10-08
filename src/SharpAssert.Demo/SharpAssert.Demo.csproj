@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- Override the rewriter assembly path for local development -->
+    <SharpAssertRewriterPath>$(MSBuildThisFileDirectory)..\SharpAssert\bin\$(Configuration)\net9.0\SharpAssert.dll</SharpAssertRewriterPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Reference SharpAssert.Runtime normally -->
+    <ProjectReference Include="..\SharpAssert.Runtime\SharpAssert.Runtime.csproj" />
+
+    <!-- Build the rewriter project but don't reference its assembly -->
+    <ProjectReference Include="..\SharpAssert\SharpAssert.csproj"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- Import the targets file to enable MSBuild task -->
+  <Import Project="..\SharpAssert\build\SharpAssert.targets" />
+
+</Project>
