@@ -5,8 +5,8 @@ Thank you for your interest in contributing to SharpAssert! This guide will help
 ## 🚀 Quick Start
 
 ### Prerequisites
-- .NET 8.0 SDK or later
-- C# 12.0 compatible IDE (VS 2022 17.7+, Rider 2023.3+, VS Code)
+- .NET 9.0 SDK or later
+- C# 13.0 compatible IDE (VS 2022 17.12+, Rider 2024.3+, VS Code)
 
 ### Initial Setup
 ```bash
@@ -28,11 +28,11 @@ SharpAssert/
 ├── src/
 │   ├── SharpAssert.Runtime/            # Core assertion library with Assert methods
 │   ├── SharpAssert/                    # MSBuild source rewriter + main package
-│   ├── SharpAssert.Tests/              # Unit tests for main library
-│   ├── SharpAssert.Rewriter.Tests/     # Unit tests for rewriter
+│   ├── SharpAssert.Tests/              # Unit tests for runtime and rewriter
 │   ├── SharpAssert.IntegrationTests/   # ★ Integration tests (MSBuild task)
 │   ├── SharpAssert.PackageTest/        # Package tests (local NuGet feed)
-│   └── SharpAssert.PowerAssertTest/    # PowerAssert forced mode tests
+│   ├── SharpAssert.PowerAssertTest/    # PowerAssert forced mode tests
+│   └── SharpAssert.Demo/               # Demo project showcasing features
 ├── scripts/
 │   ├── dev-test.sh                     # Fast development testing
 │   ├── publish-local.sh                # Publish to local feed
@@ -48,13 +48,14 @@ SharpAssert/
 
 ## 🧪 Testing Strategy
 
-SharpAssert uses a comprehensive **four-layer testing approach** to ensure reliability and maintainability across all development phases:
+SharpAssert uses a comprehensive **four-layer testing approach** to ensure reliability and maintainability across all development phases.
+
+> **For architectural details and implementation rationale, see [prd.md](prd.md) Section 9: Four-Layer Testing Strategy.**
 
 ### 1. **Unit Tests** - Component-Level Validation
-- **SharpAssert.Tests** - Tests core assertion logic without MSBuild integration
-- **SharpAssert.Rewriter.Tests** - Tests the source rewriter components in isolation
+- **SharpAssert.Tests** - Tests core assertion logic and rewriter components
 - **Purpose**: Fast feedback during development, tests individual methods and classes
-- **Run with**: `dotnet test src/SharpAssert.Tests/` or `dotnet test src/SharpAssert.Rewriter.Tests/`
+- **Run with**: `dotnet test src/SharpAssert.Tests/`
 
 ### 2. **Integration Tests** - MSBuild Task Validation (New!)
 - **SharpAssert.IntegrationTests** - Tests the rewriter as an actual MSBuild task during development
@@ -82,8 +83,8 @@ SharpAssert uses a comprehensive **four-layer testing approach** to ensure relia
 ├─────────────────────────────────────────────────────────────┤
 │ SharpAssert.sln (Main Solution)                            │
 │ ├── SharpAssert.Tests (unit tests)                         │
-│ ├── SharpAssert.Rewriter.Tests (unit tests)               │
 │ ├── SharpAssert.IntegrationTests (MSBuild task tests) ★    │
+│ ├── SharpAssert.Demo (feature showcase)                    │
 │ └── ... (main projects)                                    │
 ├─────────────────────────────────────────────────────────────┤
 │ SharpAssert.PackageTesting.sln (Package Isolation)         │
@@ -171,8 +172,7 @@ dotnet pack SharpAssert/SharpAssert.csproj -p:VersionSuffix=local
 dotnet pack SharpAssert/SharpAssert.csproj -p:Version=1.2.3-beta
 
 # Test the package
-cd SharpAssert.PackageTest
-./test-local-package.sh
+./test-local.sh
 ```
 
 ## 🔧 Development Tips
@@ -202,9 +202,9 @@ dotnet test src/SharpAssert.PackageTest/  # Test with local packages
 The package testing solution includes **two specialized test projects**:
 
 #### SharpAssert.PackageTest
-- Tests **basic functionality** via NuGet packages  
+- Tests **basic functionality** via NuGet packages
 - Validates core assertions work through complete packaging pipeline
-- Uses normal SharpAssert configuration (with PowerAssert fallback)
+- Uses normal SharpAssert configuration
 
 #### SharpAssert.PowerAssertTest  
 - Tests **PowerAssert forced mode** via NuGet packages
@@ -279,13 +279,37 @@ Working on the MSBuild rewriter now has **two validation approaches**:
 - 🎯 **MSBuild task testing** - validates actual MSBuild integration
 - 🔧 **Easy debugging** - breakpoints work seamlessly
 
+### Demo Project
+
+The **SharpAssert.Demo** project provides a living documentation system for exploring and showcasing features:
+
+```bash
+# Run all demos in console
+cd src/SharpAssert.Demo
+dotnet run
+
+# Generate markdown documentation
+dotnet run -- --format markdown
+
+# View specific feature category
+dotnet run -- --category "STRING COMPARISONS"
+```
+
+**Purpose**:
+- ✅ Interactive feature exploration
+- ✅ Generate documentation examples
+- ✅ Verify rewriter behavior on real-world expressions
+- ✅ Test edge cases manually
+
+See [SharpAssert.Demo/README.md](src/SharpAssert.Demo/README.md) for full documentation.
+
 ### Adding New Features
 
 1. **Write failing test first** (TDD)
 2. **Implement minimal code** to pass the test
 3. **Refactor** if needed
 4. **Update integration tests** if behavior changes
-5. **Test the package** with `test-local-package.sh`
+5. **Test the package** with `./test-local.sh`
 6. **Update documentation** if adding public API
 
 ## 🐛 Debugging Issues

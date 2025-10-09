@@ -73,6 +73,7 @@ SharpAssert is a Pytest‑style assertions library for .NET
 - NEVER use Arrange/Act/Assert comments in tests. Instead, separate test sections with empty lines.
 - AVOID testing multiple independent behaviors in one test. Split complex tests into focused, single-behavior tests.
 - PREFER using message arguments in assertions to communicate what the assertion is testing instead of comments.
+- **CRITICAL**: Cross-platform compatibility - Use `CultureInfo.InvariantCulture` for DateTime formatting in error messages to ensure consistent output across macOS/Linux/Windows (e.g., `dt.ToString("M/d/yyyy", CultureInfo.InvariantCulture)`).
 
 ## TDD Cycle
 

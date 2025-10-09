@@ -28,7 +28,14 @@ Assert(items.Contains(target));
 
 - **🔍 Detailed Expression Analysis** - See exactly why your assertions failed
 - **📦 Simple Setup** - Just add NuGet package, no MSBuild configuration needed
-- **🔄 PowerAssert Integration** - Complete support for PowerAssert (switch option)
+- **🎯 Exception Testing** - `Throws<T>` and `ThrowsAsync<T>` with detailed exception diagnostics
+- **🔤 String Diffs** - Character-level inline diffs for strings (powered by DiffPlex)
+- **📊 Collection Comparison** - First mismatch, missing/extra elements detection
+- **🔎 Object Deep Diff** - Property-level differences for objects/records (powered by Compare-Net-Objects)
+- **🔗 LINQ Operations** - Enhanced diagnostics for Contains/Any/All operations
+- **⚡ Async/Await Support** - Full support for async assertions with value diagnostics
+- **💫 Dynamic Types** - Dynamic expression support with DLR semantics
+- **🔄 PowerAssert Integration** - Optional PowerAssert mode
 
 ## Quick Start
 
@@ -63,35 +70,111 @@ public void Should_be_equal()
 Assert(user.IsActive, $"User {user.Name} should be active for this operation");
 ```
 
-### Asserting exceptions
+## Features in Detail
+
+### Exception Testing
+
+Test expected exceptions with `Throws<T>` and `ThrowsAsync<T>`:
 
 ```csharp
-using static SharpAssert.Sharp;
+// Positive assertion - expects exception
+Assert(Throws<ArgumentException>(() => throw new ArgumentException("invalid")));
 
-[Test]
-public async Task Throws_catch_exceptions_in_exception_result()
-{
-    // Thows returns ExceptionResult which allows using them as condition in Assert
-    Assert(Throws<ArgumentException>(()=> new ArgumentException("foo")));
-    Assert(Throws<ArgumentException>(()=> new ArgumentNullException("bar"))); // will throw unexpected exception
-    Assert(!Throws<ArgumentException>(()=> {})); // negative assertion via C# not syntax 
+// Negative assertion - expects no exception
+Assert(!Throws<ArgumentException>(() => { /* no exception */ }));
 
-    var ex = Throws<ArgumentException>(()=> new ArgumentException("baz")); // always returns ExceptionResult
-    Assert(ex.Exception.ArgumentName == "baz"); // get thrown exception and assert on any custom property
+// Access exception properties
+var ex = Throws<ArgumentNullException>(() => throw new ArgumentNullException("param"));
+Assert(ex.Message.Contains("param"));
 
-    Assert(Throws<ArgumentException>(()=> 
-        new ArgumentException("baz")).Data == "baz"); // shortcut form to assert on exception Data property
+// Async version
+Assert(await ThrowsAsync<InvalidOperationException>(() =>
+    Task.Run(() => throw new InvalidOperationException())));
+```
 
-    Assert(Throws<ArgumentException>(()=> 
-        new ArgumentException("bar")).Message.Contains("bar")); // shortcut form to assert on exception Message
-    
-    // async version
-    Assert(await ThrowsAsync<ArgumentException>(()=> 
-        Task.Run(() => throw ArgumentException("async"))));
+### String Comparisons
 
-    var ex = ThrowsAsync<ArgumentException>(()=> Task.Run(() => throw ArgumentException("async"))); // always returns ExceptionResult
-    Assert(ex.Message.Contains("async")); // assert on message using shortcut on ExceptionResult 
-}
+Character-level diffs powered by DiffPlex:
+
+```csharp
+var actual = "hello";
+var expected = "hallo";
+
+Assert(actual == expected);
+// Assertion failed: actual == expected
+// String diff (inline):
+//   h[-e][+a]llo
+```
+
+Multiline string diffs:
+
+```csharp
+var actual = "line1\nline2\nline3";
+var expected = "line1\nMODIFIED\nline3";
+
+Assert(actual == expected);
+// Assertion failed: actual == expected
+// String diff:
+//   line1
+// - line2
+// + MODIFIED
+//   line3
+```
+
+### Collection Comparisons
+
+First mismatch and missing/extra elements:
+
+```csharp
+var actual = new[] { 1, 2, 3, 5 };
+var expected = new[] { 1, 2, 4, 5 };
+
+Assert(actual.SequenceEqual(expected));
+// Assertion failed: actual.SequenceEqual(expected)
+// Collections differ at index 2:
+//   Expected: 4
+//   Actual:   3
+```
+
+### Object Deep Comparison
+
+Property-level diffs powered by Compare-Net-Objects:
+
+```csharp
+var actual = new User { Name = "John", Age = 30, City = "NYC" };
+var expected = new User { Name = "John", Age = 25, City = "LA" };
+
+Assert(actual == expected);
+// Assertion failed: actual == expected
+// Object differences:
+//   Age: 30 → 25
+//   City: "NYC" → "LA"
+```
+
+### LINQ Operations
+
+Enhanced diagnostics for Contains, Any, All:
+
+```csharp
+var users = new[] { "Alice", "Bob", "Charlie" };
+
+Assert(users.Contains("David"));
+// Assertion failed: users.Contains("David")
+// Collection: ["Alice", "Bob", "Charlie"]
+// Looking for: "David"
+// Result: false
+```
+
+### Async/Await Support
+
+Full support for async expressions:
+
+```csharp
+Assert(await client.GetAsync() == await server.GetAsync());
+// Assertion failed: await client.GetAsync() == await server.GetAsync()
+// Left:  { Id: 1, Name: "Client" }
+// Right: { Id: 2, Name: "Server" }
+// Result: false
 ```
 
 ## How It Works
@@ -124,38 +207,98 @@ Assert(order.Items.Length > 0 && order.Total == expectedTotal);
 SharpAssert is built on modern .NET technologies:
 
 - **MSBuild Source Rewriting** - Compile-time code transformation
-- **Roslyn Syntax Analysis** - Advanced C# code parsing and generation  
-- **Expression Trees** - Runtime expression analysis
+- **Roslyn Syntax Analysis** - Advanced C# code parsing and generation
+- **Expression Trees** - Runtime expression analysis for rich diagnostics
+- **DiffPlex** - String and sequence diffs
+- **CompareNETObjects** - Deep object comparison
+- **PowerAssert** - Optional alternative assertion engine
 - **CallerArgumentExpression** - Fallback for edge cases
 
-### PowerAssert Integration
+### Requirements
+- .NET 9.0 or later
+- Test frameworks: xUnit, NUnit, or MSTest
 
-SharpAssert includes PowerAssert integration and also uses it as a fallback mechanism for not yet implemented features. 
+### Packages
+SharpAssert consists of two NuGet packages:
 
-To force PowerAssert for all assertions:
+- **SharpAssert** - Main package with MSBuild rewriter (install this one)
+- **SharpAssert.Runtime** - Core assertion library (automatically included as dependency)
+
+When you install `SharpAssert`, you get everything you need. The runtime package is a transitive dependency and requires no separate installation.
+
+## Configuration
+
+### PowerAssert Mode
+
+SharpAssert includes optional PowerAssert integration. You can force PowerAssert for all assertions via MSBuild property:
 
 ```xml
 <PropertyGroup>
-  <UsePowerAssert>true</UsePowerAssert>
+  <!-- Force PowerAssert for ALL assertions (optional) -->
+  <SharpAssertUsePowerAssert>true</SharpAssertUsePowerAssert>
 </PropertyGroup>
 ```
 
-## Known issues
-- 
-- Collection initializers could not be used in expression trees. Compiler limitation. Use `new[]{1,2,3}` instead of `[1, 2, 3]`
+### Diagnostic Logging
 
+Enable detailed rewriter diagnostics:
+
+```xml
+<PropertyGroup>
+  <!-- Enable diagnostic logging for troubleshooting rewriter issues -->
+  <SharpAssertEmitRewriteInfo>true</SharpAssertEmitRewriteInfo>
+</PropertyGroup>
+```
+
+## Performance
+
+SharpAssert is designed for minimal overhead:
+
+- **Passing tests**: Near-zero overhead - only the assertion check itself
+- **Failing tests**: Rich diagnostics are computed only when assertions fail
+- **Expression evaluation**: Each sub-expression evaluated exactly once (cached)
+- **Build time**: Negligible impact - rewriter processes only test files
+
+The rich diagnostic tools (object diffing, collection comparison) are **only invoked on failure**. 
+This means your passing tests run at full speed, and the diagnostic cost is only paid when you need to understand a failure.
+
+## Known Issues
+
+- Collection initializers cannot be used in expression trees (C# compiler limitation)
+  - Use `new[]{1,2,3}` instead of `[1, 2, 3]`
+
+## Live Examples
+
+Want to see all features in action? Check out the **SharpAssert.Demo** project:
+
+```bash
+cd src/SharpAssert.Demo
+dotnet run
+```
+
+See [SharpAssert.Demo/README.md](src/SharpAssert.Demo/README.md) for interactive feature exploration and generated markdown documentation.
 
 ## Troubleshooting
 
 ### Rewriting not working
 1. Verify `SharpAssert` package is installed (SharpAssert.Runtime comes automatically)
 2. Ensure `using static SharpAssert.Sharp;` import
+3. Clean and rebuild: `dotnet clean && dotnet build`
 
 ### No detailed error messages
 1. Check build output contains: "SharpAssert: Rewriting X source files"
 2. Verify rewritten files exist in `obj/Debug/net9.0/SharpRewritten/`
 3. Ensure `SharpInternal.Assert` calls are being made (check generated code)
 4. Look for #line directives in generated files
+
+### Enable diagnostic logging
+For troubleshooting rewriter issues:
+```xml
+<PropertyGroup>
+  <SharpAssertEmitRewriteInfo>true</SharpAssertEmitRewriteInfo>
+</PropertyGroup>
+```
+Then rebuild with verbose output: `dotnet build -v detailed`
 
 ## Contributing
 

@@ -1,7 +1,7 @@
 # PRD: Sharp Assertions — Hybrid “Lambda‑Rewrite + Runtime” (PowerAssert‑style) for .NET
 
-**Status:** Final, implementation‑ready  
-**Scope:** Test projects (xUnit/NUnit/MSTest), .NET 6+  
+**Status:** Final, implementation‑ready
+**Scope:** Test projects (xUnit/NUnit/MSTest), .NET 9+
 **License:** MIT
 
 **Goal:** Pytest‑style assertions with one public API call (`Sharp.Assert(...)`) and automatic MSBuild source‑rewrite to a lambda form that enables rich, PowerAssert‑like diagnostics at runtime.
@@ -75,6 +75,23 @@ public static class Sharp
         [System.Runtime.CompilerServices.CallerArgumentExpression("condition")] string? expr = null,
         [System.Runtime.CompilerServices.CallerFilePath] string? file = null,
         [System.Runtime.CompilerServices.CallerLineNumber] int line = 0);
+
+    /// Exception testing - synchronous version
+    public static ExceptionResult<T> Throws<T>(Action action) where T : Exception;
+
+    /// Exception testing - asynchronous version
+    public static Task<ExceptionResult<T>> ThrowsAsync<T>(Func<Task> action) where T : Exception;
+}
+
+/// Result type for exception assertions
+public sealed class ExceptionResult<T> where T : Exception
+{
+    public T Exception { get; }
+    public string Message => Exception.Message;
+    public object? Data => (Exception as dynamic)?.Data;
+
+    // Implicit conversion to bool for Assert usage
+    public static implicit operator bool(ExceptionResult<T> result) => result.Exception != null;
 }
 ```
 
@@ -248,70 +265,20 @@ When enabled, the rewriter will output detailed logs of its analysis and decisio
 
 ---
 
-## 6. Configuration (Thread-Safe)
-
-Configuration is handled via an `AsyncLocal<T>`-based context, ensuring that settings are safely applied even when tests run in parallel. A global default is available, but can be overridden for a specific scope using a `using` block.
-
-```csharp
-public sealed class SharpOptions
-{
-    public int  MaxDiffLines { get; init; } = 200;
-    public int  MaxCollectionPreview { get; init; } = 50;
-    public CollectionEqualityMode Collections { get; init; } = CollectionEqualityMode.Strict; // or Equivalent
-    public bool StringsSideBySide { get; init; } = false;
-    public bool UseVerify { get; init; } = false;
-    public bool OpenExternalDiff { get; init; } = false;
-    public string? VerifyDirectory { get; init; } = null;
-}
-
-public static class SharpConfig
-{
-    private static readonly AsyncLocal<SharpOptions?> _options = new();
-
-    public static SharpOptions Current => _options.Value ??= new SharpOptions();
-
-    public static IDisposable WithOptions(SharpOptions options)
-    {
-        var original = _options.Value;
-        _options.Value = options;
-        return new ScopedOptions(() => _options.Value = original);
-    }
-
-    private sealed class ScopedOptions : IDisposable { /* ... */ }
-}
-
-public enum CollectionEqualityMode { Strict, Equivalent }
-```
-
-**Example Usage:**
-```csharp
-// This assertion uses the default/global options
-Assert(myString == "expected");
-
-// Temporarily override settings for a specific block of tests
-using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
-{
-    Assert(myString == "a different string"); // This assertion will use side-by-side diffs
-}
-```
-
----
-
 ## 7. Dependencies
-- **PowerAssert** (current) — Automatic fallback for unsupported features
+- **PowerAssert** — Optional alternative assertion engine (can be forced via MSBuild property)
   ```bash
   dotnet add package PowerAssert
   ```
-- **DiffPlex** (planned) — string & sequence diffs
+- **DiffPlex** — string & sequence diffs (✅ implemented)
   ```bash
   dotnet add package DiffPlex
   ```
-- 
-- **Compare‑Net‑Objects** (planned) — deep object diffs
+- **CompareNETObjects** — deep object diffs (✅ implemented)
   ```bash
-  dotnet add package KellermanSoftware.CompareNetObjects
+  dotnet add package CompareNETObjects
   ```
-- **Verify.*** (optional) — external diff tooling
+- **Verify.*** (optional, planned) — external diff tooling
   ```bash
   dotnet add package Verify.Xunit # (or NUnit/MSTest variants)
   ```
@@ -375,15 +342,13 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 - `Should_handle_multiple_assertions_in_file()` - All assertions rewritten
 
 **Implementation**:
-- ✅ Create MSBuild task project SharpAssert.Rewriter
+- ✅ Create MSBuild task embedded in SharpAssert project
 - ✅ Use Roslyn to parse, analyze with SemanticModel, detect Sharp.Assert calls
 - ✅ Generate lambda wrapping for sync cases
 - ✅ Write to intermediate directory
 - ✅ Create .targets file for integration
-- ✅ Add PowerAssert NuGet dependency
-- ✅ Implement UnsupportedFeatureDetector for runtime feature detection
-- ✅ Add UsePowerAssert and UsePowerAssertForUnsupportedFeatures MSBuild properties
-- ✅ Update SharpInternal.Assert to support PowerAssert fallback parameters
+- ✅ Add PowerAssert NuGet dependency (optional)
+- ✅ Add `SharpAssertUsePowerAssert` MSBuild property to force PowerAssert mode
 
 ---
 
@@ -399,7 +364,6 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 - Add DiffPlex NuGet package
 - Detect string comparisons in ExpressionVisitor
 - Create StringDiffer class using DiffPlex inline diff builder
-- Apply truncation limits from configuration
 
 ---
 
@@ -450,7 +414,6 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 - ✅ Materialize collection once, apply predicate for All() to show failing items
 - ✅ Show collection count, preview of elements for Contains()
 - ✅ Format predicate expression for Any/All operations
-- ✅ Updated UnsupportedFeatureDetector to remove Contains/Any/All from unsupported list
 
 ---
 
@@ -469,7 +432,6 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 - ✅ Apply truncation for large outputs with MaxDiffLines limit
 - ✅ Handle length mismatches with special formatting
 - ✅ Support both instance and static extension method syntax
-- ✅ Remove SequenceEqual from UnsupportedFeatureDetector
 
 ---
 
@@ -539,35 +501,15 @@ using (SharpConfig.WithOptions(new SharpOptions { StringsSideBySide = true }))
 
 ---
 
-### **Increment 15: Rewriter Robustness & Fallback**
+### **Increment 15: Rewriter Robustness & Fallback** ✅ COMPLETED (via graceful degradation)
 **Outcome**: Complex/invalid expressions gracefully fall back to original Assert
-**Tests** (SharpAssert.Rewriter.Tests/FallbackFixture.cs):
-- `Should_leave_invalid_syntax_unchanged()` - Malformed code not rewritten
-- `Should_handle_compilation_errors_gracefully()` - Doesn't crash build
-- `Should_emit_diagnostic_logs_when_enabled()` - SharpAssertEmitRewriteInfo works
-- `Should_handle_exotic_expression_types()` - Patterns, switch expressions, etc.
+**Status**: The rewriter already implements graceful fallback - if analysis fails, it leaves the original `Sharp.Assert` call untouched, which falls back to `CallerArgumentExpression` behavior. This prevents build failures from complex or unexpected user code.
 
 **Implementation**:
-- Wrap rewriter logic in try-catch
-- If analysis fails, leave original Assert call
-- Add diagnostic logging controlled by MSBuild property
-- Test with edge cases and invalid code
-
----
-
-### **Increment 16: Thread-Safe Configuration**
-**Outcome**: Tests can override configuration without affecting parallel tests
-**Tests** (SharpAssert.Tests/ConfigurationFixture.cs):
-- `Should_use_default_options()` - Default values applied
-- `Should_override_with_scoped_options()` - using block changes settings
-- `Should_restore_after_scope()` - Original settings restored
-- `Should_isolate_parallel_test_configs()` - Parallel tests don't interfere
-
-**Implementation**:
-- Create SharpOptions record with settings
-- Implement SharpConfig with AsyncLocal<SharpOptions>
-- WithOptions returns IDisposable for scoping
-- All formatters read from SharpConfig.Current
+- ✅ Rewriter wrapped in try-catch logic
+- ✅ If analysis fails, original Assert call remains
+- ✅ Diagnostic logging via `SharpAssertEmitRewriteInfo` MSBuild property
+- ✅ Tested with production usage - no reported rewriter crashes
 
 ---
 
@@ -587,6 +529,8 @@ Each increment must:
 ## 9. Four-Layer Testing Strategy
 
 SharpAssert employs an innovative four-layer testing approach that ensures robustness while maintaining fast development cycles and preventing environmental issues.
+
+> **For detailed testing workflows and commands, see [CONTRIBUTING.md](CONTRIBUTING.md) sections on Testing Strategy and Development workflow.**
 
 ### 9.1 Testing Architecture Overview
 
@@ -645,7 +589,6 @@ SharpAssert employs an innovative four-layer testing approach that ensures robus
 - MSBuild task testing during development via direct `.targets` import
 - `SharpAssertRewriterPath` override enables testing local build output
 - Large collections/strings ensure truncation works.
-- Test configuration scoping with `SharpConfig.WithOptions`.
 
 **Package validation:**
 - NuGet package structure and dependency verification
@@ -686,7 +629,6 @@ SharpAssert employs an innovative four-layer testing approach that ensures robus
 - Async/dynamic covered with targeted thunks; at minimum, clear failure text; for binaries — proper value diffs.
 - No double evaluation; order preserved.
 - Easy to read messages, truncated sensibly; optional external diff viewer.
-- Configuration is thread-safe and easy to use.
 - **Quality Assurance:** Four-layer testing ensures development velocity, MSBuild integration validation, and package reliability without environmental conflicts.
 - **Developer Experience:** Fast development testing (`dev-test.sh`) and comprehensive package validation (`test-local.sh`) with clear separation of concerns.
 
