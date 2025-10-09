@@ -1,695 +1,145 @@
-# PRD: Sharp Assertions — Hybrid “Lambda‑Rewrite + Runtime” (PowerAssert‑style) for .NET
+# SharpAssert PRD
 
-**Status:** Final, implementation‑ready
+**Status:** Active Development
 **Scope:** Test projects (xUnit/NUnit/MSTest), .NET 9+
 **License:** MIT
 
-**Goal:** Pytest‑style assertions with one public API call (`Sharp.Assert(...)`) and automatic MSBuild source‑rewrite to a lambda form that enables rich, PowerAssert‑like diagnostics at runtime.
+## Foundational Principles
 
-**Why hybrid?** We keep the rewriter very small (wraps into a lambda) and move the heavy lifting to runtime (expression‑tree analysis). We add targeted fallbacks for `await` and `dynamic`.
+**See [CONSTITUTION.md](CONSTITUTION.md)** for the immutable architectural principles and core philosophy.
 
 ---
 
-## 1. High‑Level Design
+## Remaining Work
 
-### 1.1 What users write
+### Verify.* Integration (External Diff Viewers)
+**Status:** Not Started
+**Goal:** When string/object diffs are large, write `.received`/`.verified` files and open configured diff tool.
 
-```csharp
-using static SharpAssert.Sharp;
+**Implementation:**
+- Integrate Verify.* packages (Verify.Xunit, Verify.NUnit, Verify.MSTest).
+- Write assertion failure artifacts to `.received`/`.verified` files
+- Open configured diff tool (VS Code, Beyond Compare, etc.)
+- For NUnit/MSTest: attach files via `TestContext.AddTestAttachment` / `AddResultFile`
 
-Assert(result == expected);
-Assert(isAuth && hasPerms);
-Assert(items.Contains(item));
-Assert(actual.SequenceEqual(expected));
+**Dependencies:**
+```bash
+dotnet add package Verify.Xunit  # or NUnit/MSTest variants
 ```
 
-### 1.2 What the MSBuild rewriter emits (simplified)
+---
 
-- **Sync, no `await`, no `dynamic`:**
-  ```csharp
-  SharpInternal.Assert(() => result == expected, expr: "result == expected", file: "...", line: 42);
-  ```
+### Custom Formatter Registry
+**Status:** Not Started
+**Goal:** Allow users to register custom formatters for domain types.
 
-- **Async binary with `await`:**
-  ```csharp
-  SharpInternal.AssertAsyncBinary(
-      left:  async () => await client.GetAsync(),
-      right: async () => await svc.GetAsync(),
-      op: BinaryOp.Eq,
-      expr: "await client.GetAsync() == await svc.GetAsync()", file: "...", line: 10);
-  ```
-
-- **Async (general `await` in condition):**
-  ```csharp
-  SharpInternal.AssertAsync(async () => await CheckAsync(a,b), expr: "...", file: "...", line: 12);
-  ```
-
-- **Dynamic binary:**
-  ```csharp
-  SharpInternal.AssertDynamicBinary(
-      left: () => (object?)x.Some(),
-      right: () => (object?)y,
-      op: BinaryOp.Gt,
-      expr: "x.Some() > y", file: "...", line: 27);
-  ```
-
-- **Dynamic (general):**
-  ```csharp
-  SharpInternal.AssertDynamic(() => x.SomeDynamicCall() > 10, expr: "...", file: "...", line: 30);
-  ```
-
-Users see and call only `Sharp.Assert(bool)`. Everything else lives in `SharpInternal` and is called by the rewriter.
+**Example API:**
+```csharp
+SharpConfig.RegisterFormatter<MyType>((value, context) =>
+{
+    return $"MyType({value.Id}, {value.Name})";
+});
+```
 
 ---
 
-## 2. Public & Internal APIs
+### HTML Diff Emitter
+**Status:** Not Started
+**Goal:** Generate HTML diff artifacts for CI/CD pipelines.
 
-### 2.1 Public surface (what users see)
+**Implementation:**
+- Render assertion failures as formatted HTML
+- Include syntax highlighting, collapsible sections
+- Write to artifacts directory for CI systems
 
+---
+
+### SourceLink-based Expression Embedding
+**Status:** Not Started
+**Goal:** Use SourceLink to embed original expression text without CallerArgumentExpression.
+
+**Rationale:**
+- More reliable than CallerArgumentExpression in edge cases
+- Works across compilation boundaries
+
+---
+
+## Reference Documentation
+
+### API Reference
+
+**Public API:**
 ```csharp
 public static class Sharp
 {
-    /// Entry point users call in tests. Rewriter replaces this call.
-    public static void Assert(
-        bool condition,
-        [System.Runtime.CompilerServices.CallerArgumentExpression("condition")] string? expr = null,
-        [System.Runtime.CompilerServices.CallerFilePath] string? file = null,
-        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0);
+    public static void Assert(bool condition,
+        [CallerArgumentExpression("condition")] string? expr = null,
+        [CallerFilePath] string? file = null,
+        [CallerLineNumber] int line = 0);
 
-    /// Exception testing - synchronous version
     public static ExceptionResult<T> Throws<T>(Action action) where T : Exception;
-
-    /// Exception testing - asynchronous version
     public static Task<ExceptionResult<T>> ThrowsAsync<T>(Func<Task> action) where T : Exception;
-}
-
-/// Result type for exception assertions
-public sealed class ExceptionResult<T> where T : Exception
-{
-    public T Exception { get; }
-    public string Message => Exception.Message;
-    public object? Data => (Exception as dynamic)?.Data;
-
-    // Implicit conversion to bool for Assert usage
-    public static implicit operator bool(ExceptionResult<T> result) => result.Exception != null;
 }
 ```
 
-### 2.2 Internal runtime APIs (what the rewriter targets)
-
+**Internal API (rewriter targets):**
 ```csharp
 public static class SharpInternal
 {
-    // SYNC: expression tree (PowerAssert-style)
-    public static void Assert(
-        System.Linq.Expressions.Expression<Func<bool>> condition,
-        string expr, string file, int line);
+    // Sync: expression tree (rich diagnostics)
+    public static void Assert(Expression<Func<bool>> condition, string expr, string file, int line);
 
-    // ASYNC (general): no expression tree (await is not allowed in Expression<T>)
-    public static Task AssertAsync(
-        Func<Task<bool>> conditionAsync,
-        string expr, string file, int line);
+    // Async (general): no expression tree
+    public static Task AssertAsync(Func<Task<bool>> conditionAsync, string expr, string file, int line);
 
-    // ASYNC (binary) – to get left/right values for diffs
+    // Async (binary): capture left/right values
     public static Task AssertAsyncBinary(
-        Func<Task<object?>> leftAsync,
-        Func<Task<object?>> rightAsync,
-        BinaryOp op,
-        string expr, string file, int line);
+        Func<Task<object?>> leftAsync, Func<Task<object?>> rightAsync,
+        BinaryOp op, string expr, string file, int line);
 
-    // DYNAMIC (general): run once, limited diagnostics
-    public static void AssertDynamic(
-        Func<bool> condition,
-        string expr, string file, int line);
+    // Dynamic (general): limited diagnostics
+    public static void AssertDynamic(Func<bool> condition, string expr, string file, int line);
 
-    // DYNAMIC (binary): capture left/right via thunks, compare via dynamic binder
+    // Dynamic (binary): capture left/right via thunks
     public static void AssertDynamicBinary(
-        Func<object?> left,
-        Func<object?> right,
-        BinaryOp op,
-        string expr, string file, int line);
+        Func<object?> left, Func<object?> right,
+        BinaryOp op, string expr, string file, int line);
 }
-
-public enum BinaryOp  { Eq, Ne, Lt, Le, Gt, Ge }
-public enum LogicalOp { And, Or }
 ```
 
-**Rationale:**
-- `Expression<Func<bool>>` unlocks rich sync diagnostics.
-- `await`/`dynamic` cannot be inside expression trees → we use thunks (`Func<Task<object?>>` / `Func<object?>`) and do the minimal yet useful diagnostics.
+### Rewriter Decision Matrix
+
+| Condition | Rewrite Target | Diagnostics |
+|-----------|----------------|-------------|
+| Sync (no await/dynamic) | `SharpInternal.Assert(() => expr)` | Rich (expression tree) |
+| Await + binary | `AssertAsyncBinary(left, right, op)` | Values + diffs |
+| Await + non-binary | `AssertAsync(() => expr)` | Minimal |
+| Dynamic + binary | `AssertDynamicBinary(left, right, op)` | Values + diffs |
+| Dynamic + non-binary | `AssertDynamic(() => expr)` | Minimal |
+| Both await & dynamic | `AssertAsyncBinary` with dynamic parts | Best effort |
+
+### Dependencies
+
+**Core:**
+- DiffPlex (string/sequence diffs)
+- CompareNETObjects (object deep diffs)
+
+**Optional:**
+- PowerAssert (alternative mode)
+- Verify.* (external diff viewers - future)
 
 ---
 
-## 3. Runtime Behavior (Diagnostics)
+## Testing Commands
 
-### 3.1 Expression‑tree (sync) path: `SharpInternal.Assert(Expression<Func<bool>>)`
-- Walk the expression tree and evaluate sub‑expressions once (cache results).
-- **Supported nodes & behaviors (PowerAssert‑style):**
-    - **Binary compares** `==` `!=` `<` `<=` `>` `>=` → print left/right values; type‑aware comparisons.
-    - **Logical** `&&` `||` `!` → print operand truth values (preserve short‑circuit semantics naturally).
-    - **Membership/LINQ:** detect and enhance:
-        - `.Contains(item)` → show item, `Count`, preview of collection (first N), result.
-        - `.Any(pred)` / `.All(pred)` → show predicate, `Count`, subset of matching/failing elements (truncated).
-        - `.SequenceEqual(other)` → produce diff (see 3.4).
-    - **Calls, indexers, member access** that feed into the boolean → capture values as needed for a clear message.
-    - **Strings vs strings:** produce inline (default) or side‑by‑side diff via DiffPlex.
-    - **Collections vs collections:** produce readable mismatch reports (index of first diff, missing/extra) internal LCS; include previews.
-    - **Objects/records/structs:** when equality fails, run a deep diff via Compare‑Net‑Objects (path‑level differences).
-- On failure, throw `SharpAssertionException` with a well‑formatted message (includes expression text, file, line).
-
-### 3.2 Async (general): `AssertAsync(Func<Task<bool>>)`
-- Evaluate once, `await` result.
-- Failure message includes `expr`, file/line, and boolean `False`.
-- (Optional later) If rewriter attached light metadata, we can print a hint (e.g., “logical expression with await — limited diagnostics”).
-
-### 3.3 Async (binary): `AssertAsyncBinary(Func<Task<object?>> left, Func<Task<object?>> right, BinaryOp op, …)`
-- `await` left then right (in the source order) exactly once each.
-- Compute comparison and, on failure, render like sync binary:
-    - **strings** → DiffPlex
-    - **collections** → FA diff
-    - **objects** → Compare‑Net‑Objects
-    - **primitives** → print values
-
-### 3.4 `SequenceEqual` rich diff (sync path; async via binary thunks)
-- Materialize both sequences to `List<T>` once each (avoid re‑enumeration).
-- Show per‑index comparisons (mismatch markers) and a compact unified diff (DiffPlex).
-- Truncate large outputs; show first/last N with `…`.
-
-### 3.5 Dynamic (general/binary)
-- `AssertDynamic(Func<bool>)` → evaluate once, print minimal report (`expr`, `False`).
-- `AssertDynamicBinary(Func<object?> left, Func<object?> right, op, …)`:
-    - Evaluate left/right once; compute `(dynamic)left OP (dynamic)right`; if false → print values; apply string/collection/object diff rules where appropriate.
-
-### 3.6 External diff viewers (optional)
-- Integrate `Verify.*`: when string/object diffs are large, write `.received`/`.verified` files and open configured diff tool (VS Code, Beyond Compare, etc.).
-- For NUnit/MSTest: attach files via `TestContext.AddTestAttachment` / `AddResultFile`.
-
-### 3.7 Performance Considerations
-- The rich diagnostic tools (object diffing, collection comparison) are only invoked on assertion failure. While this is efficient for passing tests, be aware that complex object diffs on large structures can introduce a performance cost *at the moment of failure*. This is generally an acceptable trade-off for the detailed feedback provided.
-
----
-
-## 4. MSBuild Source Rewrite Task
-
-### 4.1 Build integration
-
-```xml
-<PropertyGroup>
-  <EnableSharpLambdaRewrite>true</EnableSharpLambdaRewrite>
-</PropertyGroup>
-
-<Target Name="SharpLambdaRewrite" BeforeTargets="CoreCompile"
-        Condition="'$(EnableSharpLambdaRewrite)'=='true'">
-  <ItemGroup>
-    <_SharpInput Include="@(Compile)" />
-  </ItemGroup>
-
-  <SharpLambdaRewriteTask
-      Sources="@(_SharpInput)"
-      ProjectDir="$(MSBuildProjectDirectory)"
-      IntermediateDir="$(IntermediateOutputPath)"
-      OutputDir="$(IntermediateOutputPath)SharpRewritten"
-      LangVersion="$(LangVersion)"
-      NullableContext="$(Nullable)" />
-
-  <ItemGroup>
-    <Compile Remove="@(Compile)" />
-    <Compile Include="$(IntermediateOutputPath)SharpRewritten\**\*.sharp.g.cs" />
-  </ItemGroup>
-</Target>
-```
-
-### 4.2 Rewriter algorithm (deterministic)
-
-**Core Principle:** The rewriter must be robust. If it fails to analyze an assertion for any reason, it **must** silently leave the original `Sharp.Assert` call untouched. This provides a graceful fallback to the default `[CallerArgumentExpression]` behavior, preventing build failures from complex or unexpected user code.
-
-For each `InvocationExpression` resolving to `Sharp.Assert(bool)`:
-1.  **Analyze the argument with `SemanticModel`:**
-    - Contains `await`? → `HasAwait = true`
-    - Contains `dynamic` ops? → `HasDynamic = true`
-    - Top‑level binary operator? (`Eq`/`Ne`/`Lt`/`Le`/`Gt`/`Ge`) → `BinaryOp?`
-2.  **Rewrite decision matrix**
-
-| Case                 | Rewrite to                                                                                             | Notes                                                                                              |
-| -------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| No `await`, no `dynamic` | `SharpInternal.Assert(() => <expr>, expr, file, line)`                                                 | Main sync path (expression tree)                                                                   |
-| `await` + binary       | `SharpInternal.AssertAsyncBinary(async () => <left>, async () => <right>, op, expr, file, line)`         | Left/right are awaitable. If one side is sync, it's wrapped in `Task.FromResult()` to match the signature. |
-| `await` + not binary   | `SharpInternal.AssertAsync(async () => <expr>, expr, file, line)`                                      | Limited diagnostics                                                                                |
-| `dynamic` + binary     | `SharpInternal.AssertDynamicBinary(() => (object?)<left>, () => (object?)<right>, op, expr, file, line)` | Better diagnostics with values                                                                     |
-| `dynamic` + not binary | `SharpInternal.AssertDynamic(() => <expr>, expr, file, line)`                                          | Minimal diagnostics                                                                                |
-| Both `await` & `dynamic` | Prefer async track; if binary → `AssertAsyncBinary` using thunks that include dynamic parts.           |                                                                                                    |
-
-3.  **Emit fully‑qualified `global::SharpInternal.*` calls.**
-    (No `#line` needed — we aren’t expanding large blocks. Debugging stays natural.)
-
-**Note:** You can include the raw `expr` string using `[CallerArgumentExpression]` from the original `Sharp.Assert`, or the rewriter can embed it literally. Prefer embedding the literal for clarity.
-
-### 4.3 Debugging the Rewriter
-To facilitate debugging, the rewrite task will support a diagnostic MSBuild property:
-```xml
-<PropertyGroup>
-  <SharpAssertEmitRewriteInfo>true</SharpAssertEmitRewriteInfo>
-</PropertyGroup>
-```
-When enabled, the rewriter will output detailed logs of its analysis and decisions. This is crucial for troubleshooting unexpected rewrite behavior.
-
----
-
-## 5. Output Formatting & Limits
-- **Header:** `Assertion failed: <expr>  at <file>:<line>`
-- **Binary:** print semantic operator and both values.
-- **Strings:** DiffPlex inline (default). Configurable side‑by‑side and context lines.
-- **Collections:** first mismatch index; missing/extra; preview first/last N; avoid gigantic dumps.
-- **Objects:** list up to M property‑level diffs (path → left vs right).
-- **Truncation:** apply global limits; append `…` (truncated).
-
----
-
-## 7. Dependencies
-- **PowerAssert** — Optional alternative assertion engine (can be forced via MSBuild property)
-  ```bash
-  dotnet add package PowerAssert
-  ```
-- **DiffPlex** — string & sequence diffs (✅ implemented)
-  ```bash
-  dotnet add package DiffPlex
-  ```
-- **CompareNETObjects** — deep object diffs (✅ implemented)
-  ```bash
-  dotnet add package CompareNETObjects
-  ```
-- **Verify.*** (optional, planned) — external diff tooling
-  ```bash
-  dotnet add package Verify.Xunit # (or NUnit/MSTest variants)
-  ```
-
----
-
-## 8. Implementation Plan
-
-### **Increment 1: Foundation - Basic Assert with Exception** ✅ COMPLETED
-**Outcome**: Users can call `Sharp.Assert(bool)` and get meaningful failures
-**Tests** (SharpAssert.Tests/AssertionFixture.cs):
-- ✅ `Should_pass_when_condition_is_true()` - Assert(true) doesn't throw
-- ✅ `Should_throw_SharpAssertionException_when_false()` - Assert(false) throws with message
-- ✅ `Should_include_expression_text_in_error()` - Assert(1==2) shows "1==2" via CallerArgumentExpression
-- ✅ `Should_include_file_and_line_in_error()` - Error contains file path and line number
-
-**Implementation**:
-- ✅ Create `Sharp.cs` with public static `Assert(bool, CallerArgumentExpression, CallerFilePath, CallerLineNumber)`
-- ✅ Create `SharpAssertionException : Exception` with formatted message
-- ✅ Assert throws exception when condition is false with expression/file/line info
-
----
-
-### **Increment 2: Expression Tree Runtime - Binary Comparisons** ✅ COMPLETED
-**Outcome**: Runtime can analyze binary expressions and show operand values
-**Tests** (SharpAssert.Tests/ExpressionAnalysisFixture.cs):
-- ✅ `Should_show_left_and_right_values_for_equality()` - x==y shows both values
-- ✅ `Should_handle_all_comparison_operators()` - Test ==, !=, <, <=, >, >=
-- ✅ `Should_handle_null_operands()` - null == value shows "null" properly
-- ✅ `Should_evaluate_complex_expressions_once()` - Side effects happen only once
-
-**Implementation**:
-- ✅ Create `SharpInternal.cs` with `Assert(Expression<Func<bool>>, string, string, int)`
-- ✅ Implement `ExpressionVisitor` that walks tree and caches evaluated sub-expressions
-- ✅ Format binary operators with left/right values in error message
-- ✅ Create `BinaryOp` enum
-
----
-
-### **Increment 3: Logical Operators Support** ✅ COMPLETED
-**Outcome**: Logical operators (&&, ||, !) show operand truth values
-**Tests** (SharpAssert.Tests/LogicalOperatorFixture.cs):
-- ✅ `Should_show_which_part_of_AND_failed()` - true && false shows right was false  
-- ✅ `Should_short_circuit_AND_correctly()` - false && throw doesn't evaluate right
-- ✅ `Should_show_which_part_of_OR_succeeded()` - false || true shows evaluation
-- ✅ `Should_handle_NOT_operator()` - !true shows operand was true
-
-**Implementation**:
-- ✅ Extend ExpressionVisitor for AndAlso, OrElse, Not nodes
-- ✅ Preserve short-circuit semantics naturally via expression evaluation
-- ✅ Format logical operations clearly in error messages
-
----
-
-### **Increment 4: MSBuild Rewriter - Sync Cases Only with PowerAssert Fallback** ✅ COMPLETED
-**Outcome**: Build rewrites `Assert(expr)` to `SharpInternal.Assert(() => expr, ...)`
-**Tests** (SharpAssert.Rewriter.Tests/RewriterFixture.cs):
-- `Should_rewrite_simple_assertion_to_lambda()` - Assert(x==1) becomes lambda
-- `Should_preserve_complex_expressions()` - Nested calls preserved
-- `Should_skip_rewrite_if_async_present()` - Detects await, leaves original
-- `Should_handle_multiple_assertions_in_file()` - All assertions rewritten
-
-**Implementation**:
-- ✅ Create MSBuild task embedded in SharpAssert project
-- ✅ Use Roslyn to parse, analyze with SemanticModel, detect Sharp.Assert calls
-- ✅ Generate lambda wrapping for sync cases
-- ✅ Write to intermediate directory
-- ✅ Create .targets file for integration
-- ✅ Add PowerAssert NuGet dependency (optional)
-- ✅ Add `SharpAssertUsePowerAssert` MSBuild property to force PowerAssert mode
-
----
-
-### **Increment 5: String Comparison with Inline Diffs** ✅ COMPLETED
-**Outcome**: String equality failures show character-level differences
-**Tests** (SharpAssert.Tests/StringComparisonFixture.cs):
-- `Should_show_inline_diff_for_strings()` - "hello" vs "hallo" shows diff
-- `Should_handle_multiline_strings()` - Line-by-line comparison
-- `Should_truncate_very_long_strings()` - Limits output size
-- `Should_handle_null_strings()` - null vs "" handled gracefully
-
-**Implementation**:
-- Add DiffPlex NuGet package
-- Detect string comparisons in ExpressionVisitor
-- Create StringDiffer class using DiffPlex inline diff builder
-
----
-
-### **Increment 6: Collection Comparison - Basic** ✅ COMPLETED
-**Outcome**: Collection failures show first mismatch and missing/extra elements
-**Tests** (SharpAssert.Tests/CollectionComparisonFixture.cs):
-- `Should_show_first_mismatch_index()` - [1,2,3] vs [1,2,4] shows index 2
-- `Should_show_missing_elements()` - [1,2] vs [1,2,3] shows missing 3
-- `Should_show_extra_elements()` - [1,2,3] vs [1,2] shows extra 3
-- `Should_handle_empty_collections()` - [] vs [1] handled correctly
-
-**Implementation**:
-- Detect IEnumerable comparisons
-- Materialize to List<T> once to avoid re-enumeration
-- Calculate first difference, missing, extra
-- Format collection preview (first/last N elements)
-
----
-
-### **Increment 7: Object Deep Comparison** ✅ COMPLETED
-**Outcome**: Object/record/struct failures show property-level differences
-**Tests** (SharpAssert.Tests/ObjectComparisonFixture.cs):
-- ✅ `Should_show_property_differences()` - Different property values listed
-- ✅ `Should_handle_nested_objects()` - Deep path shown (e.g., "Address.City")
-- ✅ `Should_handle_null_objects()` - null vs instance handled
-- ✅ `Should_respect_equality_overrides()` - Uses Equals if overridden
-
-**Implementation**:
-- ✅ Add Compare-Net-Objects NuGet package
-- ✅ Detect object equality comparisons
-- ✅ Use CompareLogic to get differences
-- ✅ Format property paths with old vs new values
-- ✅ Apply MaxDiffLines limit
-
----
-
-### **Increment 8: LINQ Operations - Contains/Any/All** ✅ COMPLETED
-**Outcome**: LINQ operations provide specialized diagnostic messages
-**Tests** (SharpAssert.Tests/LinqOperationsFixture.cs):
-- ✅ `Should_show_collection_when_Contains_fails()` - Shows actual collection contents
-- ✅ `Should_show_matching_items_for_Any()` - Shows which items matched predicate
-- ✅ `Should_show_failing_items_for_All()` - Shows which items failed predicate
-- ✅ `Should_handle_empty_collections_in_LINQ()` - Empty.Any() shows "empty collection"
-
-**Implementation**:
-- ✅ Detect MethodCallExpression for Contains, Any, All in ExpressionAnalyzer
-- ✅ Create LinqOperationFormatter for specialized diagnostic messages
-- ✅ Materialize collection once, apply predicate for All() to show failing items
-- ✅ Show collection count, preview of elements for Contains()
-- ✅ Format predicate expression for Any/All operations
-
----
-
-### **Increment 9: SequenceEqual Deep Diff** ✅ COMPLETED
-**Outcome**: SequenceEqual shows unified diff of sequences
-**Tests** (SharpAssert.Tests/SequenceEqualFixture.cs):
-- ✅ `Should_show_unified_diff()` - Side-by-side comparison
-- ✅ `Should_handle_different_lengths()` - Shows length mismatch
-- ✅ `Should_truncate_large_sequences()` - Limits output with "..."
-- ✅ `Should_work_with_custom_comparers()` - Honors IEqualityComparer parameter
-
-**Implementation**:
-- ✅ Detect SequenceEqual method call in ExpressionAnalyzer
-- ✅ Materialize both sequences to List<T> to avoid re-enumeration
-- ✅ Use DiffPlex for unified diff with element-by-element comparison
-- ✅ Apply truncation for large outputs with MaxDiffLines limit
-- ✅ Handle length mismatches with special formatting
-- ✅ Support both instance and static extension method syntax
-
----
-
-### **Increment 10: Async Support - Basic AssertAsync** ✅ COMPLETED
-**Outcome**: Can assert on expressions containing await
-**Tests** (SharpAssert.Tests/AsyncAssertionFixture.cs):
-- ✅ `Should_handle_await_in_condition()` - Assert(await GetBool()) works
-- ✅ `Should_show_false_for_failed_async()` - Shows expression and False
-- ✅ `Should_preserve_async_context()` - Maintains SynchronizationContext
-- ✅ `Should_handle_exceptions_in_async()` - Async exceptions bubble correctly
-
-**Implementation**:
-- ✅ Create `SharpInternal.AssertAsync(Func<Task<bool>>, ...)`
-- ✅ Rewriter detects await keyword via SemanticModel
-- ✅ Emits AssertAsync for general await cases
-- ✅ Await result and provide basic diagnostics
-
----
-
-### **Increment 11: Async Binary Comparisons** ✅ COMPLETED
-**Outcome**: Binary comparisons with await show both operand values
-**Tests** (SharpAssert.Tests/AsyncBinaryFixture.cs):
-- ✅ `Should_show_both_async_values()` - await Left() == await Right() shows values
-- ✅ `Should_handle_mixed_async_sync()` - await X() == 5 works correctly
-- ✅ `Should_evaluate_in_source_order()` - Left evaluated before right
-- ✅ `Should_apply_diffs_to_async_strings()` - String diff works with async
-
-**Implementation**:
-- ✅ Create `SharpInternal.AssertAsyncBinary(Func<Task<object?>>, Func<Task<object?>>, BinaryOp, ...)`
-- ✅ Rewriter detects binary with await, generates thunks
-- ✅ Wrap sync operands in Task.FromResult
-- ✅ Apply same diff logic as sync path
-
----
-
-### **Increment 12: Dynamic Support** ✅ COMPLETED
-**Outcome**: Dynamic expressions work with value diagnostics for binaries
-**Tests** (SharpAssert.Tests/DynamicAssertionFixture.cs):
-- ✅ `Should_handle_dynamic_binary()` - dynamic == 5 shows values
-- ✅ `Should_handle_dynamic_method_calls()` - dynamic.Method() > 0 works
-- ✅ `Should_apply_dynamic_operator_semantics()` - Uses DLR for comparison
-- ✅ `Should_show_minimal_diagnostics_for_complex_dynamic()` - Falls back gracefully
-
-**Implementation**:
-- ✅ Create `SharpInternal.AssertDynamic` and `AssertDynamicBinary`
-- ✅ Rewriter detects dynamic via SemanticModel
-- ✅ Use dynamic binder for operator evaluation
-- ✅ Cast to object? in thunks for binary cases
-
----
-
-### **Increment 14: Nullable Type Support** ✅ COMPLETED
-**Outcome**: Nullable value types and reference types display clear null state diagnostics
-**Tests** (SharpAssert.Tests/NullableTypeFixture.cs):
-- ✅ `Should_show_null_state_for_nullable_int()` - int? null shows "HasValue: false"
-- ✅ `Should_show_value_state_for_nullable_int()` - int? with value shows "HasValue: true, Value: 42"
-- ✅ `Should_show_null_state_for_nullable_bool()` - bool? null comparison
-- ✅ `Should_show_null_state_for_nullable_DateTime()` - DateTime? null comparison
-- ✅ `Should_handle_nullable_reference_types()` - string?, object? null comparison
-- ✅ `Should_show_HasValue_information_in_detailed_diagnostics()` - Full nullable state
-- ✅ `Should_handle_null_comparison_edge_cases()` - nullable == null cases
-**Implementation**:
-- ✅ Create `NullableComparisonFormatterWithTypes` for nullable value types
-- ✅ Enhance `ExpressionAnalyzer` to detect nullable types at expression level
-- ✅ Improve `ObjectComparisonFormatter` for better reference type display
-- ✅ Support both nullable value types (int?, bool?) and reference types (string?, object?)
-
----
-
-### **Increment 15: Rewriter Robustness & Fallback** ✅ COMPLETED (via graceful degradation)
-**Outcome**: Complex/invalid expressions gracefully fall back to original Assert
-**Status**: The rewriter already implements graceful fallback - if analysis fails, it leaves the original `Sharp.Assert` call untouched, which falls back to `CallerArgumentExpression` behavior. This prevents build failures from complex or unexpected user code.
-
-**Implementation**:
-- ✅ Rewriter wrapped in try-catch logic
-- ✅ If analysis fails, original Assert call remains
-- ✅ Diagnostic logging via `SharpAssertEmitRewriteInfo` MSBuild property
-- ✅ Tested with production usage - no reported rewriter crashes
-
----
-
-### Verification Steps for Each Increment
-
-Each increment must:
-1. ✅ Have all tests written first and failing appropriately
-2. ✅ Implement minimal code to make tests pass
-3. ✅ Achieve 100% branch coverage for new code
-4. ✅ Run `dotnet build` successfully
-5. ✅ Pass all existing tests (no regressions)
-6. ✅ Update learnings.md with any discoveries
-7. ✅ Commit with descriptive message
-
----
-
-## 9. Four-Layer Testing Strategy
-
-SharpAssert employs an innovative four-layer testing approach that ensures robustness while maintaining fast development cycles and preventing environmental issues.
-
-> **For detailed testing workflows and commands, see [CONTRIBUTING.md](CONTRIBUTING.md) sections on Testing Strategy and Development workflow.**
-
-### 9.1 Testing Architecture Overview
-
-**Layer 1: Unit Tests** (`SharpAssert.Tests/`)
-- **Runtime unit tests (expression‑tree):**
-    - Binaries, logicals, membership, `SequenceEqual`, strings, collections, objects, nulls, type mismatches.
-- **Async tests:**
-    - `AssertAsyncBinary` with awaited thunks (order & single evaluation).
-    - `AssertAsync` minimal diagnostics.
-- **Dynamic tests:**
-    - `AssertDynamicBinary` for common ops; collection/object/string values printed correctly.
-- **Fast execution** - focused on individual components, no MSBuild integration.
-
-**Layer 2: Integration Tests** (`SharpAssert.IntegrationTests/`) 
-- **Innovation**: Tests MSBuild rewriter as actual task during development without NuGet packaging
-- **Technical approach**: Uses `ProjectReference` with `ReferenceOutputAssembly="false"` and direct `.targets` import
-- **Benefits**: Validates complete MSBuild integration, catches rewriter issues early, no packaging overhead
-- **Scope**: End-to-end rewriting validation, complex expression handling, graceful fallback testing
-
-**Layer 3: Package Tests** (`SharpAssert.PackageTest/`, `SharpAssert.PowerAssertTest/`)
-- **Isolated validation**: Tests actual NuGet packages using separate solution (`SharpAssert.PackageTesting.sln`)
-- **Cache isolation**: Custom package cache per test run prevents global cache pollution
-- **Dual modes**: Basic SharpAssert functionality + PowerAssert forced mode
-- **Real-world simulation**: Validates package structure, dependencies, and user experience
-
-**Layer 4: CI Validation**
-- **Two-phase approach**: Development layer (unit + integration) followed by package layer
-- **Isolated environments**: Each phase uses separate package caches and configurations
-- **Comprehensive coverage**: Ensures both development workflow and end-user package experience
-
-### 9.2 Developer Experience Benefits
-
-**Fast Development Cycle**:
+**Fast development cycle:**
 ```bash
-./dev-test.sh    # Quick unit + integration tests (main solution)
+./dev-test.sh    # Unit + integration tests
 ```
 
-**Comprehensive Validation**:
+**Full validation:**
 ```bash
-./test-local.sh  # Full package validation with isolation
+./test-local.sh  # All layers with package isolation
 ```
 
-**Quality Assurance Advantages**:
-- **Early MSBuild detection**: Integration tests catch rewriter issues without packaging
-- **Environmental isolation**: Package tests prevent global cache conflicts
-- **Multi-scenario coverage**: Basic + PowerAssert modes ensure all code paths
-- **CI robustness**: Two-layer approach catches both development and packaging issues
-
-### 9.3 Testing Strategy Details
-
-**Rewriter tests:**
-- Source → rewritten source (golden files) for each mapping row; ensure no `await` or `dynamic` leaks into `Expression<Func<bool>>`.
-- Test the graceful fallback mechanism where the rewriter leaves invalid code alone.
-
-**Integration testing innovation:**
-- MSBuild task testing during development via direct `.targets` import
-- `SharpAssertRewriterPath` override enables testing local build output
-- Large collections/strings ensure truncation works.
-
-**Package validation:**
-- NuGet package structure and dependency verification
-- Isolated cache testing prevents environmental pollution
-- PowerAssert fallback mode validation ensures backward compatibility
-
----
-
-## 10. Mapping Table (rewrite rules)
-
-| Case                 | User Code                           | Emits                                                                                             |
-| -------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Sync, normal         | `Assert(a + 2 == b * 3)`            | `SharpInternal.Assert(() => a + 2 == b * 3, "a + 2 == b * 3", file, line)`                        |
-| Sync, logical        | `Assert(isAuth && hasPerms)`        | `SharpInternal.Assert(() => isAuth && hasPerms, "...", file, line)`                                |
-| `.Contains`          | `Assert(users.Contains(admin))`     | `SharpInternal.Assert(() => users.Contains(admin), "...", file, line)`                            |
-| `.Any` / `.All`      | `Assert(items.Any(p))`              | `SharpInternal.Assert(() => items.Any(p), "...", file, line)`                                     |
-| `.SequenceEqual`     | `Assert(a.SequenceEqual(b))`        | `SharpInternal.Assert(() => a.SequenceEqual(b), "...", file, line)`                               |
-| Async binary         | `Assert(await L() == await R())`    | `SharpInternal.AssertAsyncBinary(async () => await L(), async () => await R(), Eq, "...", file, line)` |
-| Mixed async/sync     | `Assert(await L() == "constant")`   | `SharpInternal.AssertAsyncBinary(async () => await L(), () => Task.FromResult("constant"), ...)`   |
-| Async general        | `Assert(await CheckAsync(x))`       | `SharpInternal.AssertAsync(async () => await CheckAsync(x), "...", file, line)`                   |
-| Dynamic binary       | `Assert(xDyn == y)`                 | `SharpInternal.AssertDynamicBinary(() => (object?)xDyn, () => (object?)y, Eq, "...", file, line)`  |
-| Dynamic general      | `Assert(xDyn.Call() > 0)`           | `SharpInternal.AssertDynamic(() => xDyn.Call() > 0, "...", file, line)`                           |
-| Both `await` & `dynamic` | `Assert(await xDyn.F() == y)`       | Prefer async binary thunks that return `object?`                                                  |
-
----
-
-## 11. Non‑Goals (initial)
-- Full AST explanation for `async` and `dynamic` (beyond the targeted thunks).
-- Expression‑trees for `await` / `dynamic` (not supported by C#).
-- Rewriting outside test projects (default opt‑in per test `csproj`).
-
----
-
-## 12. Acceptance Criteria
-- Devs write only `Sharp.Assert(bool)`; rewriter does the rest.
-- **Robustness:** The build does not fail due to rewriter errors; it gracefully falls back to simpler diagnostics.
-- Sync cases yield PowerAssert‑grade messages: left/right, logical operand values, membership/LINQ insights, `SequenceEqual` diff, string/collection/object diffs.
-- Async/dynamic covered with targeted thunks; at minimum, clear failure text; for binaries — proper value diffs.
-- No double evaluation; order preserved.
-- Easy to read messages, truncated sensibly; optional external diff viewer.
-- **Quality Assurance:** Four-layer testing ensures development velocity, MSBuild integration validation, and package reliability without environmental conflicts.
-- **Developer Experience:** Fast development testing (`dev-test.sh`) and comprehensive package validation (`test-local.sh`) with clear separation of concerns.
-
----
-
-## 13. Nice‑to‑Have (future)
-- Per‑call options (`Assert(…, new SharpOptions { … })`).
-- Custom printers/formatters registry for domain types.
-- HTML diff emitter (for CI artifacts).
-- SourceLink‑based embedding of original `expr` text (if needed).
-
----
-
-## 15. Testing Architecture Innovation
-
-### 15.1 Competitive Advantage
-
-SharpAssert's four-layer testing strategy represents a significant innovation in .NET library development, particularly for MSBuild-integrated tools:
-
-**Industry Problem**: Traditional .NET library testing requires either:
-- Unit tests only (miss integration issues)
-- Full NuGet packaging for integration tests (slow, cache pollution)
-- Complex test harnesses that don't reflect real usage
-
-**SharpAssert Solution**: 
-- **Integration without packaging**: Test MSBuild rewriter as actual task during development
-- **True isolation**: Package tests use dedicated caches, preventing global pollution
-- **Fast feedback loops**: Separate development vs. validation testing workflows
-- **CI confidence**: Two-layer validation catches both development and packaging issues
-
-### 15.2 Technical Innovation Details
-
-**MSBuild Task Testing During Development**:
-```xml
-<!-- Enable testing rewriter without NuGet packaging -->
-<ProjectReference Include="..\SharpAssert.Rewriter\SharpAssert.Rewriter.csproj"
-                  ReferenceOutputAssembly="false" />
-<Import Project="..\SharpAssert.Rewriter\build\SharpAssert.Rewriter.targets" />
-<PropertyGroup>
-  <SharpAssertRewriterPath>$(MSBuildThisFileDirectory)..\SharpAssert.Rewriter\bin\$(Configuration)\net9.0\SharpAssert.Rewriter.dll</SharpAssertRewriterPath>
-</PropertyGroup>
-```
-
-**Package Testing with Complete Isolation**:
-```bash
-# Isolated cache prevents global pollution
-dotnet restore SharpAssert.PackageTesting.sln \
-  --packages ./test-packages \
-  --configfile nuget.package-tests.config
-```
-
-### 15.3 Strategic Benefits
-
-- **Development Velocity**: Fast unit + integration testing enables rapid iteration
-- **Quality Assurance**: Comprehensive validation without environmental side effects
-- **Maintainer Confidence**: Early detection of MSBuild integration issues
-- **User Experience**: Package tests ensure real-world scenarios work correctly
-- **Ecosystem Friendliness**: No global cache pollution during testing
-
-This testing approach could serve as a model for other MSBuild-integrated .NET libraries.
-
----
-
-This PRD gives a clear, minimal rewrite strategy (wrap to lambda / emit async/dynamic thunks) and a rich runtime that mirrors pytest's UX, including great diffs for strings, collections, sequences, and deep object graphs. The walking skeleton can be implemented fast, then iterated safely with confidence through the four-layer testing strategy.
+**See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed testing workflows.**
