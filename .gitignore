@@ -10,3 +10,4 @@ TestResults
 local-feed
 .DS_Store
 .claude/settings.local.json√
+prompt.md
