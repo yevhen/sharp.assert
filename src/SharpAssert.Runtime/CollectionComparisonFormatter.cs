@@ -19,15 +19,8 @@ class CollectionComparisonFormatter : IComparisonFormatter
         return AnalyzeCollectionDifferences(leftList, rightList);
     }
 
-    static List<object?> MaterializeToList(object collection)
-    {
-        var result = new List<object?>();
-        foreach (var item in (IEnumerable)collection)
-        {
-            result.Add(item);
-        }
-        return result;
-    }
+    static List<object?> MaterializeToList(object collection) =>
+        ((IEnumerable)collection).Cast<object?>().ToList();
 
     static string AnalyzeCollectionDifferences(List<object?> left, List<object?> right)
     {
@@ -39,10 +32,7 @@ class CollectionComparisonFormatter : IComparisonFormatter
 
         var differenceMessage = FindFirstDifference(left, right);
         if (differenceMessage != null)
-        {
             result.Add(differenceMessage);
-            return string.Join("\n", result);
-        }
 
         var lengthDifferenceMessage = DescribeLengthDifference(left, right);
         if (lengthDifferenceMessage != null)
@@ -64,15 +54,17 @@ class CollectionComparisonFormatter : IComparisonFormatter
 
     static string? DescribeLengthDifference(List<object?> left, List<object?> right)
     {
+        const int MaxDifferencePreview = 5;
+
         if (left.Count > right.Count)
         {
-            var extraElements = left.Skip(right.Count).Take(5).ToList();
+            var extraElements = left.Skip(right.Count).Take(MaxDifferencePreview).ToList();
             return $"  Extra elements: [{string.Join(", ", extraElements.Select(FormatValue))}]";
         }
 
         if (right.Count > left.Count)
         {
-            var missingElements = right.Skip(left.Count).Take(5).ToList();
+            var missingElements = right.Skip(left.Count).Take(MaxDifferencePreview).ToList();
             return $"  Missing elements: [{string.Join(", ", missingElements.Select(FormatValue))}]";
         }
 
