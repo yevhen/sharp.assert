@@ -1,3 +1,5 @@
+using static SharpAssert.Sharp;
+
 namespace SharpAssert;
 
 [TestFixture]
@@ -8,16 +10,13 @@ public class StringComparisonFixture : TestBase
     {
         var actual = "hello";
         var expected = "hallo";
-        
-        AssertExpressionThrows(
-            () => actual == expected,
-            "actual == expected",
-            "StringComparisonFixture.cs",
-            10,
+
+        AssertThrows(
+            () => Assert(actual == expected),
             "*Assertion failed: actual == expected*" +
             "*Left:  \"hello\"*" +
             "*Right: \"hallo\"*" +
-            "*Diff: h[-e][+a]llo*"); // Expected inline diff showing 'e' -> 'a' change
+            "*Diff: h[-e][+a]llo*");
     }
 
     [Test]
@@ -26,11 +25,8 @@ public class StringComparisonFixture : TestBase
         var actual = "line1\nline2\nline3";
         var expected = "line1\nMODIFIED\nline3";
 
-        AssertExpressionThrows(
-            () => actual == expected,
-            "actual == expected",
-            "StringComparisonFixture.cs",
-            30,
+        AssertThrows(
+            () => Assert(actual == expected),
             "*Assertion failed: actual == expected*" +
             "*Left:*" +
             "*line1*" +
@@ -53,16 +49,13 @@ public class StringComparisonFixture : TestBase
         var longPart = new string('A', 1000);
         var actual = longPart + "X";
         var expected = longPart + "Y";
-        
-        AssertExpressionThrows(
-            () => actual == expected,
-            "actual == expected",
-            "StringComparisonFixture.cs", 
-            50,
+
+        AssertThrows(
+            () => Assert(actual == expected),
             "*Assertion failed: actual == expected*" +
             "*Left:  \"*" +
             "*Right: \"*" +
-            "*...*"); // Should show truncation indicator
+            "*...*");
     }
 
     [Test]
@@ -70,15 +63,12 @@ public class StringComparisonFixture : TestBase
     {
         string? nullString = null;
         var emptyString = "";
-        
-        AssertExpressionThrows(
-            () => nullString == emptyString,
-            "nullString == emptyString",
-            "StringComparisonFixture.cs",
-            68,
+
+        AssertThrows(
+            () => Assert(nullString == emptyString),
             "*Assertion failed: nullString == emptyString*" +
             "*Left:  null*" +
-            "*Right: \"\"*"); // Should clearly distinguish null from empty
+            "*Right: \"\"*");
     }
 
     [Test]
@@ -86,7 +76,7 @@ public class StringComparisonFixture : TestBase
     {
         var str1 = "hello world";
         var str2 = "hello world";
-        AssertExpressionPasses(() => str1 == str2);
+        AssertDoesNotThrow(() => Assert(str1 == str2));
     }
 
     [Test]
@@ -94,7 +84,7 @@ public class StringComparisonFixture : TestBase
     {
         string? str1 = null;
         string? str2 = null;
-        AssertExpressionPasses(() => str1 == str2);
+        AssertDoesNotThrow(() => Assert(str1 == str2));
     }
 
     [Test]
@@ -102,6 +92,6 @@ public class StringComparisonFixture : TestBase
     {
         var str1 = "";
         var str2 = string.Empty;
-        AssertExpressionPasses(() => str1 == str2);
+        AssertDoesNotThrow(() => Assert(str1 == str2));
     }
 }

@@ -21,7 +21,7 @@ Key invariants:
 
 ### High Priority (Polish & Correctness)
 
-#### 1. Move All Tests to Integration Tests (Front Door Only)
+#### 1. ~~Move All Tests to Integration Tests (Front Door Only)~~ ✅ COMPLETED
 **Goal:** Test only via public API `Assert()`, not internal methods.
 
 **Why:** Ensures we're testing user-facing behavior, catches integration issues.

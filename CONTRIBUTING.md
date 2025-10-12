@@ -29,7 +29,6 @@ SharpAssert/
 │   ├── SharpAssert.Runtime/            # Core assertion library with Assert methods
 │   ├── SharpAssert/                    # MSBuild source rewriter + main package
 │   ├── SharpAssert.Tests/              # Unit tests for runtime and rewriter
-│   ├── SharpAssert.IntegrationTests/   # ★ Integration tests (MSBuild task)
 │   ├── SharpAssert.PackageTest/        # Package tests (local NuGet feed)
 │   ├── SharpAssert.PowerAssertTest/    # PowerAssert forced mode tests
 │   └── SharpAssert.Demo/               # Demo project showcasing features
@@ -48,31 +47,22 @@ SharpAssert/
 
 ## 🧪 Testing Strategy
 
-SharpAssert uses a comprehensive **four-layer testing approach** to ensure reliability and maintainability across all development phases.
-
-> **For architectural details and implementation rationale, see [prd.md](prd.md) Section 9: Four-Layer Testing Strategy.**
+SharpAssert uses a comprehensive **three-layer testing approach** to ensure reliability and maintainability across all development phases.
 
 ### 1. **Unit Tests** - Component-Level Validation
 - **SharpAssert.Tests** - Tests core assertion logic and rewriter components
 - **Purpose**: Fast feedback during development, tests individual methods and classes
 - **Run with**: `dotnet test src/SharpAssert.Tests/`
 
-### 2. **Integration Tests** - MSBuild Task Validation (New!)
-- **SharpAssert.IntegrationTests** - Tests the rewriter as an actual MSBuild task during development
-- **Purpose**: Validates that MSBuild integration works without requiring NuGet packages
-- **Key Innovation**: Uses project references with `ReferenceOutputAssembly="false"` and direct import of `.targets` files
-- **MSBuild Task Testing**: Overrides `SharpAssertRewriterPath` to use local build output
-- **Run with**: `dotnet test src/SharpAssert.IntegrationTests/`
-
-### 3. **Package Tests** - End-to-End NuGet Validation
+### 2. **Package Tests** - End-to-End NuGet Validation
 - **SharpAssert.PackageTest** - Tests basic functionality via NuGet packages
-- **SharpAssert.PowerAssertTest** - Tests PowerAssert forced mode via NuGet packages  
+- **SharpAssert.PowerAssertTest** - Tests PowerAssert forced mode via NuGet packages
 - **Purpose**: Validates complete end-user experience including packaging and MSBuild integration
 - **Isolation**: Uses separate solution (`SharpAssert.PackageTesting.sln`) and NuGet config
 - **Run with**: `./test-local.sh`
 
-### 4. **Development Scripts** - Automated Workflows
-- **`./dev-test.sh`** - Fast development testing (Unit + Integration only)
+### 3. **Development Scripts** - Automated Workflows
+- **`./dev-test.sh`** - Fast development testing (Unit tests only)
 - **`./test-local.sh`** - Complete package validation with cache isolation
 
 ### Testing Architecture Overview
@@ -83,7 +73,6 @@ SharpAssert uses a comprehensive **four-layer testing approach** to ensure relia
 ├─────────────────────────────────────────────────────────────┤
 │ SharpAssert.sln (Main Solution)                            │
 │ ├── SharpAssert.Tests (unit tests)                         │
-│ ├── SharpAssert.IntegrationTests (MSBuild task tests) ★    │
 │ ├── SharpAssert.Demo (feature showcase)                    │
 │ └── ... (main projects)                                    │
 ├─────────────────────────────────────────────────────────────┤
@@ -92,28 +81,6 @@ SharpAssert uses a comprehensive **four-layer testing approach** to ensure relia
 │ └── SharpAssert.PowerAssertTest (PowerAssert mode tests)   │
 └─────────────────────────────────────────────────────────────┘
 ```
-
-### Integration Tests: MSBuild Task Testing Innovation
-
-The **SharpAssert.IntegrationTests** project enables testing the MSBuild rewriter during development without packaging:
-
-```xml
-<!-- Project reference for build dependency only -->
-<ProjectReference Include="..\SharpAssert\SharpAssert.csproj"
-                  ReferenceOutputAssembly="false" />
-
-<!-- Direct import of targets file (simulates NuGet package behavior) -->
-<Import Project="..\SharpAssert\build\SharpAssert.targets" />
-
-<!-- Override rewriter path to use local build output -->
-<SharpAssertRewriterPath>$(MSBuildThisFileDirectory)..\SharpAssert\bin\$(Configuration)\net9.0\SharpAssert.dll</SharpAssertRewriterPath>
-```
-
-This approach:
-- ✅ Tests MSBuild task functionality during development
-- ✅ Eliminates need to package for every rewriter change  
-- ✅ Provides fast feedback loop for MSBuild integration issues
-- ✅ Simulates real NuGet package behavior without packaging overhead
 
 ### Package Testing Isolation
 
@@ -127,23 +94,21 @@ Package tests use complete isolation to prevent global NuGet cache pollution:
 ### Testing Workflow by Development Phase
 
 ```bash
-# ⚡ Fast development (Unit + Integration) - No packaging required
+# ⚡ Fast development (Unit tests) - No packaging required
 ./dev-test.sh
 
 # 📦 Full validation before commits (includes package tests)
 ./test-local.sh
 
 # 🔧 Manual testing workflows
-dotnet test                                    # All tests in main solution
-dotnet test src/SharpAssert.IntegrationTests/     # Just MSBuild integration tests
-./publish-local.sh                            # Build packages to local feed
-dotnet test SharpAssert.PackageTesting.sln    # Just package tests
+dotnet test                                 # All tests in main solution
+./publish-local.sh                         # Build packages to local feed
+dotnet test SharpAssert.PackageTesting.sln # Just package tests
 ```
 
 ### When to Use Each Test Layer
 
 - **Unit Tests**: Fast development, testing individual methods/classes
-- **Integration Tests**: Validating MSBuild task behavior, rewriter integration
 - **Package Tests**: Before commits, validating end-user experience
 - **Development Scripts**: Daily workflow automation
 
@@ -242,42 +207,23 @@ This serves as the **automated Clean Install Test** ensuring packaging works cor
 
 ### Rewriter Development
 
-Working on the MSBuild rewriter now has **two validation approaches**:
+Working on the MSBuild rewriter:
 
-#### Fast Development Cycle (Recommended)
-
-1. **Use Integration Tests for rapid iteration**
+1. **Write unit tests** in `SharpAssert.Tests/Rewriter/` for fast feedback
    ```bash
-   # Fast feedback - no packaging required
-   dotnet test src/SharpAssert.IntegrationTests/
-   # or use the dev script
-   ./dev-test.sh
+   dotnet test src/SharpAssert.Tests/ --filter "FullyQualifiedName~Rewriter"
    ```
 
-2. **Debug integration tests**
-   - Set breakpoints in `SharpLambdaRewriteTask` or `SharpAssertRewriter`
-   - Integration tests use your local build output directly
-   - Inspect rewritten files in: `src/SharpAssert.IntegrationTests/obj/Debug/net9.0/SharpRewritten/`
-
-#### Complete Package Validation
-
-1. **Use Package Tests for final validation**
+2. **Use package tests for validation**
    ```bash
-   # Complete end-to-end validation (slower)
+   # Complete end-to-end validation
    ./test-local.sh
    ```
 
-2. **Debug package tests**
+3. **Debug package tests**
    - Inspect rewritten code in: `src/SharpAssert.PackageTest/obj/Debug/net9.0/SharpRewritten/`
    - Use verbose MSBuild logging: `dotnet build -v diagnostic`
    - Check #line directives in generated files
-
-#### Integration Test Benefits for Rewriter Development
-
-- ⚡ **No packaging step** - directly uses your build output
-- 🔄 **Fast feedback loop** - change code, run test immediately  
-- 🎯 **MSBuild task testing** - validates actual MSBuild integration
-- 🔧 **Easy debugging** - breakpoints work seamlessly
 
 ### Demo Project
 
@@ -308,20 +254,12 @@ See [SharpAssert.Demo/README.md](src/SharpAssert.Demo/README.md) for full docume
 1. **Write failing test first** (TDD)
 2. **Implement minimal code** to pass the test
 3. **Refactor** if needed
-4. **Update integration tests** if behavior changes
-5. **Test the package** with `./test-local.sh`
-6. **Update documentation** if adding public API
+4. **Test the package** with `./test-local.sh`
+5. **Update documentation** if adding public API
 
 ## 🐛 Debugging Issues
 
 ### Common Problems by Test Layer
-
-**Integration Tests (SharpAssert.IntegrationTests) - MSBuild Task Issues:**
-- Verify the rewriter project builds successfully: `dotnet build SharpAssert/`
-- Check that `SharpAssertRewriterPath` points to correct assembly location
-- Ensure `.targets` file is properly imported
-- Look for rewritten files in `src/SharpAssert.IntegrationTests/obj/Debug/net9.0/SharpRewritten/`
-- Use `dotnet build src/SharpAssert.IntegrationTests/ -v diagnostic` for detailed MSBuild logging
 
 **Package Tests - End-to-End Issues:**
 - **Rewriter not working**: Check `SharpAssert` package is installed (SharpAssert.Runtime comes automatically)
@@ -343,7 +281,7 @@ See [SharpAssert.Demo/README.md](src/SharpAssert.Demo/README.md) for full docume
 
 ### Debugging Workflow
 
-1. **Start with Integration Tests** - fastest feedback for MSBuild issues
+1. **Start with Unit Tests** - fastest feedback for logic issues
 2. **Use Package Tests** for complete validation - slower but comprehensive
 3. **Check both solutions** - main solution vs package testing solution
 4. **Clean and rebuild** when in doubt - `dotnet clean && dotnet build`
@@ -404,14 +342,12 @@ Follow [Semantic Versioning](https://semver.org/):
 ### Testing Best Practices
 
 1. **Use the right test layer for the job**:
-   - **Unit tests** for business logic and algorithms
-   - **Integration tests** for MSBuild task behavior and rewriter validation
+   - **Unit tests** for business logic, algorithms, and rewriter components
    - **Package tests** for complete end-to-end scenarios
 
 2. **Follow the development testing workflow**:
    - Start with `./dev-test.sh` for rapid iteration
    - Use `./test-local.sh` before committing for full validation
-   - Run integration tests when changing rewriter logic
 
 3. **Always run tests** before committing - use `./test-local.sh` for complete validation
 
@@ -425,8 +361,8 @@ Follow [Semantic Versioning](https://semver.org/):
 
 ### MSBuild Rewriter Best Practices
 
-1. **Start with integration tests** when developing rewriter features
-2. **Test MSBuild integration early** - don't wait for packaging to catch integration issues
+1. **Start with unit tests** when developing rewriter features
+2. **Test with package tests** before committing changes
 3. **Use isolated package testing** to prevent global cache pollution
 4. **Verify generated code quality** - check the rewritten files in `obj/` directories
 

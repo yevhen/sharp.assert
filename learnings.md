@@ -15,10 +15,6 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Build Configuration:**
     - The project targets `net9.0` to leverage modern C# language features.
     - Careful attention is needed for compatibility with features like file-scoped namespaces and implicit usings when working with the rewriter.
-- **Integration Testing:**
-    - SharpAssert.IntegrationTest should use ProjectReference instead of PackageReference for true integration testing
-    - This ensures changes to local code are immediately reflected without requiring package publishing
-    - Remove RestorePackagesPath and RestoreAdditionalProjectSources when using ProjectReference
 
 ## Runtime: Expression Tree Analysis
 
@@ -136,7 +132,6 @@ This document is organized by topic to consolidate key learnings about the proje
 - **DiffPlex Character-Level Diffs:** Use `Differ.CreateCharacterDiffs()` for single-line strings to show precise character changes like `h[-e][+a]llo`
 - **DiffPlex Line-Level Diffs:** Use `Differ.CreateLineDiffs()` for multiline strings to show `- line2` and `+ MODIFIED` format
 - **String vs Object Detection:** Check `leftValue is string && rightValue is string` for pure string-string comparisons, plus handle mixed null cases
-- **UnsupportedFeatureDetector Updates:** Remove implemented features from unsupported list - string comparisons no longer fall back to PowerAssert
 - **Test-Driven Approach:** Write failing tests first, verify they fail for right reasons (PowerAssert fallback), then implement feature and update test expectations
 - **FluentAssertions Wildcard Matching:** Use `*pattern*` in AssertExpressionThrows expectations to match partial message content flexibly
 
@@ -147,7 +142,6 @@ This document is organized by topic to consolidate key learnings about the proje
 - **First Difference Algorithm:** Use linear scan with index tracking to find first non-equal elements for precise error location
 - **Missing/Extra Elements Detection:** Compare collection lengths and use `Skip()` + `Take()` for efficient subset extraction
 - **Collection Preview Formatting:** Limit preview to first N elements with "... (X items)" suffix for large collections
-- **Test Isolation with usePowerAssertForUnsupported=false:** Essential for testing SharpAssert formatters directly without PowerAssert fallback
 - **List<T> Reference Equality:** List<T> uses reference equality by default, making `list1 == list2` perfect for testing collection formatter triggering
 - **Expression Type Verification:** Collections trigger BinaryExpression with NodeType.Equal, confirming proper expression tree analysis path
 - **Value Formatting Strategy:** Use pattern matching (`null => "null"`, `string s => $"\"{s}\""`, `_ => value.ToString()!`) for consistent display
@@ -158,24 +152,14 @@ This document is organized by topic to consolidate key learnings about the proje
   - `AssertExpressionThrows<T>()` - For testing expected exception scenarios with message pattern matching
   - `AssertExpressionDoesNotThrow()` - For testing successful assertion scenarios
 - **CollectionComparisonFixture Inconsistency:** Originally called `SharpInternal.Assert()` directly instead of using TestBase utilities, breaking the established pattern used by other fixtures like LogicalOperatorFixture, BinaryComparisonFixture, StringComparisonFixture
-- **PowerAssert Parameter Handling:** Extended TestBase with overload to support `usePowerAssertForUnsupported` parameter needed for testing specific SharpAssert features without PowerAssert fallback
 - **Expression Tree Pattern:** All test fixtures should use `Expression<Func<bool>> expr = () => condition;` pattern for proper expression tree creation in tests
-- **Parameter Order Awareness:** SharpInternal.Assert signature: (condition, expr, file, line, message=null, usePowerAssert=false, usePowerAssertForUnsupported=true) - must pass parameters in correct order
-
-## CRITICAL: UnsupportedFeatureDetector Maintenance
-
-- **Feature Implementation Dependencies:** When implementing support for new comparison types (strings, collections, objects, LINQ), MUST update UnsupportedFeatureDetector to remove the feature from unsupported list
-- **Common Bug Pattern:** Implementing formatter (e.g., CollectionComparisonFormatter) but forgetting to update UnsupportedFeatureDetector causes feature to incorrectly fall back to PowerAssert instead of using new formatter
-- **Fix Strategy:** Remove detection logic from UnsupportedFeatureDetector.Visit* methods when corresponding IComparisonFormatter is implemented and registered
-- **Test Impact:** Update related UnsupportedFeatureDetectorFixture tests to expect features as supported rather than unsupported
-- **Root Cause Prevention:** Always check UnsupportedFeatureDetector when implementing new comparison formatters - it's the gatekeeper that determines PowerAssert vs SharpAssert routing
+- **Parameter Order Awareness:** SharpInternal.Assert signature: (condition, expr, file, line, message=null, usePowerAssert=false) - must pass parameters in correct order
 
 ## Object Comparison Implementation (Increment 7)
 
 - **CompareNETObjects Package:** Use package name `CompareNETObjects` (not `KellermanSoftware.CompareNETObjects`) and namespace `KellermanSoftware.CompareNetObjects`
 - **CompareLogic Configuration:** Simple configuration approach `var logic = new CompareLogic(); logic.Config.MaxDifferences = MaxObjectDifferences;` is more reliable than complex object initializers
 - **Object Detection Strategy:** Exclude strings (handled by StringComparisonFormatter), IEnumerable (handled by CollectionComparisonFormatter), primitives, and common value types from object comparison
-- **Never Considered Unsupported:** Object comparisons were always supported via BinaryExpression path, they just used DefaultComparisonFormatter before - no UnsupportedFeatureDetector changes needed
 - **Property Path Formatting:** CompareNETObjects provides property paths like "Address.City" automatically - no need to manually construct nested paths
 - **Test Pattern Consistency:** All ObjectComparisonFixture tests should use the same `Expression<Func<bool>> expr = () => condition;` pattern with AssertExpressionThrows/DoesNotThrow from TestBase
 - **Configuration Constants:** Use hardcoded constants like `MaxObjectDifferences = 20` following same pattern as StringDiffer, rather than premature configuration system integration
@@ -192,7 +176,6 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Truncation Logic:** Apply MaxDiffLines limit to unified diff output with "truncated" message for large diffs
 - **Static Extension Support:** Works with both instance method syntax (`seq1.SequenceEqual(seq2)`) and static syntax (`Enumerable.SequenceEqual(seq1, seq2)`)
 - **Test Structure Consistency:** Used same pattern as LinqOperationsFixture with nested TestFixture classes (PositiveTestCases, FailureFormatting, StaticExtensionMethods)
-- **UnsupportedFeatureDetector Maintenance:** Critical to update test expectations when features move from unsupported to supported status
 
 ## Async Support Implementation (Increment 10)
 
@@ -202,12 +185,11 @@ This document is organized by topic to consolidate key learnings about the proje
 - **BinaryOp Enum Addition:** Required for future async binary comparison support (Increment 11), defines comparison operators: Eq, Ne, Lt, Le, Gt, Ge
 - **Test Migration Strategy:** Convert ignored placeholder tests to real async tests using FluentAssertions async assertion patterns (`await action.Should().NotThrowAsync()`)
 - **Async Context Preservation:** AssertAsync naturally preserves SynchronizationContext through proper async/await usage - no special handling needed
-- **No UnsupportedFeatureDetector Changes:** Basic async support doesn't require rewriter detection yet - that's for Increment 11 (async binary comparisons)
 - **Async Test Patterns:** Use `async Task` test methods with `await` for assertions, test both success and failure paths with appropriate exception expectations
 
 ## Async Binary Comparison Implementation (Increment 11)
 
-- **Rewriter Architecture:** Async binary comparisons are handled at the rewriter level, not as unsupported features, since they are rewritten before becoming expression trees
+- **Rewriter Architecture:** Async binary comparisons are handled at the rewriter level, since they are rewritten before becoming expression trees
 - **Binary Operation Detection:** Use `IsBinaryOperation()` to detect comparison operators: ==, !=, <, <=, >, >= - requires proper parentheses grouping for operator precedence
 - **SyntaxKind Token Names:** Use correct Roslyn token names: `LessThanEqualsToken` and `GreaterThanEqualsToken` (not the incorrect `LessThanOrEqualToken`)
 - **Async Thunk Generation:** Generate thunks for both operands - `async () => operand` for await expressions, `() => Task.FromResult<object?>(operand)` for sync

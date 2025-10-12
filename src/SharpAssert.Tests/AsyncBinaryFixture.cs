@@ -1,4 +1,5 @@
 using FluentAssertions;
+using static SharpAssert.Sharp;
 
 namespace SharpAssert;
 
@@ -11,16 +12,9 @@ public class AsyncBinaryFixture : TestBase
         async Task<int> Left() { await Task.Yield(); return 42; }
         async Task<int> Right() { await Task.Yield(); return 24; }
 
-        var action = async () => await SharpInternal.AssertAsyncBinary(
-            async () => await Left(),
-            async () => await Right(), 
-            BinaryOp.Eq,
-            "await Left() == await Right()",
-            "AsyncBinaryFixture.cs",
-            123);
-
-        await action.Should().ThrowAsync<SharpAssertionException>()
-            .Where(ex => ex.Message.Contains("42") && ex.Message.Contains("24"));
+        await AssertThrowsAsync(
+            async () => Assert(await Left() == await Right()),
+            "*42*24*");
     }
 
     [Test]
@@ -28,47 +22,34 @@ public class AsyncBinaryFixture : TestBase
     {
         async Task<int> GetAsyncValue() { await Task.Yield(); return 42; }
 
-        var action = async () => await SharpInternal.AssertAsyncBinary(
-            async () => await GetAsyncValue(),
-            () => Task.FromResult<object?>(24), 
-            BinaryOp.Eq,
-            "await GetAsyncValue() == 24",
-            "AsyncBinaryFixture.cs",
-            123);
-
-        await action.Should().ThrowAsync<SharpAssertionException>()
-            .Where(ex => ex.Message.Contains("42") && ex.Message.Contains("24"));
+        await AssertThrowsAsync(
+            async () => Assert(await GetAsyncValue() == 24),
+            "*42*24*");
     }
 
     [Test]
     public async Task Should_evaluate_in_source_order()
     {
         var evaluationOrder = new List<string>();
-        
-        async Task<int> First() 
-        { 
-            await Task.Yield(); 
+
+        async Task<int> First()
+        {
+            await Task.Yield();
             evaluationOrder.Add("First");
-            return 1; 
+            return 1;
         }
-        
-        async Task<int> Second() 
-        { 
-            await Task.Yield(); 
+
+        async Task<int> Second()
+        {
+            await Task.Yield();
             evaluationOrder.Add("Second");
-            return 2; 
+            return 2;
         }
 
-        var action = async () => await SharpInternal.AssertAsyncBinary(
-            async () => await First(),
-            async () => await Second(), 
-            BinaryOp.Eq,
-            "await First() == await Second()",
-            "AsyncBinaryFixture.cs",
-            123);
+        await AssertThrowsAsync(
+            async () => Assert(await First() == await Second()),
+            "*");
 
-        await action.Should().ThrowAsync<SharpAssertionException>();
-        
         evaluationOrder.Should().Equal("First", "Second");
     }
 
@@ -78,15 +59,8 @@ public class AsyncBinaryFixture : TestBase
         async Task<string> GetString1() { await Task.Yield(); return "hello"; }
         async Task<string> GetString2() { await Task.Yield(); return "hallo"; }
 
-        var action = async () => await SharpInternal.AssertAsyncBinary(
-            async () => await GetString1(),
-            async () => await GetString2(), 
-            BinaryOp.Eq,
-            "await GetString1() == await GetString2()",
-            "AsyncBinaryFixture.cs",
-            123);
-
-        await action.Should().ThrowAsync<SharpAssertionException>()
-            .Where(ex => ex.Message.Contains("h[-e][+a]llo"));
+        await AssertThrowsAsync(
+            async () => Assert(await GetString1() == await GetString2()),
+            "*h[-e][+a]llo*");
     }
 }

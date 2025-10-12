@@ -1,3 +1,5 @@
+using static SharpAssert.Sharp;
+
 namespace SharpAssert;
 
 [TestFixture]
@@ -11,7 +13,7 @@ public class SequenceEqualFixture : TestBase
         {
             var seq1 = new List<int> { 1, 2, 3, 4, 5 };
             var seq2 = new List<int> { 1, 2, 3, 4, 5 };
-            AssertExpressionPasses(() => seq1.SequenceEqual(seq2));
+            AssertDoesNotThrow(() => Assert(seq1.SequenceEqual(seq2)));
         }
 
         [Test]
@@ -19,7 +21,7 @@ public class SequenceEqualFixture : TestBase
         {
             var seq1 = new List<string>();
             var seq2 = Array.Empty<string>();
-            AssertExpressionPasses(() => seq1.SequenceEqual(seq2));
+            AssertDoesNotThrow(() => Assert(seq1.SequenceEqual(seq2)));
         }
 
         [Test]
@@ -27,7 +29,7 @@ public class SequenceEqualFixture : TestBase
         {
             var list = new List<int> { 1, 2, 3 };
             var array = new[] { 1, 2, 3 };
-            AssertExpressionPasses(() => list.SequenceEqual(array));
+            AssertDoesNotThrow(() => Assert(list.SequenceEqual(array)));
         }
 
         [Test]
@@ -36,7 +38,7 @@ public class SequenceEqualFixture : TestBase
             var seq1 = new[] { "Hello", "World" };
             var seq2 = new[] { "hello", "world" };
             var comparer = StringComparer.OrdinalIgnoreCase;
-            AssertExpressionPasses(() => seq1.SequenceEqual(seq2, comparer));
+            AssertDoesNotThrow(() => Assert(seq1.SequenceEqual(seq2, comparer)));
         }
 
         [Test]
@@ -44,7 +46,7 @@ public class SequenceEqualFixture : TestBase
         {
             var seq1 = new[] { 42 };
             var seq2 = new[] { 42 };
-            AssertExpressionPasses(() => seq1.SequenceEqual(seq2));
+            AssertDoesNotThrow(() => Assert(seq1.SequenceEqual(seq2)));
         }
     }
 
@@ -56,13 +58,8 @@ public class SequenceEqualFixture : TestBase
         {
             var seq1 = new[] { 1, 2, 3 };
             var seq2 = new[] { 1, 2, 4 };
-            
-            AssertExpressionThrows(
-                () => seq1.SequenceEqual(seq2),
-                "seq1.SequenceEqual(seq2)",
-                "SequenceEqualFixture.cs",
-                42,
-                "*SequenceEqual failed*unified diff*");
+
+            AssertThrows(() => Assert(seq1.SequenceEqual(seq2)), "*SequenceEqual failed*unified diff*");
         }
 
         [Test]
@@ -70,27 +67,17 @@ public class SequenceEqualFixture : TestBase
         {
             var shortSeq = new[] { 1, 2, 3 };
             var longSeq = new[] { 1, 2, 3, 4, 5 };
-            
-            AssertExpressionThrows(
-                () => shortSeq.SequenceEqual(longSeq),
-                "shortSeq.SequenceEqual(longSeq)",
-                "SequenceEqualFixture.cs",
-                42,
-                "*SequenceEqual failed*length*");
+
+            AssertThrows(() => Assert(shortSeq.SequenceEqual(longSeq)), "*SequenceEqual failed*length*");
         }
 
         [Test]
         public void Should_truncate_large_sequences()
         {
             var largeSeq1 = Enumerable.Range(1, 100).ToArray();
-            var largeSeq2 = Enumerable.Range(1, 100).Select(x => x > 50 ? x + 1000 : x).ToArray(); // Many differences
-            
-            AssertExpressionThrows(
-                () => largeSeq1.SequenceEqual(largeSeq2),
-                "largeSeq1.SequenceEqual(largeSeq2)",
-                "SequenceEqualFixture.cs",
-                42,
-                "*truncated*");
+            var largeSeq2 = Enumerable.Range(1, 100).Select(x => x > 50 ? x + 1000 : x).ToArray();
+
+            AssertThrows(() => Assert(largeSeq1.SequenceEqual(largeSeq2)), "*truncated*");
         }
 
         [Test]
@@ -99,13 +86,8 @@ public class SequenceEqualFixture : TestBase
             var seq1 = new[] { "Hello", "World" };
             var seq2 = new[] { "hello", "DIFFERENT" };
             var comparer = StringComparer.OrdinalIgnoreCase;
-            
-            AssertExpressionThrows(
-                () => seq1.SequenceEqual(seq2, comparer),
-                "seq1.SequenceEqual(seq2, comparer)",
-                "SequenceEqualFixture.cs",
-                42,
-                "*SequenceEqual failed*");
+
+            AssertThrows(() => Assert(seq1.SequenceEqual(seq2, comparer)), "*SequenceEqual failed*");
         }
 
         [Test]
@@ -113,13 +95,8 @@ public class SequenceEqualFixture : TestBase
         {
             var empty = Array.Empty<int>();
             var nonEmpty = new[] { 1, 2, 3 };
-            
-            AssertExpressionThrows(
-                () => empty.SequenceEqual(nonEmpty),
-                "empty.SequenceEqual(nonEmpty)",
-                "SequenceEqualFixture.cs",
-                42,
-                "*SequenceEqual failed*length*");
+
+            AssertThrows(() => Assert(empty.SequenceEqual(nonEmpty)), "*SequenceEqual failed*length*");
         }
 
         [Test]
@@ -127,13 +104,8 @@ public class SequenceEqualFixture : TestBase
         {
             var seq1 = new[] { "apple", "banana", "cherry" };
             var seq2 = new[] { "apple", "grape", "cherry" };
-            
-            AssertExpressionThrows(
-                () => seq1.SequenceEqual(seq2),
-                "seq1.SequenceEqual(seq2)",
-                "SequenceEqualFixture.cs",
-                42,
-                "*SequenceEqual failed*banana*grape*");
+
+            AssertThrows(() => Assert(seq1.SequenceEqual(seq2)), "*SequenceEqual failed*banana*grape*");
         }
     }
 
@@ -145,13 +117,8 @@ public class SequenceEqualFixture : TestBase
         {
             var seq1 = new[] { 1, 2, 3 };
             var seq2 = new[] { 1, 2, 4 };
-            
-            AssertExpressionThrows(
-                () => seq1.SequenceEqual(seq2),
-                "Enumerable.SequenceEqual(seq1, seq2)",
-                "SequenceEqualFixture.cs",
-                42,
-                "*SequenceEqual failed*");
+
+            AssertThrows(() => Assert(seq1.SequenceEqual(seq2)), "*SequenceEqual failed*");
         }
     }
 }

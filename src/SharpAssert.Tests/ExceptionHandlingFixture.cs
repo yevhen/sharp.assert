@@ -1,5 +1,5 @@
 using System.Collections;
-using System.Linq.Expressions;
+using static SharpAssert.Sharp;
 
 namespace SharpAssert;
 
@@ -11,9 +11,8 @@ public class ExceptionHandlingFixture : TestBase
     {
         var list1 = new ArrayList { 1, 2, 3 };
         var list2 = new ArrayList { 4, 5, 6 };
-        Expression<Func<bool>> expr = () => list1.Count < list2.Count;
 
-        AssertExpressionThrows(expr, "list1.Count < list2.Count", "TestFile.cs", 500, "*3*3*");
+        AssertThrows(() => Assert(list1.Count < list2.Count), "*3*3*");
     }
 
     [Test]
@@ -22,7 +21,7 @@ public class ExceptionHandlingFixture : TestBase
         var list1 = new ArrayList { 1, 2, 3 };
         var list2 = new ArrayList { 4, 5, 6, 7 };
 
-        AssertExpressionPasses(() => list1.Count < list2.Count);
+        AssertDoesNotThrow(() => Assert(list1.Count < list2.Count));
     }
 
     [Test]
@@ -31,7 +30,7 @@ public class ExceptionHandlingFixture : TestBase
         var list1 = new ArrayList { 1, 2, 3 };
         var list2 = new ArrayList { 1, 2, 3 };
 
-        AssertExpressionPasses(() => list1.Count == list2.Count);
+        AssertDoesNotThrow(() => Assert(list1.Count == list2.Count));
     }
 
     [Test]
@@ -40,7 +39,7 @@ public class ExceptionHandlingFixture : TestBase
         var list1 = new ArrayList { 1, 2, 3, 4, 5 };
         var list2 = new ArrayList { 1, 2 };
 
-        AssertExpressionPasses(() => list1.Count > list2.Count);
+        AssertDoesNotThrow(() => Assert(list1.Count > list2.Count));
     }
 
     [Test]
@@ -49,7 +48,7 @@ public class ExceptionHandlingFixture : TestBase
         var list1 = new ArrayList { 1, 2 };
         var list2 = new ArrayList { 1, 2 };
 
-        AssertExpressionPasses(() => list1.Count <= list2.Count);
+        AssertDoesNotThrow(() => Assert(list1.Count <= list2.Count));
     }
 }
 

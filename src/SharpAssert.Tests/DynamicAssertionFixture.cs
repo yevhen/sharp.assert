@@ -58,16 +58,15 @@ public class DynamicAssertionFixture : TestBase
     [Test]
     public void Should_handle_dynamic_binary()
     {
-        var action = () => SharpInternal.AssertDynamicBinary(
-            () => 42,
-            () => 5,
-            BinaryOp.Eq,
-            "dynamic == 5",
-            "TestFile.cs",
-            10);
-
-        action.Should().Throw<SharpAssertionException>()
-            .WithMessage("*42*5*");
+        AssertThrows(
+            () => SharpInternal.AssertDynamicBinary(
+                () => 42,
+                () => 5,
+                BinaryOp.Eq,
+                "dynamic == 5",
+                "TestFile.cs",
+                10),
+            "*42*5*");
     }
 
     [Test]
@@ -82,27 +81,25 @@ public class DynamicAssertionFixture : TestBase
     [Test]
     public void Should_apply_dynamic_operator_semantics()
     {
-        var action = () => SharpInternal.AssertDynamicBinary(
-            () => 42,
-            () => 42,
-            BinaryOp.Eq,
-            "dynamic == 42",
-            "TestFile.cs",
-            10);
-
-        action.Should().NotThrow();
+        AssertDoesNotThrow(
+            () => SharpInternal.AssertDynamicBinary(
+                () => 42,
+                () => 42,
+                BinaryOp.Eq,
+                "dynamic == 42",
+                "TestFile.cs",
+                10));
     }
 
     [Test]
     public void Should_show_minimal_diagnostics_for_complex_dynamic()
     {
-        var action = () => SharpInternal.AssertDynamic(
-            () => false,
-            "dynamic false expression",
-            "TestFile.cs",
-            20);
-
-        action.Should().Throw<SharpAssertionException>()
-            .WithMessage("*dynamic false expression*TestFile.cs*Result: False*");
+        AssertThrows(
+            () => SharpInternal.AssertDynamic(
+                () => false,
+                "dynamic false expression",
+                "TestFile.cs",
+                20),
+            "*dynamic false expression*TestFile.cs*Result: False*");
     }
 }

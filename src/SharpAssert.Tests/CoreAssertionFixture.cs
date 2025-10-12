@@ -9,55 +9,43 @@ public class CoreAssertionFixture : TestBase
     [Test]
     public void Should_pass_when_condition_is_true()
     {
-        var action = () => Assert(true);
-        action.Should().NotThrow();
+        AssertDoesNotThrow(() => Assert(true));
     }
 
     [Test]
     public void Should_throw_SharpAssertionException_when_false()
     {
-        var action = () => Assert(false);
-        action.Should().Throw<SharpAssertionException>()
-              .WithMessage("Assertion failed*");
+        AssertThrows(() => Assert(false), "Assertion failed*");
     }
 
     [Test]
     public void Should_include_expression_text_in_error()
     {
-        var action = () => Assert(1 == 2);
-        action.Should().Throw<SharpAssertionException>()
-              .WithMessage("*1 == 2*");
+        AssertThrows(() => Assert(1 == 2), "*1 == 2*");
     }
 
     [Test]
     public void Should_include_file_and_line_in_error()
     {
-        var action = () => Assert(false);
-        action.Should().Throw<SharpAssertionException>()
-              .WithMessage("*AssertionFixture.cs:*");
+        AssertThrows(() => Assert(false), "*AssertionFixture.cs:*");
     }
 
     [Test]
     public void Should_pass_when_condition_is_true_with_message()
     {
-        var action = () => Assert(true, "This should pass");
-        action.Should().NotThrow();
+        AssertDoesNotThrow(() => Assert(true, "This should pass"));
     }
 
     [Test]
     public void Should_include_custom_message_in_error()
     {
-        var action = () => Assert(false, "Custom error message");
-        action.Should().Throw<SharpAssertionException>()
-              .WithMessage("Custom error message*");
+        AssertThrows(() => Assert(false, "Custom error message"), "Custom error message*");
     }
 
     [Test]
     public void Should_include_both_message_and_expression_in_error()
     {
-        var action = () => Assert(1 == 2, "Values should be equal");
-        action.Should().Throw<SharpAssertionException>()
-              .WithMessage("Values should be equal*1 == 2*");
+        AssertThrows(() => Assert(1 == 2, "Values should be equal"), "Values should be equal*1 == 2*");
     }
 
     [Test]
@@ -82,7 +70,7 @@ public class CoreAssertionFixture : TestBase
         var exception = new NullReferenceException();
 
         var result = Throws<NullReferenceException>(() => throw exception);
-        Assert(result);
+        AssertDoesNotThrow(() => Assert(result));
 
         result.Exception.Should().Be(exception);
     }
@@ -119,14 +107,16 @@ public class CoreAssertionFixture : TestBase
     [Test]
     public void Assert_does_not_throw_when_no_exception_is_thrown()
     {
-        Assert(!Throws<ArgumentException>(() => { /* do nothing */ }));
+        var result = Throws<ArgumentException>(() => { /* do nothing */ });
+        AssertDoesNotThrow(() => Assert(!result));
     }
 
     [Test]
     public void Can_check_exception_message_directly()
     {
-        Assert(Throws<ArgumentException>(() =>
-                throw new ArgumentException("Invalid parameter")).Message == "Invalid parameter");
+        var result = Throws<ArgumentException>(() =>
+                throw new ArgumentException("Invalid parameter"));
+        AssertDoesNotThrow(() => Assert(result.Message == "Invalid parameter"));
     }
 
     [Test]
@@ -161,13 +151,13 @@ public class CoreAssertionFixture : TestBase
     {
         var exception = new InvalidOperationException("Test exception");
 
-        var result = await ThrowsAsync<InvalidOperationException>(async () => 
+        var result = await ThrowsAsync<InvalidOperationException>(async () =>
         {
             await Task.Delay(1);
             throw exception;
         });
 
-        Assert(result);
+        AssertDoesNotThrow(() => Assert(result));
         result.Exception.Should().Be(exception);
     }
 
@@ -180,20 +170,20 @@ public class CoreAssertionFixture : TestBase
             throw new ArgumentException("Test message");
         });
 
-        Assert(result && result.Message == "Test message");
+        AssertDoesNotThrow(() => Assert(result && result.Message == "Test message"));
         result.Exception.Should().BeOfType<ArgumentException>();
     }
 
     [Test]
     public async Task ThrowsAsync_detects_when_no_exception_thrown()
     {
-        var result = await ThrowsAsync<ArgumentException>(async () => 
+        var result = await ThrowsAsync<ArgumentException>(async () =>
         {
             await Task.Delay(1);
             // No exception thrown
         });
 
-        Assert(!result);
+        AssertDoesNotThrow(() => Assert(!result));
     }
 
     [Test]
@@ -243,7 +233,7 @@ public class CoreAssertionFixture : TestBase
             }
         });
 
-        Assert(result && result.Message == "Inner exception");
+        AssertDoesNotThrow(() => Assert(result && result.Message == "Inner exception"));
     }
 
     [Test]

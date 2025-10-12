@@ -1,4 +1,5 @@
 using FluentAssertions;
+using static SharpAssert.Sharp;
 
 namespace SharpAssert;
 
@@ -8,53 +9,32 @@ public class AsyncAssertionFixture : TestBase
     [Test]
     public async Task Should_handle_await_in_condition()
     {
-        var action = async () => await SharpInternal.AssertAsync(
-            async () => await GetTrueAsync(), 
-            "await GetTrueAsync()", 
-            "TestFile.cs", 
-            10);
-        
-        await action.Should().NotThrowAsync();
+        await AssertDoesNotThrowAsync(async () => Assert(await GetTrueAsync()));
     }
 
     [Test]
     public async Task Should_show_false_for_failed_async()
     {
-        var action = async () => await SharpInternal.AssertAsync(
-            async () => await GetFalseAsync(), 
-            "await GetFalseAsync()", 
-            "TestFile.cs", 
-            10);
-        
-        await action.Should().ThrowAsync<SharpAssertionException>()
-            .WithMessage("Assertion failed: await GetFalseAsync()  at TestFile.cs:10*Result: False*");
+        await AssertThrowsAsync(
+            async () => Assert(await GetFalseAsync()),
+            "*await GetFalseAsync()*Result: False*");
     }
 
     [Test]
     public async Task Should_preserve_async_context()
     {
-        var action = async () => await SharpInternal.AssertAsync(
-            async () => 
-            {
-                await Task.Yield();
-                return true;
-            }, 
-            "await operation()", 
-            "TestFile.cs", 
-            10);
-        
-        await action.Should().NotThrowAsync();
+        await AssertDoesNotThrowAsync(async () =>
+        {
+            await Task.Yield();
+            Assert(true);
+        });
     }
 
     [Test]
     public async Task Should_handle_exceptions_in_async()
     {
-        var action = async () => await SharpInternal.AssertAsync(
-            async () => await ThrowingMethodAsync(), 
-            "await ThrowingMethodAsync()", 
-            "TestFile.cs", 
-            10);
-        
+        var action = async () => Assert(await ThrowingMethodAsync());
+
         await action.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Test exception");
     }

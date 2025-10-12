@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+using static SharpAssert.Sharp;
 
 namespace SharpAssert;
 
@@ -10,9 +10,8 @@ public class NullableTypeFixture : TestBase
     {
         int? nullableValue = null;
         var nonNullValue = 42;
-        Expression<Func<bool>> expr = () => nullableValue == nonNullValue;
 
-        AssertExpressionThrows(expr, "nullableValue == nonNullValue", "TestFile.cs", 123,
+        AssertThrows(() => Assert(nullableValue == nonNullValue),
             "*null*42*");
     }
 
@@ -21,9 +20,8 @@ public class NullableTypeFixture : TestBase
     {
         int? nullableValue = 42;
         var nonNullValue = 24;
-        Expression<Func<bool>> expr = () => nullableValue == nonNullValue;
 
-        AssertExpressionThrows(expr, "nullableValue == nonNullValue", "TestFile.cs", 123,
+        AssertThrows(() => Assert(nullableValue == nonNullValue),
             "*42*24*");
     }
 
@@ -32,9 +30,8 @@ public class NullableTypeFixture : TestBase
     {
         bool? nullableBool = null;
         var regularBool = true;
-        Expression<Func<bool>> expr = () => nullableBool == regularBool;
 
-        AssertExpressionThrows(expr, "nullableBool == regularBool", "TestFile.cs", 123,
+        AssertThrows(() => Assert(nullableBool == regularBool),
             "*null*True*");
     }
 
@@ -43,9 +40,8 @@ public class NullableTypeFixture : TestBase
     {
         bool? nullableBool = false;
         var regularBool = true;
-        Expression<Func<bool>> expr = () => nullableBool == regularBool;
 
-        AssertExpressionThrows(expr, "nullableBool == regularBool", "TestFile.cs", 123,
+        AssertThrows(() => Assert(nullableBool == regularBool),
             "*False*True*");
     }
 
@@ -54,9 +50,8 @@ public class NullableTypeFixture : TestBase
     {
         DateTime? nullableDate = null;
         var regularDate = new DateTime(2023, 1, 1);
-        Expression<Func<bool>> expr = () => nullableDate == regularDate;
 
-        AssertExpressionThrows(expr, "nullableDate == regularDate", "TestFile.cs", 123,
+        AssertThrows(() => Assert(nullableDate == regularDate),
             "*null*1/1/2023*");
     }
 
@@ -65,9 +60,8 @@ public class NullableTypeFixture : TestBase
     {
         DateTime? nullableDate = new DateTime(2023, 6, 15);
         var regularDate = new DateTime(2023, 1, 1);
-        Expression<Func<bool>> expr = () => nullableDate == regularDate;
 
-        AssertExpressionThrows(expr, "nullableDate == regularDate", "TestFile.cs", 123,
+        AssertThrows(() => Assert(nullableDate == regularDate),
             "*6/15/2023*1/1/2023*");
     }
 
@@ -76,9 +70,8 @@ public class NullableTypeFixture : TestBase
     {
         int? nullable1 = null;
         int? nullable2 = null;
-        Expression<Func<bool>> expr = () => nullable1 == nullable2;
 
-        AssertExpressionPasses(expr);
+        AssertDoesNotThrow(() => Assert(nullable1 == nullable2));
     }
 
     [Test]
@@ -86,9 +79,8 @@ public class NullableTypeFixture : TestBase
     {
         int? nullable1 = 42;
         int? nullable2 = 42;
-        Expression<Func<bool>> expr = () => nullable1 == nullable2;
 
-        AssertExpressionPasses(expr);
+        AssertDoesNotThrow(() => Assert(nullable1 == nullable2));
     }
 
     [Test]
@@ -96,9 +88,8 @@ public class NullableTypeFixture : TestBase
     {
         int? nullableNull = null;
         int? nullableValue = 42;
-        Expression<Func<bool>> expr = () => nullableNull == nullableValue;
 
-        AssertExpressionThrows(expr, "nullableNull == nullableValue", "TestFile.cs", 123,
+        AssertThrows(() => Assert(nullableNull == nullableValue),
             "*null*42*");
     }
 
@@ -107,9 +98,8 @@ public class NullableTypeFixture : TestBase
     {
         string? nullableString = null;
         string? nonNullString = "hello";
-        Expression<Func<bool>> expr = () => nullableString == nonNullString;
 
-        AssertExpressionThrows(expr, "nullableString == nonNullString", "TestFile.cs", 123,
+        AssertThrows(() => Assert(nullableString == nonNullString),
             "*null*\"hello\"*");
     }
 
@@ -118,9 +108,8 @@ public class NullableTypeFixture : TestBase
     {
         object? nullableObject = null;
         var nonNullObject = new { Name = "Test" };
-        Expression<Func<bool>> expr = () => nullableObject == nonNullObject;
 
-        AssertExpressionThrows(expr, "nullableObject == nonNullObject", "TestFile.cs", 123,
+        AssertThrows(() => Assert(nullableObject == nonNullObject),
             "*null*{ Name = Test }*");
     }
 
@@ -129,9 +118,8 @@ public class NullableTypeFixture : TestBase
     {
         int? nullableWithoutValue = null;
         int? nullableWithValue = 42;
-        Expression<Func<bool>> expr = () => nullableWithoutValue == nullableWithValue;
 
-        AssertExpressionThrows(expr, "nullableWithoutValue == nullableWithValue", "TestFile.cs", 123,
+        AssertThrows(() => Assert(nullableWithoutValue == nullableWithValue),
             "*null*42*");
     }
 
@@ -139,9 +127,8 @@ public class NullableTypeFixture : TestBase
     public void Should_handle_null_comparison_edge_cases()
     {
         int? nullable = 42;
-        Expression<Func<bool>> expr = () => nullable == null;
 
-        AssertExpressionThrows(expr, "nullable == null", "TestFile.cs", 123,
+        AssertThrows(() => Assert(nullable == null),
             "*42*null*");
     }
 }

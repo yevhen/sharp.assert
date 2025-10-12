@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+using static SharpAssert.Sharp;
 
 namespace SharpAssert;
 
@@ -10,10 +10,8 @@ public class CollectionComparisonFixture : TestBase
     {
         var left = new List<int> { 1, 2, 3 };
         var right = new List<int> { 1, 2, 4 };
-        Expression<Func<bool>> expr = () => left == right;
 
-        AssertExpressionThrows(expr,
-            "left == right", "CollectionComparisonFixture.cs", 11,
+        AssertThrows(() => Assert(left == right),
             "*First difference at index 2: expected 3, got 4*");
     }
 
@@ -22,10 +20,8 @@ public class CollectionComparisonFixture : TestBase
     {
         var left = new List<int> { 1, 2 };
         var right = new List<int> { 1, 2, 3 };
-        Expression<Func<bool>> expr = () => left == right;
 
-        AssertExpressionThrows(expr,
-            "left == right", "CollectionComparisonFixture.cs", 26,
+        AssertThrows(() => Assert(left == right),
             "*Missing elements: [3]*");
     }
 
@@ -34,10 +30,8 @@ public class CollectionComparisonFixture : TestBase
     {
         var left = new List<int> { 1, 2, 3 };
         var right = new List<int> { 1, 2 };
-        Expression<Func<bool>> expr = () => left == right;
 
-        AssertExpressionThrows(expr,
-            "left == right", "CollectionComparisonFixture.cs", 43,
+        AssertThrows(() => Assert(left == right),
             "*Extra elements: [3]*");
     }
 
@@ -46,10 +40,8 @@ public class CollectionComparisonFixture : TestBase
     {
         var left = new List<int>();
         var right = new List<int> { 1 };
-        Expression<Func<bool>> expr = () => left == right;
 
-        AssertExpressionThrows(expr,
-            "left == right", "CollectionComparisonFixture.cs", 60,
+        AssertThrows(() => Assert(left == right),
             "*Missing elements: [1]*");
     }
 
@@ -58,7 +50,7 @@ public class CollectionComparisonFixture : TestBase
     {
         var left = new List<int> { 1, 2, 3 };
         var right = new List<int> { 1, 2, 3 };
-        AssertExpressionPasses(() => left.SequenceEqual(right));
+        AssertDoesNotThrow(() => Assert(left.SequenceEqual(right)));
     }
 
     [Test]
@@ -66,7 +58,7 @@ public class CollectionComparisonFixture : TestBase
     {
         var left = new List<int>();
         var right = new List<int>();
-        AssertExpressionPasses(() => left.SequenceEqual(right));
+        AssertDoesNotThrow(() => Assert(left.SequenceEqual(right)));
     }
 
     [Test]
@@ -74,6 +66,6 @@ public class CollectionComparisonFixture : TestBase
     {
         var list = new List<int> { 1, 2, 3 };
         var array = new[] { 1, 2, 3 };
-        AssertExpressionPasses(() => list.SequenceEqual(array));
+        AssertDoesNotThrow(() => Assert(list.SequenceEqual(array)));
     }
 }

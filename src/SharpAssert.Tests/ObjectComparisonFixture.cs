@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+using static SharpAssert.Sharp;
 
 namespace SharpAssert;
 
@@ -26,9 +26,7 @@ public class ObjectComparisonFixture : TestBase
         var obj1 = new Person("Alice", 25);
         var obj2 = new Person("Alice", 25);
 
-        Expression<Func<bool>> expr = () => obj1 == obj2;
-
-        AssertExpressionPasses(expr);
+        AssertDoesNotThrow(() => Assert(obj1 == obj2));
     }
 
     [Test]
@@ -36,11 +34,8 @@ public class ObjectComparisonFixture : TestBase
     {
         var obj1 = new Person("Alice", 25);
         var obj2 = new Person("Bob", 30);
-        
-        Expression<Func<bool>> expr = () => obj1 == obj2;
-        
-        AssertExpressionThrows(
-            expr, "obj1 == obj2", "test.cs", 42,
+
+        AssertThrows(() => Assert(obj1 == obj2),
             "*Property differences*Name*Alice*Bob*Age*25*30*");
     }
 
@@ -49,11 +44,8 @@ public class ObjectComparisonFixture : TestBase
     {
         var obj1 = new PersonWithAddress("Alice", new Address("123 Main St", "NYC"));
         var obj2 = new PersonWithAddress("Alice", new Address("123 Main St", "LA"));
-        
-        Expression<Func<bool>> expr = () => obj1 == obj2;
-        
-        AssertExpressionThrows(
-            expr, "obj1 == obj2", "test.cs", 42,
+
+        AssertThrows(() => Assert(obj1 == obj2),
             "*Address.City*NYC*LA*");
     }
 
@@ -62,11 +54,8 @@ public class ObjectComparisonFixture : TestBase
     {
         Person? obj1 = null;
         var obj2 = new Person("Alice", 25);
-        
-        Expression<Func<bool>> expr = () => obj1 == obj2;
-        
-        AssertExpressionThrows(
-            expr, "obj1 == obj2", "test.cs", 42,
+
+        AssertThrows(() => Assert(obj1 == obj2),
             "*Left*null*Right*Person*");
     }
 
@@ -75,10 +64,8 @@ public class ObjectComparisonFixture : TestBase
     {
         var obj1 = new PersonWithCustomEquals { Name = "Alice", Age = 25 };
         var obj2 = new PersonWithCustomEquals { Name = "Alice", Age = 30 };
-        
-        Expression<Func<bool>> expr = () => obj1 == obj2;
-        
-        AssertExpressionPasses(expr);
+
+        AssertDoesNotThrow(() => Assert(obj1 == obj2));
     }
 
     [Test]
@@ -86,10 +73,8 @@ public class ObjectComparisonFixture : TestBase
     {
         var obj1 = new PersonWithAddress("Alice", new Address("123 Main St", "NYC"));
         var obj2 = new PersonWithAddress("Alice", new Address("123 Main St", "NYC"));
-        
-        Expression<Func<bool>> expr = () => obj1 == obj2;
-        
-        AssertExpressionPasses(expr);
+
+        AssertDoesNotThrow(() => Assert(obj1 == obj2));
     }
 
     [Test]
@@ -97,9 +82,7 @@ public class ObjectComparisonFixture : TestBase
     {
         Person? obj1 = null;
         Person? obj2 = null;
-        
-        Expression<Func<bool>> expr = () => obj1 == obj2;
-        
-        AssertExpressionPasses(expr);
+
+        AssertDoesNotThrow(() => Assert(obj1 == obj2));
     }
 }

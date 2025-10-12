@@ -1,5 +1,4 @@
-using System.Linq.Expressions;
-using FluentAssertions;
+using static SharpAssert.Sharp;
 
 namespace SharpAssert;
 
@@ -11,18 +10,16 @@ public class LogicalOperatorFixture : TestBase
     {
         var left = true;
         var right = false;
-        Expression<Func<bool>> expr = () => left && right;
 
-        AssertExpressionThrows(expr, "left && right", "TestFile.cs", 10, "*&&*true*false*");
+        AssertThrows(() => Assert(left && right), "*&&*true*false*");
     }
 
     [Test]
     public void Should_short_circuit_AND_correctly()
     {
         var left = false;
-        Expression<Func<bool>> expr = () => left && ThrowException();
 
-        AssertExpressionThrows(expr, "left && ThrowException()", "TestFile.cs", 20, "*&&*false*");
+        AssertThrows(() => Assert(left && ThrowException()), "*&&*false*");
     }
 
     [Test]
@@ -30,9 +27,8 @@ public class LogicalOperatorFixture : TestBase
     {
         var left = false;
         var right = false;
-        Expression<Func<bool>> expr = () => left || right;
 
-        AssertExpressionThrows(expr, "left || right", "TestFile.cs", 30, "*||*false*false*");
+        AssertThrows(() => Assert(left || right), "*||*false*false*");
     }
 
     [Test]
@@ -40,9 +36,8 @@ public class LogicalOperatorFixture : TestBase
     {
         var left = false;
         var right = true;
-        Expression<Func<bool>> expr = () => left || right;
 
-        SharpInternal.Assert(expr, "left || right", "TestFile.cs", 35);
+        AssertDoesNotThrow(() => Assert(left || right));
     }
 
     [Test]
@@ -50,29 +45,24 @@ public class LogicalOperatorFixture : TestBase
     {
         var left = true;
         var right = true;
-        Expression<Func<bool>> expr = () => left && right;
 
-        var action = () => SharpInternal.Assert(expr, "left && right", "TestFile.cs", 45);
-        action.Should().NotThrow("both operands are true");
+        AssertDoesNotThrow(() => Assert(left && right));
     }
 
     [Test]
     public void Should_pass_when_NOT_succeeds()
     {
         var operand = false;
-        Expression<Func<bool>> expr = () => !operand;
 
-        var action = () => SharpInternal.Assert(expr, "!operand", "TestFile.cs", 50);
-        action.Should().NotThrow("NOT false should be true");
+        AssertDoesNotThrow(() => Assert(!operand));
     }
 
     [Test]
     public void Should_handle_NOT_operator()
     {
         var operand = true;
-        Expression<Func<bool>> expr = () => !operand;
 
-        AssertExpressionThrows(expr, "!operand", "TestFile.cs", 40, "*!*true*");
+        AssertThrows(() => Assert(!operand), "*!*true*");
     }
 
     [Test]
@@ -80,10 +70,8 @@ public class LogicalOperatorFixture : TestBase
     {
         var leftTrue = true;
         var rightFalse = false;
-        
-        Expression<Func<bool>> expr = () => leftTrue || rightFalse;
 
-        AssertExpressionPasses(expr);
+        AssertDoesNotThrow(() => Assert(leftTrue || rightFalse));
     }
 
     [Test]
@@ -91,10 +79,8 @@ public class LogicalOperatorFixture : TestBase
     {
         var leftFalse = false;
         var rightTrue = true;
-        
-        Expression<Func<bool>> expr = () => leftFalse || rightTrue;
 
-        AssertExpressionPasses(expr);
+        AssertDoesNotThrow(() => Assert(leftFalse || rightTrue));
     }
 
     [Test]
@@ -102,10 +88,8 @@ public class LogicalOperatorFixture : TestBase
     {
         var leftFalse = false;
         var rightTrue = true;
-        
-        Expression<Func<bool>> expr = () => leftFalse && rightTrue;
 
-        AssertExpressionThrows(expr, "leftFalse && rightTrue", "TestFile.cs", 604, "*&&*false*");
+        AssertThrows(() => Assert(leftFalse && rightTrue), "*&&*false*");
     }
 
     [Test]
@@ -113,10 +97,8 @@ public class LogicalOperatorFixture : TestBase
     {
         var leftTrue = true;
         var rightFalse = false;
-        
-        Expression<Func<bool>> expr = () => leftTrue && rightFalse;
 
-        AssertExpressionThrows(expr, "leftTrue && rightFalse", "TestFile.cs", 605, "*&&*true*false*");
+        AssertThrows(() => Assert(leftTrue && rightFalse), "*&&*true*false*");
     }
 
     static bool ThrowException() => throw new InvalidOperationException("This should not be called due to short-circuit evaluation");

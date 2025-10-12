@@ -22,10 +22,21 @@
         
     </ItemGroup>
 
+    <!-- Override the rewriter assembly path for local development -->
+    <PropertyGroup>
+        <SharpAssertRewriterPath>$(MSBuildThisFileDirectory)..\SharpAssert\bin\$(Configuration)\net9.0\SharpAssert.dll</SharpAssertRewriterPath>
+    </PropertyGroup>
+
     <ItemGroup>
+        <!-- Build the rewriter project but don't reference its assembly -->
         <ProjectReference Include="..\SharpAssert.Runtime\SharpAssert.Runtime.csproj" />
+
+        <!-- Build the rewriter project but keep the assembly reference for internal API test fixtures -->
         <ProjectReference Include="..\SharpAssert\SharpAssert.csproj" />
     </ItemGroup>
+
+    <!-- Import the targets file to enable MSBuild task -->
+    <Import Project="..\SharpAssert\build\SharpAssert.targets" />
 
     <ItemGroup>
         <Using Include="NUnit.Framework"/>

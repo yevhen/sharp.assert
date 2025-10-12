@@ -4,6 +4,8 @@ using FluentAssertions;
 namespace SharpAssert;
 
 [TestFixture]
+// NOTE: This fixture intentionally tests internal API directly.
+// Most tests should use Sharp.Assert() public API instead.
 public class SharpInternalAssertionFixture : TestBase
 {
     [Test]
