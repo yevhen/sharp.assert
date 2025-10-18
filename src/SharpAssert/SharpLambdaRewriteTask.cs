@@ -24,10 +24,7 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
     public string IntermediateDir { get; set; } = string.Empty;
     public string OutputDir { get; set; } = string.Empty;
     public string LangVersion { get; set; } = "latest";
-    
-    public bool UsePowerAssert { get; set; } = false;
-    public bool UsePowerAssertForUnsupported { get; set; } = true;
-    
+
     [Output]
     public ITaskItem[] GeneratedFiles { get; set; } = [];
     
@@ -199,7 +196,7 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
         var absoluteSourcePath = Path.GetFullPath(sourcePath);
         LogDiagnostics($"Using absolute path for rewriter: {absoluteSourcePath}");
 
-        var rewrittenContent = SharpAssertRewriter.Rewrite(sourceContent, absoluteSourcePath, UsePowerAssert, UsePowerAssertForUnsupported);
+        var rewrittenContent = SharpAssertRewriter.Rewrite(sourceContent, absoluteSourcePath);
         if (rewrittenContent == sourceContent)
         {
             LogDiagnostics($"No Assert calls found, skipping: {relativePath}");

@@ -45,16 +45,6 @@ if ! dotnet test src/SharpAssert.PackageTest/ \
 fi
 
 echo ""
-echo -e "${BLUE}⚡ Running PowerAssert (forced mode) tests...${NC}"
-if ! dotnet test src/SharpAssert.PowerAssertTest/ \
-  --no-build \
-  --no-restore \
-  --verbosity normal; then
-    echo -e "${RED}❌ PowerAssert forced mode tests failed${NC}"
-    exit 1
-fi
-
-echo ""
 echo -e "${GREEN}✅ All package tests passed!${NC}"
 echo -e "${GREEN}📦 Packages validated in isolation (cache: $PACKAGE_CACHE)${NC}"
 echo -e "${GREEN}🎉 No global cache pollution${NC}"

@@ -87,13 +87,10 @@ Assert(obj.Items.Contains(5));  // Should show collection contents
 **Dependencies to attribute:**
 - **DiffPlex** — string & sequence diffs
 - **Compare-Net-Objects** — deep object diffs
-- **PowerAssert** — optional alternative/fallback mode (clarify current usage)
 
 **Tasks:**
 - Add "Credits" or "Dependencies" section to README.md
 - Link to each package's repository
-- Clarify PowerAssert relationship (optional vs. fallback vs. not used)
-- Review all references to PowerAssert fallback behavior
 
 ---
 
@@ -120,26 +117,7 @@ dotnet add package Verify.Xunit  # or NUnit/MSTest variants
 
 ---
 
-#### 6. Expose Direct PowerAssert Integration
-**Goal:** Allow users to call PowerAssert directly via `Sharp.Assert(() => ...)` overload.
-
-**API:**
-```csharp
-// Current: Sharp.Assert(bool condition)
-// New: Sharp.Assert(Expression<Func<bool>> condition)  // delegates to PowerAssert
-```
-
-**Why:** Gives users escape hatch if they prefer PowerAssert diagnostics for specific assertions.
-
-**Tasks:**
-- Add overload that accepts `Expression<Func<bool>>`
-- Delegate directly to PowerAssert.PAssert.IsTrue
-- Document when to use this overload
-- Test that it works alongside rewritten assertions
-
----
-
-#### 7. Custom Formatters Registry
+#### 6. Custom Formatters Registry
 **Goal:** Allow users to register custom formatters for domain types.
 
 **API:**
@@ -158,7 +136,7 @@ SharpConfig.RegisterFormatter<MyType>((value, context) =>
 
 ---
 
-#### 8. Custom Comparers
+#### 7. Custom Comparers
 **Goal:** Allow users to register custom equality comparers for types.
 
 **API:**
@@ -179,7 +157,7 @@ SharpConfig.RegisterComparer<MyType>((left, right) =>
 
 ### Low Priority (Nice-to-Have)
 
-#### 9. HTML Diff Emitter
+#### 8. HTML Diff Emitter
 **Goal:** Generate HTML diff artifacts for CI/CD pipelines.
 
 **Implementation:**
@@ -189,7 +167,7 @@ SharpConfig.RegisterComparer<MyType>((left, right) =>
 
 ---
 
-#### 10. SourceLink-based Expression Embedding
+#### 9. SourceLink-based Expression Embedding
 **Goal:** Use SourceLink to embed original expression text without CallerArgumentExpression.
 
 **Rationale:**
@@ -205,7 +183,7 @@ SharpConfig.RegisterComparer<MyType>((left, right) =>
 All core features are **✅ COMPLETED**:
 - Basic assertions with CallerArgumentExpression
 - Expression tree runtime with binary/logical operators
-- MSBuild rewriter with PowerAssert fallback
+- MSBuild rewriter
 - String diffs (DiffPlex)
 - Collection comparisons
 - Object deep diffs (Compare-Net-Objects)
@@ -213,7 +191,6 @@ All core features are **✅ COMPLETED**:
 - Async/await support
 - Dynamic type support (basic)
 - Nullable type support
-- Graceful rewriter fallback
 
 ### API Reference
 
@@ -274,7 +251,6 @@ public static class SharpInternal
 - CompareNETObjects (object deep diffs)
 
 **Optional:**
-- PowerAssert (alternative mode via explicit overload - future)
 - Verify.* (external diff viewers - future)
 
 ---

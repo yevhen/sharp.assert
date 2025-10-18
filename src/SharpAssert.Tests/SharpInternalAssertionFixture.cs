@@ -93,13 +93,4 @@ public class SharpInternalAssertionFixture : TestBase
         AssertExpressionPasses(() => number.ToString() == text && int.Parse(text) == number);
     }
 
-    [Test]
-    public void Should_pass_with_powerassert_integration_when_forced()
-    {
-        var x = 5;
-        var y = 5;
-        Expression<Func<bool>> expr = () => x == y;
-        var action = () => SharpInternal.Assert(expr, "x == y", "TestFile.cs", 42, usePowerAssert: true);
-        action.Should().NotThrow();
-    }
 }

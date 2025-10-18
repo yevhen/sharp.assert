@@ -9,5 +9,5 @@ TestResults
 .idea/
 local-feed
 .DS_Store
-.claude/settings.local.json√
+.claude/settings.local.json
 prompt.md

@@ -35,7 +35,6 @@ Assert(items.Contains(target));
 - **🔗 LINQ Operations** - Enhanced diagnostics for Contains/Any/All operations
 - **⚡ Async/Await Support** - Full support for async assertions with value diagnostics
 - **💫 Dynamic Types** - Dynamic expression support with DLR semantics
-- **🔄 PowerAssert Integration** - Optional PowerAssert mode
 
 ## Quick Start
 
@@ -211,7 +210,6 @@ SharpAssert is built on modern .NET technologies:
 - **Expression Trees** - Runtime expression analysis for rich diagnostics
 - **DiffPlex** - String and sequence diffs
 - **CompareNETObjects** - Deep object comparison
-- **PowerAssert** - Optional alternative assertion engine
 - **CallerArgumentExpression** - Fallback for edge cases
 
 ### Requirements
@@ -227,17 +225,6 @@ SharpAssert consists of two NuGet packages:
 When you install `SharpAssert`, you get everything you need. The runtime package is a transitive dependency and requires no separate installation.
 
 ## Configuration
-
-### PowerAssert Mode
-
-SharpAssert includes optional PowerAssert integration. You can force PowerAssert for all assertions via MSBuild property:
-
-```xml
-<PropertyGroup>
-  <!-- Force PowerAssert for ALL assertions (optional) -->
-  <SharpAssertUsePowerAssert>true</SharpAssertUsePowerAssert>
-</PropertyGroup>
-```
 
 ### Diagnostic Logging
 

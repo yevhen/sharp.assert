@@ -3,8 +3,6 @@
   <PropertyGroup>
     <EnableSharpLambdaRewrite Condition="'$(EnableSharpLambdaRewrite)' == ''">true</EnableSharpLambdaRewrite>
     <SharpAssertEmitRewriteInfo Condition="'$(SharpAssertEmitRewriteInfo)' == ''">false</SharpAssertEmitRewriteInfo>
-    <SharpAssertUsePowerAssert Condition="'$(SharpAssertUsePowerAssert)' == ''">false</SharpAssertUsePowerAssert>
-    <SharpAssertUsePowerAssertForUnsupported Condition="'$(SharpAssertUsePowerAssertForUnsupported)' == ''">true</SharpAssertUsePowerAssertForUnsupported>
     <SharpAssertRewriterPath Condition="'$(SharpAssertRewriterPath)' == ''">$(MSBuildThisFileDirectory)../tools/net9.0/SharpAssert.dll</SharpAssertRewriterPath>
   </PropertyGroup>
 
@@ -34,9 +32,7 @@
         ProjectDir="$(MSBuildProjectDirectory)"
         IntermediateDir="$(IntermediateOutputPath)"
         OutputDir="$(IntermediateOutputPath)SharpRewritten"
-        LangVersion="$(LangVersion)"
-        UsePowerAssert="$(SharpAssertUsePowerAssert)"
-        UsePowerAssertForUnsupported="$(SharpAssertUsePowerAssertForUnsupported)">
+        LangVersion="$(LangVersion)">
       <Output TaskParameter="GeneratedFiles" ItemName="_SharpRewrittenFiles" />
       <Output TaskParameter="ProcessedSourceFiles" ItemName="_SharpProcessedSources" />
     </SharpLambdaRewriteTask>

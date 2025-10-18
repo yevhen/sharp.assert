@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 namespace SharpAssert;
@@ -12,8 +13,7 @@ namespace SharpAssert;
 /// providing rich diagnostic information when assertions fail without requiring special syntax.
 /// </para>
 /// <para>
-/// The library supports both synchronous and asynchronous exception testing, with intelligent fallback
-/// to PowerAssert for complex scenarios to ensure comprehensive error reporting.
+/// The library supports both synchronous and asynchronous exception testing with comprehensive error reporting.
 /// </para>
 /// <para>
 /// All assertion methods are thread-safe and can be used in concurrent testing scenarios.
