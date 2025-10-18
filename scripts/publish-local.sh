@@ -13,8 +13,11 @@ echo "============================================"
 # Create local-feed directory if it doesn't exist
 mkdir -p local-feed
 
-# Generate unique version based on timestamp for development
-VERSION="1.0.0-dev$(date +%Y%m%d%H%M%S)"
+# Extract version suffix from Directory.Build.props
+# Default to 'local' if not found or if Directory.Build.props doesn't exist
+VERSION_SUFFIX=$(grep '<VersionSuffix' Directory.Build.props 2>/dev/null | head -n 1 | sed -n 's/.*<VersionSuffix[^>]*>\([^<]*\)<\/VersionSuffix>.*/\1/p')
+VERSION_SUFFIX=${VERSION_SUFFIX:-local}
+VERSION="1.0.0-${VERSION_SUFFIX}"
 
 echo -e "${YELLOW}🏗️ Building packages with version: $VERSION${NC}"
 
