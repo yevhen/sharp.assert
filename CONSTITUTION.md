@@ -94,20 +94,6 @@ This document defines the immutable architectural principles and core philosophy
 
 ---
 
-## 10. Four-Layer Testing Strategy
-
-**Principle**: Progressive isolation through unit → integration → package → CI layers.
-
-**Why**: Fast development cycle with comprehensive validation; catches issues early without environmental pollution.
-
-**Invariant**:
-- Layer 1 (Unit): Fast, focused
-- Layer 2 (Integration): MSBuild rewriter without packaging
-- Layer 3 (Package): NuGet validation with isolated cache
-- Layer 4 (CI): Two-phase validation
-
----
-
 ## 11. No Defensive/Speculative Code
 
 **Principle**: Every line of code must be reachable via public API. No "just in case" code.
