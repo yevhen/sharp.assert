@@ -8,7 +8,7 @@ This document showcases all supported features of SharpAssert with detailed diag
 
 > Fundamental assertion failures showing expression text and values
 
-### Demo: Simple Failure
+### Simple Failure
 **Description:** Basic assertion failure with expression text
 
 **Code:**
@@ -23,7 +23,7 @@ Assertion failed: false  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/
 
 ---
 
-### Demo: Expression Text
+### Expression Text
 **Description:** Shows operands and result for comparison expressions
 
 **Code:**
@@ -38,7 +38,7 @@ Assertion failed: 1 == 2  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo
 
 ---
 
-### Demo: Custom Message
+### Custom Message
 **Description:** Assertion with custom failure message
 
 **Code:**
@@ -54,7 +54,7 @@ Assertion failed: false  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/
 
 ---
 
-### Demo: Complex Expression
+### Complex Expression
 **Description:** Multi-variable expression with operators
 
 **Code:**
@@ -78,7 +78,7 @@ Assertion failed: x + y * z > 100  at /Users/yb/work/oss/SharpAssert/src/SharpAs
 
 > Equality, inequality, and relational operator comparisons
 
-### Demo: Equality Operators
+### Equality Operators
 **Description:** == and != showing left and right values
 
 **Code:**
@@ -97,7 +97,7 @@ Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/Shar
 
 ---
 
-### Demo: Relational Operators
+### Relational Operators
 **Description:** <, <=, >, >= with numbers
 
 **Code:**
@@ -116,7 +116,7 @@ Assertion failed: value > threshold  at /Users/yb/work/oss/SharpAssert/src/Sharp
 
 ---
 
-### Demo: Null Comparisons
+### Null Comparisons
 **Description:** null vs non-null showing both sides
 
 **Code:**
@@ -135,7 +135,7 @@ Assertion failed: nullValue == nonNullValue  at /Users/yb/work/oss/SharpAssert/s
 
 ---
 
-### Demo: Single Evaluation
+### Single Evaluation
 **Description:** Method calls happen only once
 
 **Code:**
@@ -153,7 +153,7 @@ Assertion failed: GetValue() == 100  at /Users/yb/work/oss/SharpAssert/src/Sharp
 
 ---
 
-### Demo: Type Mismatch
+### Type Mismatch
 **Description:** Comparing different types
 
 **Code:**
@@ -174,7 +174,7 @@ Assertion failed: intValue.Equals(stringValue)  at /Users/yb/work/oss/SharpAsser
 
 > AND, OR, NOT operators with short-circuit evaluation
 
-### Demo: AND Failure
+### AND Failure
 **Description:** Shows which operand failed
 
 **Code:**
@@ -194,7 +194,7 @@ Assertion failed: left && right  at /Users/yb/work/oss/SharpAssert/src/SharpAsse
 
 ---
 
-### Demo: Short-Circuit AND
+### Short-Circuit AND
 **Description:** Right side not evaluated when left is false
 
 **Code:**
@@ -212,7 +212,7 @@ Assertion failed: condition && ThrowsException()  at /Users/yb/work/oss/SharpAss
 
 ---
 
-### Demo: OR Failure
+### OR Failure
 **Description:** Both operands evaluated and shown
 
 **Code:**
@@ -232,7 +232,7 @@ Assertion failed: left || right  at /Users/yb/work/oss/SharpAssert/src/SharpAsse
 
 ---
 
-### Demo: NOT Operator
+### NOT Operator
 **Description:** Shows the actual value being negated
 
 **Code:**
@@ -250,7 +250,7 @@ Assertion failed: !value  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo
 
 ---
 
-### Demo: Nested Logical
+### Nested Logical
 **Description:** Complex expressions with multiple operators
 
 **Code:**
@@ -276,7 +276,7 @@ Assertion failed: (a && b) || (c && d)  at /Users/yb/work/oss/SharpAssert/src/Sh
 
 > Single-line and multiline string diffs with character-level highlighting
 
-### Demo: Single-Line Diff
+### Single-Line Diff
 **Description:** Inline character diff for single-line strings
 
 **Code:**
@@ -296,7 +296,7 @@ Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/Shar
 
 ---
 
-### Demo: Multiline Diff
+### Multiline Diff
 **Description:** Line-by-line comparison for multiline strings
 
 **Code:**
@@ -334,7 +334,7 @@ Line 3: Conclusion
 
 ---
 
-### Demo: Null vs String
+### Null vs String
 **Description:** null compared to non-null string
 
 **Code:**
@@ -353,7 +353,7 @@ Assertion failed: nullString == nonNullString  at /Users/yb/work/oss/SharpAssert
 
 ---
 
-### Demo: Empty vs Non-Empty
+### Empty vs Non-Empty
 **Description:** Empty string vs text
 
 **Code:**
@@ -373,7 +373,7 @@ Assertion failed: empty == nonEmpty  at /Users/yb/work/oss/SharpAssert/src/Sharp
 
 ---
 
-### Demo: Long Strings
+### Long Strings
 **Description:** Long text with diff and truncation
 
 **Code:**
@@ -397,7 +397,7 @@ Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/Shar
 
 > Array and list comparisons showing differences, missing, and extra elements
 
-### Demo: First Mismatch
+### First Mismatch
 **Description:** Shows first element that differs
 
 **Code:**
@@ -417,7 +417,7 @@ Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/Shar
 
 ---
 
-### Demo: Missing Elements
+### Missing Elements
 **Description:** Shows elements present in expected but not actual
 
 **Code:**
@@ -437,7 +437,7 @@ Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/Shar
 
 ---
 
-### Demo: Extra Elements
+### Extra Elements
 **Description:** Shows elements in actual but not expected
 
 **Code:**
@@ -457,7 +457,7 @@ Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/Shar
 
 ---
 
-### Demo: Empty Collection
+### Empty Collection
 **Description:** Empty vs non-empty collection
 
 **Code:**
@@ -477,7 +477,7 @@ Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/Shar
 
 ---
 
-### Demo: Different Lengths
+### Different Lengths
 **Description:** Collections with different sizes
 
 **Code:**
@@ -497,7 +497,7 @@ Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/Shar
 
 ---
 
-### Demo: Large Collections
+### Large Collections
 **Description:** Preview truncation for large collections
 
 **Code:**
@@ -521,7 +521,7 @@ Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/Shar
 
 > Deep object comparison showing property-level differences
 
-### Demo: Property Difference
+### Property Difference
 **Description:** Simple object with different property values
 
 **Code:**
@@ -540,7 +540,7 @@ Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/Shar
 
 ---
 
-### Demo: Nested Objects
+### Nested Objects
 **Description:** Deep property paths like Address.City
 
 **Code:**
@@ -564,7 +564,7 @@ Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/Shar
 
 ---
 
-### Demo: Null Object
+### Null Object
 **Description:** null vs object instance
 
 **Code:**
@@ -583,7 +583,7 @@ Assertion failed: nullPerson == nonNullPerson  at /Users/yb/work/oss/SharpAssert
 
 ---
 
-### Demo: Record Comparison
+### Record Comparison
 **Description:** Record type value equality
 
 **Code:**
@@ -602,7 +602,7 @@ Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/Shar
 
 ---
 
-### Demo: Multiple Differences
+### Multiple Differences
 **Description:** Multiple properties differ
 
 **Code:**
@@ -627,7 +627,7 @@ Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/Shar
 
 > Contains, Any, All with predicates showing matching/failing items
 
-### Demo: Contains Failure
+### Contains Failure
 **Description:** Shows collection contents when item not found
 
 **Code:**
@@ -646,7 +646,7 @@ Assertion failed: items.Contains(missingItem)  at /Users/yb/work/oss/SharpAssert
 
 ---
 
-### Demo: Any with Predicate
+### Any with Predicate
 **Description:** Shows items matching predicate
 
 **Code:**
@@ -663,7 +663,7 @@ Assertion failed: items.Any(x => x > 10)  at /Users/yb/work/oss/SharpAssert/src/
 
 ---
 
-### Demo: All with Predicate
+### All with Predicate
 **Description:** Shows items failing predicate
 
 **Code:**
@@ -680,7 +680,7 @@ Assertion failed: items.All(x => x > 3)  at /Users/yb/work/oss/SharpAssert/src/S
 
 ---
 
-### Demo: Empty Collection
+### Empty Collection
 **Description:** LINQ on empty collection
 
 **Code:**
@@ -701,7 +701,7 @@ Assertion failed: items.Any()  at /Users/yb/work/oss/SharpAssert/src/SharpAssert
 
 > SequenceEqual with unified diff display
 
-### Demo: Unified Diff
+### Unified Diff
 **Description:** Side-by-side sequence comparison
 
 **Code:**
@@ -724,7 +724,7 @@ Assertion failed: actual.SequenceEqual(expected)  at /Users/yb/work/oss/SharpAss
 
 ---
 
-### Demo: Different Lengths
+### Different Lengths
 **Description:** Sequences of different sizes
 
 **Code:**
@@ -746,7 +746,7 @@ Assertion failed: actual.SequenceEqual(expected)  at /Users/yb/work/oss/SharpAss
 
 ---
 
-### Demo: Element-by-Element
+### Element-by-Element
 **Description:** Detailed element comparison
 
 **Code:**
@@ -768,7 +768,7 @@ Assertion failed: actual.SequenceEqual(expected)  at /Users/yb/work/oss/SharpAss
 
 ---
 
-### Demo: Large Sequences
+### Large Sequences
 **Description:** Truncation for large sequences
 
 **Code:**
@@ -796,7 +796,7 @@ Assertion failed: actual.SequenceEqual(expected)  at /Users/yb/work/oss/SharpAss
 
 > Async/await assertions showing awaited values
 
-### Demo: Basic Await
+### Basic Await
 **Description:** Simple async condition
 
 **Code:**
@@ -812,7 +812,7 @@ Assertion failed: await GetBoolAsync()  at /Users/yb/work/oss/SharpAssert/src/Sh
 
 ---
 
-### Demo: Async Binary
+### Async Binary
 **Description:** Both sides awaited with values shown
 
 **Code:**
@@ -829,7 +829,7 @@ Assertion failed: await GetLeftValueAsync() == await GetRightValueAsync()  at /U
 
 ---
 
-### Demo: Mixed Async/Sync
+### Mixed Async/Sync
 **Description:** Await on one side, constant on other
 
 **Code:**
@@ -846,7 +846,7 @@ Assertion failed: await GetLeftValueAsync() == 100  at /Users/yb/work/oss/SharpA
 
 ---
 
-### Demo: Async String Diff
+### Async String Diff
 **Description:** Awaited string with diff
 
 **Code:**
@@ -868,7 +868,7 @@ Assertion failed: await GetStringAsync() == "expected value"  at /Users/yb/work/
 
 > Dynamic type assertions with DLR evaluation
 
-### Demo: Dynamic Binary
+### Dynamic Binary
 **Description:** Dynamic comparison showing values
 
 **Code:**
@@ -886,7 +886,7 @@ Assertion failed: value == 100  at /Users/yb/work/oss/SharpAssert/src/SharpAsser
 
 ---
 
-### Demo: Dynamic Method Call
+### Dynamic Method Call
 **Description:** Method call on dynamic object
 
 **Code:**
@@ -904,7 +904,7 @@ Assertion failed: obj.GetValue() > 100  at /Users/yb/work/oss/SharpAssert/src/Sh
 
 ---
 
-### Demo: Dynamic Operators
+### Dynamic Operators
 **Description:** Dynamic operator semantics
 
 **Code:**
@@ -927,7 +927,7 @@ Assertion failed: left > right  at /Users/yb/work/oss/SharpAssert/src/SharpAsser
 
 > Nullable value types and reference types showing HasValue and Value
 
-### Demo: Nullable Int (null)
+### Nullable Int (null)
 **Description:** int? null showing HasValue: false
 
 **Code:**
@@ -945,7 +945,7 @@ Assertion failed: value == 42  at /Users/yb/work/oss/SharpAssert/src/SharpAssert
 
 ---
 
-### Demo: Nullable Int (value)
+### Nullable Int (value)
 **Description:** int? with value showing HasValue: true, Value
 
 **Code:**
@@ -963,7 +963,7 @@ Assertion failed: value == 100  at /Users/yb/work/oss/SharpAssert/src/SharpAsser
 
 ---
 
-### Demo: Nullable Bool
+### Nullable Bool
 **Description:** bool? comparison
 
 **Code:**
@@ -981,7 +981,7 @@ Assertion failed: value == true  at /Users/yb/work/oss/SharpAssert/src/SharpAsse
 
 ---
 
-### Demo: Nullable DateTime
+### Nullable DateTime
 **Description:** DateTime? null comparison
 
 **Code:**
@@ -1000,7 +1000,7 @@ Assertion failed: value == expected  at /Users/yb/work/oss/SharpAssert/src/Sharp
 
 ---
 
-### Demo: Nullable Reference Types
+### Nullable Reference Types
 **Description:** string?, object? comparisons
 
 **Code:**
@@ -1019,7 +1019,7 @@ Assertion failed: value == expected  at /Users/yb/work/oss/SharpAssert/src/Sharp
 
 ---
 
-### Demo: Null Comparison Edge Cases
+### Null Comparison Edge Cases
 **Description:** nullable == null
 
 **Code:**

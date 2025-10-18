@@ -29,7 +29,7 @@ sealed class MarkdownRenderer(string outputFile = "demo.md") : IDemoRenderer, IS
     public void RenderDemo(DemoDefinition demo, DemoResult result)
     {
         // Demo header
-        content.AppendLine($"### Demo: {demo.Name}");
+        content.AppendLine($"### {demo.Name}");
         content.AppendLine($"**Description:** {demo.Description}");
         content.AppendLine();
 

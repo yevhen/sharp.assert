@@ -24,17 +24,28 @@ Assert(items.Contains(target));
 // Result: false
 ```
 
+## How It Works
+
+SharpAssert uses **MSBuild source rewriting** to automatically transform your assertion calls at compile time:
+
+1. **You write:** `Assert(x == y)`
+2. **MSBuild rewrites:** `global::SharpAssert.SharpInternal.Assert(() => x == y, "x == y", "file.cs", 42)`
+3. **Runtime analysis:** Expression tree provides detailed failure diagnostics when assertions fail
+
 ## Features
 
-- **🔍 Detailed Expression Analysis** - See exactly why your assertions failed
-- **📦 Simple Setup** - Just add NuGet package, no MSBuild configuration needed
-- **🎯 Exception Testing** - `Throws<T>` and `ThrowsAsync<T>` with detailed exception diagnostics
-- **🔤 String Diffs** - Character-level inline diffs for strings (powered by DiffPlex)
-- **📊 Collection Comparison** - First mismatch, missing/extra elements detection
-- **🔎 Object Deep Diff** - Property-level differences for objects/records (powered by Compare-Net-Objects)
-- **🔗 LINQ Operations** - Enhanced diagnostics for Contains/Any/All operations
-- **⚡ Async/Await Support** - Full support for async assertions with value diagnostics
-- **💫 Dynamic Types** - Dynamic expression support with DLR semantics
+- **🔍 [Detailed Expression Analysis](#complex-expression-analysis)** - See exactly why your assertions failed
+- **🎯 [Exception Testing](#exception-testing)** - `Throws<T>` and `ThrowsAsync<T>` with detailed exception diagnostics
+- **🔤 [String Diffs](#string-comparisons)** - Character-level inline diffs for strings (powered by DiffPlex)
+- **📊 [Collection Comparison](#collection-comparisons)** - First mismatch, missing/extra elements detection
+- **🔎 [Object Deep Diff](#object-deep-comparison)** - Property-level differences for objects/records (powered by Compare-Net-Objects)
+- **🔗 [LINQ Operations](#linq-operations)** - Enhanced diagnostics for Contains/Any/All operations
+- **⚡ [Async/Await Support](#asyncawait-support)** - Full support for async assertions with value diagnostics
+- **💫 Dynamic Types** - Dynamic objects support (Expando)
+
+## Live Examples
+
+See [demo](src/SharpAssert.Demo/demo.md) for assertion example output.
 
 ## Quick Start
 
@@ -63,33 +74,7 @@ public void Should_be_equal()
 }
 ```
 
-### Custom Error Messages
-
-```csharp
-Assert(user.IsActive, $"User {user.Name} should be active for this operation");
-```
-
 ## Features in Detail
-
-### Exception Testing
-
-Test expected exceptions with `Throws<T>` and `ThrowsAsync<T>`:
-
-```csharp
-// Positive assertion - expects exception
-Assert(Throws<ArgumentException>(() => throw new ArgumentException("invalid")));
-
-// Negative assertion - expects no exception
-Assert(!Throws<ArgumentException>(() => { /* no exception */ }));
-
-// Access exception properties
-var ex = Throws<ArgumentNullException>(() => throw new ArgumentNullException("param"));
-Assert(ex.Message.Contains("param"));
-
-// Async version
-Assert(await ThrowsAsync<InvalidOperationException>(() =>
-    Task.Run(() => throw new InvalidOperationException())));
-```
 
 ### String Comparisons
 
@@ -176,15 +161,31 @@ Assert(await client.GetAsync() == await server.GetAsync());
 // Result: false
 ```
 
-## How It Works
+### Exception Testing
 
-SharpAssert uses **MSBuild source rewriting** to automatically transform your assertion calls at compile time:
+Test expected exceptions with `Throws<T>` and `ThrowsAsync<T>`:
 
-1. **You write:** `Assert(x == y)` 
-2. **MSBuild rewrites:** `global::SharpAssert.SharpInternal.Assert(() => x == y, "x == y", "file.cs", 42)`
-3. **Runtime analysis:** Expression tree provides detailed failure diagnostics when assertions fail
+```csharp
+// Positive assertion - expects exception
+Assert(Throws<ArgumentException>(() => throw new ArgumentException("invalid")));
 
-## Advanced Usage
+// Negative assertion - expects no exception
+Assert(!Throws<ArgumentException>(() => { /* no exception */ }));
+
+// Access exception properties
+var ex = Throws<ArgumentNullException>(() => throw new ArgumentNullException("param"));
+Assert(ex.Message.Contains("param"));
+
+// Async version
+Assert(await ThrowsAsync<InvalidOperationException>(() =>
+    Task.Run(() => throw new InvalidOperationException())));
+```
+
+### Custom Error Messages
+
+```csharp
+Assert(user.IsActive, $"User {user.Name} should be active for this operation");
+```
 
 ### Complex Expression Analysis
 
@@ -253,17 +254,6 @@ This means your passing tests run at full speed, and the diagnostic cost is only
 
 - Collection initializers cannot be used in expression trees (C# compiler limitation)
   - Use `new[]{1,2,3}` instead of `[1, 2, 3]`
-
-## Live Examples
-
-Want to see all features in action? Check out the **SharpAssert.Demo** project:
-
-```bash
-cd src/SharpAssert.Demo
-dotnet run
-```
-
-See [SharpAssert.Demo/README.md](src/SharpAssert.Demo/README.md) for interactive feature exploration and generated markdown documentation.
 
 ## Troubleshooting
 
