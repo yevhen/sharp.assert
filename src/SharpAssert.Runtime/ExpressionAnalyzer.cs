@@ -49,25 +49,68 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
     static string AnalyzeLogicalBinaryFailure(BinaryExpression binaryExpr, AssertionContext context)
     {
         var locationPart = GetLocationPart(context);
-        
+        var baseMessage = FormatBaseMessage(context, locationPart);
+
         var leftValue = GetValue(binaryExpr.Left);
         var leftBool = (bool)leftValue!;
-        
+
         if (binaryExpr.NodeType != AndAlso)
         {
-            var rightValueOrElse = GetValue(binaryExpr.Right);
-            return FormatLogicalFailure(context, locationPart, leftValue, rightValueOrElse, "||: Both operands were false", false);
+            var leftAnalysis = AnalyzeSubExpression(binaryExpr.Left);
+            var rightAnalysis = AnalyzeSubExpression(binaryExpr.Right);
+
+            return baseMessage +
+                   $"  Left: {leftAnalysis}\n" +
+                   $"  Right: {rightAnalysis}\n" +
+                   "  ||: Both operands were false";
         }
 
         if (!leftBool)
-            return FormatLogicalFailure(context, locationPart, leftValue, null, "&&: Left operand was false", true);
+        {
+            var leftAnalysis = AnalyzeSubExpression(binaryExpr.Left);
+            return baseMessage +
+                   $"  Left: {leftAnalysis}\n" +
+                   "  &&: Left operand was false";
+        }
 
-        var rightValue = GetValue(binaryExpr.Right);
-        return FormatLogicalFailure(context, locationPart, leftValue, rightValue, "&&: Right operand was false", false);
+        var leftAnalysisAnd = AnalyzeSubExpression(binaryExpr.Left);
+        var rightAnalysisAnd = AnalyzeSubExpression(binaryExpr.Right);
+
+        return baseMessage +
+               $"  Left: {leftAnalysisAnd}\n" +
+               $"  Right: {rightAnalysisAnd}\n" +
+               "  &&: Right operand was false";
     }
 
-    static string GetLocationPart(AssertionContext context) => 
+    static string GetLocationPart(AssertionContext context) =>
         AssertionFormatter.FormatLocation(context.File, context.Line);
+
+    static string AnalyzeSubExpression(Expression expression)
+    {
+        var exprText = ReadableExpressionFormatter.Format(expression);
+        var value = GetValue(expression);
+
+        if (expression is BinaryExpression { NodeType: AndAlso or OrElse })
+        {
+            var subContext = new AssertionContext(exprText, string.Empty, 0, null);
+            var subLambda = Expression.Lambda<Func<bool>>(expression);
+            var analysis = AnalyzeFailure(subLambda, subContext);
+
+            var lines = analysis.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            var indentedLines = string.Join("\n    ", lines.Skip(1));
+            return $"{exprText}\n    {indentedLines}";
+        }
+
+        if (expression is BinaryExpression binaryExpr)
+        {
+            var leftValue = GetValue(binaryExpr.Left);
+            var rightValue = GetValue(binaryExpr.Right);
+
+            return $"{exprText}\n    Left:  {FormatValue(leftValue)}\n    Right: {FormatValue(rightValue)}";
+        }
+
+        return $"{FormatValue(value)}";
+    }
 
     static string FormatIfFailed(Expression expression, Func<string> formatter) =>
         GetValue(expression) is true ? string.Empty : formatter();
@@ -77,28 +120,15 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
             ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
             : $"Assertion failed: {context.Expression}  at {locationPart}\n";
 
-    static string FormatLogicalFailure(AssertionContext context, string locationPart, object? leftValue, object? rightValue, string explanation, bool isShortCircuit)
-    {
-        var baseMessage = FormatBaseMessage(context, locationPart);
-            
-        var result = baseMessage + $"  Left:  {FormatValue(leftValue)}{(isShortCircuit ? " (short-circuit)" : "")}";
-        
-        if (rightValue is not null)
-            result += $"\n  Right: {FormatValue(rightValue)}";
-            
-        result += $"\n  {explanation}";
-
-        return result;
-    }
-
     static string AnalyzeNotFailure(UnaryExpression unaryExpr, AssertionContext context)
     {
-        var operandValue = GetValue(unaryExpr.Operand);
         var locationPart = GetLocationPart(context);
-        
         var baseMessage = FormatBaseMessage(context, locationPart);
-        
-        return baseMessage + $"  Operand: {FormatValue(operandValue)}\n" +
+
+        var operandAnalysis = AnalyzeSubExpression(unaryExpr.Operand);
+        var operandValue = GetValue(unaryExpr.Operand);
+
+        return baseMessage + $"  Operand: {operandAnalysis}\n" +
                $"  !: Operand was {FormatValue(operandValue)}";
     }
 
