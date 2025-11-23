@@ -109,7 +109,7 @@ record SequenceEqualComparisonResult(
 
 record SequenceLengthMismatch(int ExpectedLength, int ActualLength, IReadOnlyList<object?> FirstPreview, IReadOnlyList<object?> SecondPreview);
 
-record SequenceDiffLine(SequenceDiffOperation Operation, int Index, string Value);
+record SequenceDiffLine(SequenceDiffOperation Operation, int Index, object? Value);
 
 enum SequenceDiffOperation
 {

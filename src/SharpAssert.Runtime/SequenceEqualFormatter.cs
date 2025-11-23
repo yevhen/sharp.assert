@@ -75,7 +75,7 @@ static class SequenceEqualFormatter
 
         var diffLines = ComputeDiffLines(firstStrings, secondStrings);
 
-        return BuildDiffLines(diffLines, out truncated);
+        return BuildDiffLines(diffLines, first, second, out truncated);
     }
 
     static List<string> ComputeDiffLines(string[] first, string[] second)
@@ -89,11 +89,11 @@ static class SequenceEqualFormatter
         return GenerateUnifiedDiffLines(first, second, diffResult);
     }
 
-    static IReadOnlyList<SequenceDiffLine> BuildDiffLines(List<string> diffLines, out bool truncated)
+    static IReadOnlyList<SequenceDiffLine> BuildDiffLines(List<string> diffLines, IReadOnlyList<object?> firstValues, IReadOnlyList<object?> secondValues, out bool truncated)
     {
         truncated = diffLines.Count > MaxDiffLines;
         var slice = truncated ? diffLines.Take(MaxDiffLines) : diffLines;
-        return slice.Select(ToDiffLine).ToList();
+        return slice.Select(line => ToDiffLine(line, firstValues, secondValues)).ToList();
     }
     
     static List<string> GenerateUnifiedDiffLines(string[] first, string[] second, DiffResult diffResult)
@@ -143,14 +143,14 @@ static class SequenceEqualFormatter
     }
     
     static string FormatValue(object? value) => ValueFormatter.Format(value);
-    static SequenceDiffLine ToDiffLine(string line)
+    static SequenceDiffLine ToDiffLine(string line, IReadOnlyList<object?> firstValues, IReadOnlyList<object?> secondValues)
     {
         if (line.StartsWith("-"))
         {
             var parts = line[1..].TrimStart();
             var spaceIndex = parts.IndexOf(' ');
             var index = int.Parse(parts[..spaceIndex]);
-            var value = parts[(spaceIndex + 1)..];
+            var value = firstValues[index];
             return new SequenceDiffLine(SequenceDiffOperation.Removed, index, value);
         }
 
@@ -159,14 +159,14 @@ static class SequenceEqualFormatter
             var parts = line[1..].TrimStart();
             var spaceIndex = parts.IndexOf(' ');
             var index = int.Parse(parts[..spaceIndex]);
-            var value = parts[(spaceIndex + 1)..];
+            var value = secondValues[index];
             return new SequenceDiffLine(SequenceDiffOperation.Added, index, value);
         }
 
         var trimmed = line.TrimStart();
         var idxSpace = trimmed.IndexOf(' ');
         var idx = int.Parse(trimmed[..idxSpace]);
-        var val = trimmed[(idxSpace + 1)..];
+        var val = firstValues[idx];
         return new SequenceDiffLine(SequenceDiffOperation.Context, idx, val);
     }
     static object? GetValue(Expression expression)
