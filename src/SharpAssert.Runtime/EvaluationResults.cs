@@ -46,7 +46,8 @@ record LogicalEvaluationResult(
     EvaluationResult Left,
     EvaluationResult? Right,
     bool Value,
-    bool ShortCircuited)
+    bool ShortCircuited,
+    ExpressionType NodeType)
     : EvaluationResult(ExpressionText)
 {
     public override bool? BooleanValue => Value;

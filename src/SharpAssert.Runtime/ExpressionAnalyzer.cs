@@ -40,7 +40,7 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
                 return AnalyzeMethodCall(methodCall, cache);
         }
 
-        var exprText = ReadableExpressionFormatter.Format(expression);
+        var exprText = ExpressionDisplay.GetIdentifierOrPath(expression);
         var value = GetValue(expression, cache);
 
         return new ValueEvaluationResult(exprText, value, expression.Type);
@@ -53,7 +53,9 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
 
         var leftValue = GetValue(binaryExpr.Left, cache);
         var rightValue = GetValue(binaryExpr.Right, cache);
-        var exprText = ReadableExpressionFormatter.Format(binaryExpr);
+        var leftText = ExpressionDisplay.GetIdentifierOrPath(binaryExpr.Left);
+        var rightText = ExpressionDisplay.GetIdentifierOrPath(binaryExpr.Right);
+        var exprText = ExpressionDisplay.FormatBinary(leftText, ExpressionDisplay.OperatorSymbol(binaryExpr.NodeType), rightText, false);
 
         var leftOperand = new AssertionOperand(leftValue, binaryExpr.Left.Type);
         var rightOperand = new AssertionOperand(rightValue, binaryExpr.Right.Type);
@@ -66,7 +68,14 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
 
     static EvaluationResult AnalyzeLogicalBinary(BinaryExpression binaryExpr, Dictionary<Expression, object?> cache)
     {
-        var exprText = ReadableExpressionFormatter.Format(binaryExpr);
+        var leftText = ExpressionDisplay.GetIdentifierOrPath(binaryExpr.Left);
+        var rightText = ExpressionDisplay.GetIdentifierOrPath(binaryExpr.Right);
+        var needsParens = ExpressionDisplay.IsLogical(binaryExpr.Right.NodeType);
+        var exprText = ExpressionDisplay.FormatBinary(
+            leftText,
+            ExpressionDisplay.OperatorSymbol(binaryExpr.NodeType),
+            needsParens ? $"({rightText})" : rightText,
+            false);
         var leftValue = GetValue(binaryExpr.Left, cache);
         var leftBool = (bool)leftValue!;
 
@@ -76,14 +85,14 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
             var rightAnalysis = AnalyzeExpression(binaryExpr.Right, cache);
             var orValue = leftBool || (bool)GetValue(binaryExpr.Right, cache)!;
 
-            return new LogicalEvaluationResult(exprText, LogicalOperator.OrElse, leftAnalysis, rightAnalysis, orValue, false);
+            return new LogicalEvaluationResult(exprText, LogicalOperator.OrElse, leftAnalysis, rightAnalysis, orValue, false, binaryExpr.NodeType);
         }
 
         // AND
         if (!leftBool)
         {
             var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache);
-            return new LogicalEvaluationResult(exprText, LogicalOperator.AndAlso, leftAnalysis, null, false, true);
+            return new LogicalEvaluationResult(exprText, LogicalOperator.AndAlso, leftAnalysis, null, false, true, binaryExpr.NodeType);
         }
 
         var leftResult = AnalyzeExpression(binaryExpr.Left, cache);
@@ -91,12 +100,13 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
         var rightBool = (bool)GetValue(binaryExpr.Right, cache)!;
         var andValue = leftBool && rightBool;
 
-        return new LogicalEvaluationResult(exprText, LogicalOperator.AndAlso, leftResult, rightResult, andValue, false);
+        return new LogicalEvaluationResult(exprText, LogicalOperator.AndAlso, leftResult, rightResult, andValue, false, binaryExpr.NodeType);
     }
 
     static EvaluationResult AnalyzeNot(UnaryExpression unaryExpr, Dictionary<Expression, object?> cache)
     {
-        var exprText = ReadableExpressionFormatter.Format(unaryExpr);
+        var operandPath = ExpressionDisplay.GetIdentifierOrPath(unaryExpr.Operand);
+        var exprText = ExpressionDisplay.FormatUnary("!", operandPath, false);
         var operandValue = GetValue(unaryExpr.Operand, cache);
         var operand = AnalyzeExpression(unaryExpr.Operand, cache);
 
@@ -106,7 +116,7 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
     static EvaluationResult AnalyzeMethodCall(MethodCallExpression methodCall, Dictionary<Expression, object?> cache)
     {
         var methodName = methodCall.Method.Name;
-        var exprText = ReadableExpressionFormatter.Format(methodCall);
+        var exprText = methodCall.ToString();
         var value = (bool)GetValue(methodCall, cache)!;
 
         if (value)
