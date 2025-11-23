@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 
 namespace SharpAssert;
 
@@ -7,27 +8,49 @@ class CollectionComparisonFormatter : IComparisonFormatter
     public bool CanFormat(object? leftValue, object? rightValue) =>
         IsEnumerable(leftValue) && IsEnumerable(rightValue);
 
-    public string FormatComparison(object? leftValue, object? rightValue)
+    public ComparisonResult CreateComparison(object? leftValue, object? rightValue)
     {
-        if (leftValue == null && rightValue == null) return string.Empty;
-        if (leftValue == null) return "  Left:  null\n  Right: Collection";
-        if (rightValue == null) return "  Left:  Collection\n  Right: null";
+        if (leftValue == null && rightValue == null)
+        {
+            return new ComparisonResult(
+                new AssertionOperand(null, typeof(object)),
+                new AssertionOperand(null, typeof(object)),
+                Array.Empty<string>());
+        }
+        if (leftValue == null)
+        {
+            return new ComparisonResult(
+                new AssertionOperand(leftValue, typeof(object)),
+                new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)),
+                new[] { "Left:  null", "Right: Collection" });
+        }
+        if (rightValue == null)
+        {
+            return new ComparisonResult(
+                new AssertionOperand(leftValue, leftValue.GetType()),
+                new AssertionOperand(rightValue, typeof(object)),
+                new[] { "Left:  Collection", "Right: null" });
+        }
 
         var leftList = MaterializeToList(leftValue);
         var rightList = MaterializeToList(rightValue);
 
-        return AnalyzeCollectionDifferences(leftList, rightList);
+        var lines = AnalyzeCollectionDifferences(leftList, rightList);
+        return new ComparisonResult(
+            new AssertionOperand(leftValue, leftValue.GetType()),
+            new AssertionOperand(rightValue, rightValue.GetType()),
+            lines);
     }
 
     static List<object?> MaterializeToList(object collection) =>
         ((IEnumerable)collection).Cast<object?>().ToList();
 
-    static string AnalyzeCollectionDifferences(List<object?> left, List<object?> right)
+    static IReadOnlyList<string> AnalyzeCollectionDifferences(List<object?> left, List<object?> right)
     {
         var result = new List<string>
         {
-            $"  Left:  {FormatCollectionPreview(left)}",
-            $"  Right: {FormatCollectionPreview(right)}"
+            $"Left:  {FormatCollectionPreview(left)}",
+            $"Right: {FormatCollectionPreview(right)}"
         };
 
         var differenceMessage = FindFirstDifference(left, right);
@@ -38,7 +61,7 @@ class CollectionComparisonFormatter : IComparisonFormatter
         if (lengthDifferenceMessage != null)
             result.Add(lengthDifferenceMessage);
 
-        return string.Join("\n", result);
+        return result;
     }
 
     static string? FindFirstDifference(List<object?> left, List<object?> right)
@@ -47,7 +70,7 @@ class CollectionComparisonFormatter : IComparisonFormatter
         for (var i = 0; i < minLength; i++)
         {
             if (!Equals(left[i], right[i]))
-                return $"  First difference at index {i}: expected {FormatValue(left[i])}, got {FormatValue(right[i])}";
+                return $"First difference at index {i}: expected {FormatValue(left[i])}, got {FormatValue(right[i])}";
         }
         return null;
     }
@@ -59,13 +82,13 @@ class CollectionComparisonFormatter : IComparisonFormatter
         if (left.Count > right.Count)
         {
             var extraElements = left.Skip(right.Count).Take(MaxDifferencePreview).ToList();
-            return $"  Extra elements: [{string.Join(", ", extraElements.Select(FormatValue))}]";
+            return $"Extra elements: [{string.Join(", ", extraElements.Select(FormatValue))}]";
         }
 
         if (right.Count > left.Count)
         {
             var missingElements = right.Skip(left.Count).Take(MaxDifferencePreview).ToList();
-            return $"  Missing elements: [{string.Join(", ", missingElements.Select(FormatValue))}]";
+            return $"Missing elements: [{string.Join(", ", missingElements.Select(FormatValue))}]";
         }
 
         return null;

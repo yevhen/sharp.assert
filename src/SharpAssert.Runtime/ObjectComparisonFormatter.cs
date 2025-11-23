@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using KellermanSoftware.CompareNetObjects;
 
 namespace SharpAssert;
@@ -11,7 +12,7 @@ class ObjectComparisonFormatter : IComparisonFormatter
     public bool CanFormat(object? leftValue, object? rightValue) =>
         IsObject(leftValue) || IsObject(rightValue);
 
-    public string FormatComparison(object? leftValue, object? rightValue)
+    public ComparisonResult CreateComparison(object? leftValue, object? rightValue)
     {
         var nullResult = FormatNullComparison(leftValue, rightValue);
         if (nullResult != null)
@@ -22,17 +23,47 @@ class ObjectComparisonFormatter : IComparisonFormatter
 
         var result = compareLogic.Compare(leftValue, rightValue);
 
-        return result.AreEqual ? string.Empty : FormatObjectDifferences(result.Differences);
+        var lines = result.AreEqual ? Array.Empty<string>() : FormatObjectDifferences(result.Differences);
+
+        return new ComparisonResult(
+            new AssertionOperand(leftValue, leftValue?.GetType() ?? typeof(object)),
+            new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)),
+            lines);
     }
 
-    static string? FormatNullComparison(object? leftValue, object? rightValue)
+    static ComparisonResult? FormatNullComparison(object? leftValue, object? rightValue)
     {
         if (leftValue == null && rightValue == null)
-            return string.Empty;
+        {
+            return new ComparisonResult(
+                new AssertionOperand(null, typeof(object)),
+                new AssertionOperand(null, typeof(object)),
+                Array.Empty<string>());
+        }
+
         if (leftValue == null)
-            return "  Left:  null\n  Right: " + FormatObjectValue(rightValue);
+        {
+            return new ComparisonResult(
+                new AssertionOperand(null, typeof(object)),
+                new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)),
+                new[]
+                {
+                    "Left:  null",
+                    "Right: " + FormatObjectValue(rightValue)
+                });
+        }
+
         if (rightValue == null)
-            return "  Left:  " + FormatObjectValue(leftValue) + "\n  Right: null";
+        {
+            return new ComparisonResult(
+                new AssertionOperand(leftValue, leftValue.GetType()),
+                new AssertionOperand(null, typeof(object)),
+                new[]
+                {
+                    "Left:  " + FormatObjectValue(leftValue),
+                    "Right: null"
+                });
+        }
         return null;
     }
 
@@ -81,11 +112,11 @@ class ObjectComparisonFormatter : IComparisonFormatter
         }
     }
 
-    static string FormatObjectDifferences(IList<Difference> differences)
+    static IReadOnlyList<string> FormatObjectDifferences(IList<Difference> differences)
     {
         var lines = new List<string>
         {
-            "  Property differences:"
+            "Property differences:"
         };
 
         lines.AddRange(
@@ -93,12 +124,12 @@ class ObjectComparisonFormatter : IComparisonFormatter
             let propertyPath = diff.PropertyName
             let expectedValue = FormatValue(diff.Object1Value)
             let actualValue = FormatValue(diff.Object2Value)
-            select $"    {propertyPath}: expected {expectedValue}, got {actualValue}");
+            select $"  {propertyPath}: expected {expectedValue}, got {actualValue}");
 
         if (differences.Count > MaxObjectDifferences)
-            lines.Add($"    ... ({differences.Count - MaxObjectDifferences} more differences)");
+            lines.Add($"  ... ({differences.Count - MaxObjectDifferences} more differences)");
 
-        return string.Join("\n", lines);
+        return lines;
     }
 
     static string FormatValue(string? value)

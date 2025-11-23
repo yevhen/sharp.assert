@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace SharpAssert;
 
 static class DynamicExpressionAnalyzer
@@ -62,8 +64,10 @@ static class DynamicExpressionAnalyzer
         var left = new AssertionOperand(leftValue);
         var right = new AssertionOperand(rightValue);
 
-        var formatter = ComparisonFormatterService.GetComparisonFormatter(left, right);
-        return baseMessage + formatter.FormatComparison(left, right);
+        var comparison = ComparisonFormatterService.GetComparisonResult(left, right);
+        var details = string.Join("\n", comparison.Lines.Select(l => $"  {l}"));
+
+        return string.IsNullOrEmpty(details) ? baseMessage.TrimEnd('\n') : baseMessage + details;
     }
 
     static string FormatDynamicFailure(AssertionContext context) => FormatBaseMessage(context, "  Result: False");

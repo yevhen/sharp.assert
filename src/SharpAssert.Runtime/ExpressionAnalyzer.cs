@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using static System.Linq.Expressions.ExpressionType;
 
@@ -8,152 +9,127 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
 {
     static readonly string[] LinqOperationMethods = ["Contains", "Any", "All"];
     const string SequenceEqualMethod = "SequenceEqual";
+    static readonly ReferenceEqualityComparer ExprComparer = ReferenceEqualityComparer.Instance;
 
     public static string AnalyzeFailure(Expression<Func<bool>> expression, AssertionContext context)
     {
-        switch (expression.Body)
+        var analysis = Analyze(expression, context);
+        if (analysis.Passed)
+            return string.Empty;
+
+        var formatter = new StringEvaluationFormatter();
+        return formatter.Format(analysis);
+    }
+
+    internal static AssertionEvaluationResult Analyze(Expression<Func<bool>> expression, AssertionContext context)
+    {
+        var cache = new Dictionary<Expression, object?>(ExprComparer);
+        var result = AnalyzeExpression(expression.Body, cache);
+        return new AssertionEvaluationResult(context, result);
+    }
+
+    static EvaluationResult AnalyzeExpression(Expression expression, Dictionary<Expression, object?> cache)
+    {
+        switch (expression)
         {
             case BinaryExpression binaryExpr:
-            {
-                if (binaryExpr.NodeType is AndAlso or OrElse)
-                    return FormatIfFailed(binaryExpr, () => AnalyzeLogicalBinaryFailure(binaryExpr, context));
-
-                var leftValue = GetValue(binaryExpr.Left);
-                var rightValue = GetValue(binaryExpr.Right);
-
-                return EvaluateBinaryExpression(binaryExpr.NodeType, leftValue, rightValue)
-                    ? string.Empty
-                    : AnalyzeBinaryFailure(leftValue, rightValue, binaryExpr.Left.Type, binaryExpr.Right.Type, context);
-            }
+                return AnalyzeBinaryExpression(binaryExpr, cache);
             case UnaryExpression { NodeType: Not } unaryExpr:
-            {
-                return FormatIfFailed(unaryExpr, () => AnalyzeNotFailure(unaryExpr, context));
-            }
+                return AnalyzeNot(unaryExpr, cache);
             case MethodCallExpression methodCall:
-            {
-                var methodName = methodCall.Method.Name;
-
-                if (LinqOperationMethods.Contains(methodName))
-                    return FormatIfFailed(methodCall, () => LinqOperationFormatter.FormatLinqOperation(methodCall, context));
-
-                if (methodName == SequenceEqualMethod)
-                    return FormatIfFailed(methodCall, () => SequenceEqualFormatter.FormatSequenceEqual(methodCall, context));
-
-                break;
-            }
+                return AnalyzeMethodCall(methodCall, cache);
         }
 
-        return FormatIfFailed(expression.Body, () => AssertionFormatter.FormatAssertionFailure(context));
+        var exprText = ReadableExpressionFormatter.Format(expression);
+        var value = GetValue(expression, cache);
+
+        return new ValueEvaluationResult(exprText, value, expression.Type);
     }
 
-    static string AnalyzeLogicalBinaryFailure(BinaryExpression binaryExpr, AssertionContext context)
+    static EvaluationResult AnalyzeBinaryExpression(BinaryExpression binaryExpr, Dictionary<Expression, object?> cache)
     {
-        var locationPart = GetLocationPart(context);
-        var baseMessage = FormatBaseMessage(context, locationPart);
+        if (binaryExpr.NodeType is AndAlso or OrElse)
+            return AnalyzeLogicalBinary(binaryExpr, cache);
 
-        var leftValue = GetValue(binaryExpr.Left);
+        var leftValue = GetValue(binaryExpr.Left, cache);
+        var rightValue = GetValue(binaryExpr.Right, cache);
+        var exprText = ReadableExpressionFormatter.Format(binaryExpr);
+
+        var leftOperand = new AssertionOperand(leftValue, binaryExpr.Left.Type);
+        var rightOperand = new AssertionOperand(rightValue, binaryExpr.Right.Type);
+        var comparison = ComparisonFormatterService.GetComparisonResult(leftOperand, rightOperand);
+
+        var resultValue = EvaluateBinaryExpression(binaryExpr.NodeType, leftValue, rightValue);
+
+        return new BinaryComparisonEvaluationResult(exprText, binaryExpr.NodeType, comparison, resultValue);
+    }
+
+    static EvaluationResult AnalyzeLogicalBinary(BinaryExpression binaryExpr, Dictionary<Expression, object?> cache)
+    {
+        var exprText = ReadableExpressionFormatter.Format(binaryExpr);
+        var leftValue = GetValue(binaryExpr.Left, cache);
         var leftBool = (bool)leftValue!;
 
-        if (binaryExpr.NodeType != AndAlso)
+        if (binaryExpr.NodeType == OrElse)
         {
-            var leftAnalysis = AnalyzeSubExpression(binaryExpr.Left);
-            var rightAnalysis = AnalyzeSubExpression(binaryExpr.Right);
+            var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache);
+            var rightAnalysis = AnalyzeExpression(binaryExpr.Right, cache);
+            var orValue = leftBool || (bool)GetValue(binaryExpr.Right, cache)!;
 
-            return baseMessage +
-                   $"  Left: {leftAnalysis}\n" +
-                   $"  Right: {rightAnalysis}\n" +
-                   "  ||: Both operands were false";
+            return new LogicalEvaluationResult(exprText, LogicalOperator.OrElse, leftAnalysis, rightAnalysis, orValue, false);
         }
 
+        // AND
         if (!leftBool)
         {
-            var leftAnalysis = AnalyzeSubExpression(binaryExpr.Left);
-            return baseMessage +
-                   $"  Left: {leftAnalysis}\n" +
-                   "  &&: Left operand was false";
+            var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache);
+            return new LogicalEvaluationResult(exprText, LogicalOperator.AndAlso, leftAnalysis, null, false, true);
         }
 
-        var leftAnalysisAnd = AnalyzeSubExpression(binaryExpr.Left);
-        var rightAnalysisAnd = AnalyzeSubExpression(binaryExpr.Right);
+        var leftResult = AnalyzeExpression(binaryExpr.Left, cache);
+        var rightResult = AnalyzeExpression(binaryExpr.Right, cache);
+        var rightBool = (bool)GetValue(binaryExpr.Right, cache)!;
+        var andValue = leftBool && rightBool;
 
-        return baseMessage +
-               $"  Left: {leftAnalysisAnd}\n" +
-               $"  Right: {rightAnalysisAnd}\n" +
-               "  &&: Right operand was false";
+        return new LogicalEvaluationResult(exprText, LogicalOperator.AndAlso, leftResult, rightResult, andValue, false);
     }
 
-    static string GetLocationPart(AssertionContext context) =>
-        AssertionFormatter.FormatLocation(context.File, context.Line);
-
-    static string AnalyzeSubExpression(Expression expression)
+    static EvaluationResult AnalyzeNot(UnaryExpression unaryExpr, Dictionary<Expression, object?> cache)
     {
-        var exprText = ReadableExpressionFormatter.Format(expression);
-        var value = GetValue(expression);
+        var exprText = ReadableExpressionFormatter.Format(unaryExpr);
+        var operandValue = GetValue(unaryExpr.Operand, cache);
+        var operand = AnalyzeExpression(unaryExpr.Operand, cache);
 
-        if (expression is BinaryExpression { NodeType: AndAlso or OrElse })
-        {
-            var subContext = new AssertionContext(exprText, string.Empty, 0, null);
-            var subLambda = Expression.Lambda<Func<bool>>(expression);
-            var analysis = AnalyzeFailure(subLambda, subContext);
-
-            var lines = analysis.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            var indentedLines = string.Join("\n    ", lines.Skip(1));
-            return $"{exprText}\n    {indentedLines}";
-        }
-
-        if (expression is BinaryExpression binaryExpr)
-        {
-            var leftValue = GetValue(binaryExpr.Left);
-            var rightValue = GetValue(binaryExpr.Right);
-
-            return $"{exprText}\n    Left:  {FormatValue(leftValue)}\n    Right: {FormatValue(rightValue)}";
-        }
-
-        return $"{FormatValue(value)}";
+        return new UnaryEvaluationResult(exprText, UnaryOperator.Not, operand, operandValue, !(bool)operandValue!);
     }
 
-    static string FormatIfFailed(Expression expression, Func<string> formatter) =>
-        GetValue(expression) is true ? string.Empty : formatter();
-
-    static string FormatBaseMessage(AssertionContext context, string locationPart) =>
-        context.Message is not null
-            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
-            : $"Assertion failed: {context.Expression}  at {locationPart}\n";
-
-    static string AnalyzeNotFailure(UnaryExpression unaryExpr, AssertionContext context)
+    static EvaluationResult AnalyzeMethodCall(MethodCallExpression methodCall, Dictionary<Expression, object?> cache)
     {
-        var locationPart = GetLocationPart(context);
-        var baseMessage = FormatBaseMessage(context, locationPart);
+        var methodName = methodCall.Method.Name;
+        var exprText = ReadableExpressionFormatter.Format(methodCall);
+        var value = (bool)GetValue(methodCall, cache)!;
 
-        var operandAnalysis = AnalyzeSubExpression(unaryExpr.Operand);
-        var operandValue = GetValue(unaryExpr.Operand);
+        if (value)
+            return new ValueEvaluationResult(exprText, value, methodCall.Type);
 
-        return baseMessage + $"  Operand: {operandAnalysis}\n" +
-               $"  !: Operand was {FormatValue(operandValue)}";
+        if (LinqOperationMethods.Contains(methodName))
+            return LinqOperationFormatter.BuildResult(methodCall, exprText, value);
+
+        if (methodName == SequenceEqualMethod)
+            return SequenceEqualFormatter.BuildResult(methodCall, exprText, value);
+
+        return new ValueEvaluationResult(exprText, value, methodCall.Type);
     }
 
-    static string AnalyzeBinaryFailure(object? leftValue, object? rightValue, Type leftType, Type rightType, AssertionContext context)
+    static object? GetValue(Expression expression, Dictionary<Expression, object?> cache)
     {
-        var locationPart = GetLocationPart(context);
-        var baseMessage = FormatBaseMessage(context, locationPart);
+        if (cache.TryGetValue(expression, out var cached))
+            return cached;
 
-        var left = new AssertionOperand(leftValue, leftType);
-        var right = new AssertionOperand(rightValue, rightType);
-
-        var formatter = ComparisonFormatterService.GetComparisonFormatter(left, right);
-
-        return $"{baseMessage}{formatter.FormatComparison(left, right)}";
+        var value = CompileAndEvaluate(expression);
+        cache[expression] = value;
+        return value;
     }
-
-    static string FormatValue(object? value) => value switch
-    {
-        null => "null",
-        string s => $"\"{s}\"",
-        DateTime dt => dt.ToString("M/d/yyyy", System.Globalization.CultureInfo.InvariantCulture),
-        _ => value.ToString()!
-    };
-
-    static object? GetValue(Expression expression) => CompileAndEvaluate(expression);
     
     static object? CompileAndEvaluate(Expression expression)
     {

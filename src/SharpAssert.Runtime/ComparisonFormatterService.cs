@@ -12,14 +12,14 @@ static class ComparisonFormatterService
         new ObjectComparisonFormatter(),
     ];
 
-    public static IComparisonFormatter GetComparisonFormatter(AssertionOperand left, AssertionOperand right)
+    public static ComparisonResult GetComparisonResult(AssertionOperand left, AssertionOperand right)
     {
         foreach (var formatter in ComparisonFormatters)
         {
             if (formatter.CanFormat(left, right))
-                return formatter;
+                return formatter.CreateComparison(left, right);
         }
 
-        return DefaultFormatter;
+        return DefaultFormatter.CreateComparison(left, right);
     }
 }

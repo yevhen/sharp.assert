@@ -9,41 +9,42 @@ static class StringDiffer
     const int MaxStringLength = 1000;
     const int MaxDiffLines = 50;
     
-    public static string FormatDiff(string? left, string? right)
+    public static IReadOnlyList<string> FormatDiffLines(string? left, string? right)
     {
         if (left == null || right == null)
-            return FormatNullComparison(left, right);
+            return FormatNullComparisonLines(left, right);
 
         var leftTruncated = TruncateString(left);
         var rightTruncated = TruncateString(right);
 
         if (IsMultiline(left) || IsMultiline(right))
-            return FormatMultilineComparison(leftTruncated, rightTruncated);
+            return FormatMultilineComparisonLines(leftTruncated, rightTruncated);
 
-        var basic = $"  Left:  {FormatStringValue(leftTruncated)}\n  Right: {FormatStringValue(rightTruncated)}";
-        return basic + "\n" + GenerateInlineDiff(leftTruncated, rightTruncated);
+        var result = new List<string>
+        {
+            $"Left:  {FormatStringValue(leftTruncated)}",
+            $"Right: {FormatStringValue(rightTruncated)}"
+        };
+
+        result.AddRange(GenerateInlineDiffLines(leftTruncated, rightTruncated));
+        return result;
     }
 
-    static string FormatNullComparison(string? left, string? right)
+    static IReadOnlyList<string> FormatNullComparisonLines(string? left, string? right)
     {
-        if (left == null && right == null) return string.Empty;
-        if (left == null) return $"  Left:  null\n  Right: {FormatStringValue(right)}";
-        return $"  Left:  {FormatStringValue(left)}\n  Right: null";
+        if (left == null && right == null) return Array.Empty<string>();
+        if (left == null) return new[] { "Left:  null", $"Right: {FormatStringValue(right)}" };
+        return new[] { $"Left:  {FormatStringValue(left)}", "Right: null" };
     }
 
-    static string FormatMultilineComparison(string left, string right)
+    static IReadOnlyList<string> FormatMultilineComparisonLines(string left, string right)
     {
-        var result = new System.Text.StringBuilder();
-        result.AppendLine("  Left:");
-        foreach (var line in left.Split('\n'))
-            result.AppendLine(line);
-
-        result.AppendLine("  Right:");
-        foreach (var line in right.Split('\n'))
-            result.AppendLine(line);
-
-        result.Append(GenerateMultilineDiff(left, right));
-        return result.ToString();
+        var result = new List<string> { "Left:" };
+        result.AddRange(left.Split('\n'));
+        result.Add("Right:");
+        result.AddRange(right.Split('\n'));
+        result.AddRange(GenerateMultilineDiffLines(left, right));
+        return result;
     }
 
     static string FormatStringValue(string? value)
@@ -60,13 +61,13 @@ static class StringDiffer
     
     static bool IsMultiline(string input) => input.Contains('\n');
     
-    static string GenerateInlineDiff(string left, string right)
+    static IReadOnlyList<string> GenerateInlineDiffLines(string left, string right)
     {
         var differ = new Differ();
         var diffResult = differ.CreateCharacterDiffs(left, right, ignoreWhitespace: false);
 
         var leftPos = 0;
-        var resultBuilder = new System.Text.StringBuilder("  Diff: ");
+        var resultBuilder = new System.Text.StringBuilder("Diff: ");
 
         foreach (var block in diffResult.DiffBlocks)
         {
@@ -78,7 +79,7 @@ static class StringDiffer
         }
 
         AppendRemainingText(resultBuilder, left, leftPos);
-        return resultBuilder.ToString();
+        return new[] { resultBuilder.ToString() };
     }
 
     static void AppendUnchangedText(System.Text.StringBuilder builder, string source, int start, int end)
@@ -109,13 +110,13 @@ static class StringDiffer
             builder.Append(source.Substring(position));
     }
     
-    static string GenerateMultilineDiff(string left, string right)
+    static IReadOnlyList<string> GenerateMultilineDiffLines(string left, string right)
     {
         var diffBuilder = new InlineDiffBuilder(new Differ());
         var diff = diffBuilder.BuildDiffModel(left, right, ignoreWhitespace: false);
 
         var result = new List<string>();
-        result.Add("  Diff:");
+        result.Add("Diff:");
 
         foreach (var line in diff.Lines)
         {
@@ -140,7 +141,7 @@ static class StringDiffer
             result.Add("(No specific line differences found)");
 
         TruncateResultIfNeeded(result);
-        return string.Join("\n", result);
+        return result;
     }
 
     static void TruncateResultIfNeeded(List<string> result)

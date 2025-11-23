@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -8,48 +9,53 @@ static class LinqOperationFormatter
 {
     const int CollectionPreviewLimit = 10;
     
-    public static string FormatLinqOperation(MethodCallExpression methodCall, AssertionContext context)
+    public static FormattedEvaluationResult BuildResult(MethodCallExpression methodCall, string expressionText, bool value)
     {
         var methodName = methodCall.Method.Name;
         var collection = GetValue(methodCall.Object ?? methodCall.Arguments[0]);
         
-        return methodName switch
+        var lines = methodName switch
         {
-            "Contains" => FormatContainsFailure(methodCall, collection, context),
-            "Any" => FormatAnyFailure(methodCall, collection, context),
-            "All" => FormatAllFailure(methodCall, collection, context),
-            _ => AssertionFormatter.FormatAssertionFailure(context)
+            "Contains" => FormatContainsFailure(methodCall, collection),
+            "Any" => FormatAnyFailure(methodCall, collection),
+            "All" => FormatAllFailure(methodCall, collection),
+            _ => new[] { "Unsupported LINQ operation" }
         };
+
+        return new FormattedEvaluationResult(expressionText, value, lines);
     }
     
-    static string FormatContainsFailure(MethodCallExpression methodCall, object? collection, AssertionContext context)
+    static IReadOnlyList<string> FormatContainsFailure(MethodCallExpression methodCall, object? collection)
     {
         var item = GetValue(methodCall.Arguments.Last()); // Contains item
-        var baseMessage = FormatBaseMessage(context);
         var collectionStr = FormatCollection(collection);
         var count = GetCount(collection);
         
-        return $"{baseMessage}  Contains failed: searched for {FormatValue(item)} in {collectionStr}\n  Count: {count}";
+        return new[]
+        {
+            $"Contains failed: searched for {FormatValue(item)} in {collectionStr}",
+            $"Count: {count}"
+        };
     }
     
-    static string FormatAnyFailure(MethodCallExpression methodCall, object? collection, AssertionContext context)
+    static IReadOnlyList<string> FormatAnyFailure(MethodCallExpression methodCall, object? collection)
     {
-        var baseMessage = FormatBaseMessage(context);
         var count = GetCount(collection);
         
         if (count == 0)
-            return $"{baseMessage}  Any failed: collection is empty";
+            return new[] { "Any failed: collection is empty" };
         
         var collectionStr = FormatCollection(collection);
         var predicateStr = GetPredicateString(methodCall);
             
-        return $"{baseMessage}  Any failed: no items matched {predicateStr} in {collectionStr}";
+        return new[]
+        {
+            $"Any failed: no items matched {predicateStr} in {collectionStr}"
+        };
     }
     
-    static string FormatAllFailure(MethodCallExpression methodCall, object? collection, AssertionContext context)
+    static IReadOnlyList<string> FormatAllFailure(MethodCallExpression methodCall, object? collection)
     {
-        var baseMessage = FormatBaseMessage(context);
-
         var predicateStr = GetPredicateString(methodCall);
         var predicateArg = GetPredicateArgument(methodCall);
 
@@ -58,7 +64,10 @@ static class LinqOperationFormatter
             ? FormatCollection(failingItems)
             : FormatCollection(collection);
         
-        return $"{baseMessage}  All failed: items {failingStr} did not match {predicateStr}";
+        return new[]
+        {
+            $"All failed: items {failingStr} did not match {predicateStr}"
+        };
     }
 
     static Expression? GetPredicateArgument(MethodCallExpression methodCall)
@@ -135,14 +144,6 @@ static class LinqOperationFormatter
     {
         var compiled = Expression.Lambda(expression).Compile();
         return compiled.DynamicInvoke();
-    }
-    
-    static string FormatBaseMessage(AssertionContext context)
-    {
-        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
-        return context.Message is not null 
-            ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
-            : $"Assertion failed: {context.Expression}  at {locationPart}\n";
     }
     
     static string GetPredicateString(MethodCallExpression methodCall) => 

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 
 namespace SharpAssert;
 
@@ -55,8 +56,10 @@ class AsyncExpressionAnalyzer
         var left = new AssertionOperand(leftValue);
         var right = new AssertionOperand(rightValue);
 
-        var formatter = ComparisonFormatterService.GetComparisonFormatter(left, right);
-        return baseMessage + formatter.FormatComparison(left, right);
+        var comparison = ComparisonFormatterService.GetComparisonResult(left, right);
+        var details = string.Join("\n", comparison.Lines.Select(l => $"  {l}"));
+
+        return string.IsNullOrEmpty(details) ? baseMessage.TrimEnd('\n') : baseMessage + details;
     }
 
     static string FormatAsyncFailure(AssertionContext context) => FormatBaseMessage(context, "  Result: False");
