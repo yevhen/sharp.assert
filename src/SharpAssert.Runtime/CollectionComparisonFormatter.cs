@@ -5,6 +5,9 @@ namespace SharpAssert;
 
 class CollectionComparisonFormatter : IComparisonFormatter
 {
+    const int MaxPreview = 10;
+    const int MaxDifferencePreview = 5;
+
     public bool CanFormat(object? leftValue, object? rightValue) =>
         IsEnumerable(leftValue) && IsEnumerable(rightValue);
 
@@ -15,8 +18,8 @@ class CollectionComparisonFormatter : IComparisonFormatter
             return new CollectionComparisonResult(
                 new AssertionOperand(leftValue, typeof(object)),
                 new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)),
-                "null",
-                "Collection",
+                Array.Empty<object?>(),
+                Array.Empty<object?>(),
                 null,
                 null);
         }
@@ -25,8 +28,8 @@ class CollectionComparisonFormatter : IComparisonFormatter
             return new CollectionComparisonResult(
                 new AssertionOperand(leftValue, leftValue.GetType()),
                 new AssertionOperand(rightValue, typeof(object)),
-                "Collection",
-                "null",
+                Array.Empty<object?>(),
+                Array.Empty<object?>(),
                 null,
                 null);
         }
@@ -47,7 +50,7 @@ class CollectionComparisonFormatter : IComparisonFormatter
     static List<object?> MaterializeToList(object collection) =>
         ((IEnumerable)collection).Cast<object?>().ToList();
 
-    static (string? firstDiff, string? lengthDiff, string leftPreview, string rightPreview) AnalyzeCollectionDifferences(List<object?> left, List<object?> right)
+    static (CollectionMismatch? firstDiff, CollectionLengthDelta? lengthDiff, IReadOnlyList<object?> leftPreview, IReadOnlyList<object?> rightPreview) AnalyzeCollectionDifferences(List<object?> left, List<object?> right)
     {
         var differenceMessage = FindFirstDifference(left, right);
 
@@ -56,53 +59,41 @@ class CollectionComparisonFormatter : IComparisonFormatter
         return (differenceMessage, lengthDifferenceMessage, FormatCollectionPreview(left), FormatCollectionPreview(right));
     }
 
-    static string? FindFirstDifference(List<object?> left, List<object?> right)
+    static CollectionMismatch? FindFirstDifference(List<object?> left, List<object?> right)
     {
         var minLength = Math.Min(left.Count, right.Count);
         for (var i = 0; i < minLength; i++)
         {
             if (!Equals(left[i], right[i]))
-                return $"First difference at index {i}: expected {FormatValue(left[i])}, got {FormatValue(right[i])}";
+                return new CollectionMismatch(i, left[i], right[i]);
         }
         return null;
     }
 
-    static string? DescribeLengthDifference(List<object?> left, List<object?> right)
+    static CollectionLengthDelta? DescribeLengthDifference(List<object?> left, List<object?> right)
     {
-        const int MaxDifferencePreview = 5;
-
         if (left.Count > right.Count)
         {
             var extraElements = left.Skip(right.Count).Take(MaxDifferencePreview).ToList();
-            return $"Extra elements: [{string.Join(", ", extraElements.Select(FormatValue))}]";
+            return new CollectionLengthDelta(null, extraElements);
         }
 
         if (right.Count > left.Count)
         {
             var missingElements = right.Skip(left.Count).Take(MaxDifferencePreview).ToList();
-            return $"Missing elements: [{string.Join(", ", missingElements.Select(FormatValue))}]";
+            return new CollectionLengthDelta(missingElements, null);
         }
 
         return null;
     }
 
-    static string FormatCollectionPreview(List<object?> items)
+    static IReadOnlyList<object?> FormatCollectionPreview(List<object?> items)
     {
-        const int maxPreview = 10;
-        if (items.Count <= maxPreview)
-            return $"[{string.Join(", ", items.Select(FormatValue))}]";
+        if (items.Count <= MaxPreview)
+            return items.ToArray();
 
-        var preview = items.Take(maxPreview - 1).Select(FormatValue);
-        return $"[{string.Join(", ", preview)}, ... ({items.Count} items)]";
+        return items.Take(MaxPreview - 1).Concat(["..."]).ToArray();
     }
-
-    static string FormatValue(object? value) => value switch
-    {
-        null => "null",
-        string s => $"\"{s}\"",
-        DateTime dt => dt.ToString("M/d/yyyy", System.Globalization.CultureInfo.InvariantCulture),
-        _ => value.ToString()!
-    };
 
     static bool IsEnumerable(object? value) =>
         value is IEnumerable && value is not string;

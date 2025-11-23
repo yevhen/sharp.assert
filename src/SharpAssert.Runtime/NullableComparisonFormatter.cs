@@ -25,66 +25,29 @@ class NullableComparisonFormatter : IComparisonFormatter
 
     public ComparisonResult CreateComparison(object? leftValue, object? rightValue)
     {
-        var leftDisplay = FormatRuntimeValue(leftValue);
-        var rightDisplay = FormatRuntimeValue(rightValue);
-
         return new NullableComparisonResult(
             new AssertionOperand(leftValue, leftValue?.GetType() ?? typeof(object)),
             new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)),
-            leftDisplay,
-            rightDisplay);
+            leftValue,
+            rightValue,
+            leftValue == null,
+            rightValue == null,
+            leftValue?.GetType(),
+            rightValue?.GetType());
     }
 
     static ComparisonResult FormatWithTypes(AssertionOperand left, AssertionOperand right)
     {
-        var leftDisplay = FormatWithType(left.Value, left.ExpressionType!);
-        var rightDisplay = FormatWithType(right.Value, right.ExpressionType!);
-
-        return new NullableComparisonResult(left, right, leftDisplay, rightDisplay);
+        return new NullableComparisonResult(
+            left,
+            right,
+            left.Value,
+            right.Value,
+            left.Value == null,
+            right.Value == null,
+            left.ExpressionType,
+            right.ExpressionType);
     }
 
-    static string FormatWithType(object? value, Type expressionType)
-    {
-        if (!IsNullableType(expressionType))
-            return FormatActualValue(value);
-
-        return value == null ? "null" : $"{FormatActualValue(value)}";
-    }
-
-    static string FormatRuntimeValue(object? value)
-    {
-        if (value == null)
-            return "null";
-
-        var type = value.GetType();
-        if (!IsNullableType(type))
-            return FormatActualValue(value);
-
-        var hasValueProperty = type.GetProperty("HasValue");
-        var valueProperty = type.GetProperty("Value");
-
-        if (hasValueProperty?.GetValue(value) is not bool hasValue)
-            return FormatActualValue(value);
-
-        if (!hasValue)
-            return "null";
-
-        var actualValue = valueProperty?.GetValue(value);
-        return $"{FormatActualValue(actualValue)}";
-
-    }
-
-    static bool IsNullableType(Type? type)
-    {
-        if (type == null) return false;
-        return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
-    }
-
-    static string FormatActualValue(object? value) => value switch
-    {
-        null => "null",
-        string s => $"\"{s}\"",
-        DateTime dt => dt.ToString("M/d/yyyy", System.Globalization.CultureInfo.InvariantCulture),
-        _ => value.ToString()!
-    };
+    static bool IsNullableType(Type? type) => type is not null && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
 }

@@ -28,52 +28,54 @@ static class SequenceEqualFormatter
                 new AssertionOperand(firstSequence, firstSequence?.GetType() ?? typeof(object)),
                 new AssertionOperand(secondSequence, secondSequence?.GetType() ?? typeof(object)),
                 hasComparer,
-                new[]
-                {
-                    "SequenceEqual failed: one or both operands are not sequences"
-                });
+                null,
+                null,
+                false,
+                "SequenceEqual failed: one or both operands are not sequences");
         }
         
         // Materialize sequences to avoid multiple enumeration
         var firstList = MaterializeSequence(firstEnum);
         var secondList = MaterializeSequence(secondEnum);
 
-        var lines = firstList.Count != secondList.Count
-            ? FormatLengthMismatch(firstList, secondList)
-            : FormatUnifiedDiff(firstList, secondList, hasComparer);
+        if (firstList.Count != secondList.Count)
+        {
+            var lengthMismatch = FormatLengthMismatch(firstList, secondList);
+            return new SequenceEqualComparisonResult(
+                new AssertionOperand(firstSequence, firstSequence.GetType()),
+                new AssertionOperand(secondSequence, secondSequence.GetType()),
+                hasComparer,
+                lengthMismatch,
+                null,
+                false);
+        }
+
+        var diffLines = FormatUnifiedDiff(firstList, secondList, out var truncated);
 
         return new SequenceEqualComparisonResult(
             new AssertionOperand(firstSequence, firstSequence.GetType()),
             new AssertionOperand(secondSequence, secondSequence.GetType()),
             hasComparer,
-            lines);
+            null,
+            diffLines,
+            truncated);
     }
     
     static List<object?> MaterializeSequence(IEnumerable sequence) => sequence.Cast<object?>().ToList();
 
-    static IReadOnlyList<string> FormatLengthMismatch(List<object?> first, List<object?> second)
+    static SequenceLengthMismatch FormatLengthMismatch(List<object?> first, List<object?> second)
     {
-        var firstPreview = FormatSequencePreview(first);
-        var secondPreview = FormatSequencePreview(second);
-        
-        return new[]
-        {
-            "SequenceEqual failed: length mismatch",
-            $"Expected length: {second.Count}",
-            $"Actual length:   {first.Count}",
-            $"First:  {firstPreview}",
-            $"Second: {secondPreview}"
-        };
+        return new SequenceLengthMismatch(second.Count, first.Count, FormatSequencePreview(first), FormatSequencePreview(second));
     }
     
-    static IReadOnlyList<string> FormatUnifiedDiff(List<object?> first, List<object?> second, bool hasComparer)
+    static IReadOnlyList<SequenceDiffLine> FormatUnifiedDiff(List<object?> first, List<object?> second, out bool truncated)
     {
         var firstStrings = first.Select(FormatValue).ToArray();
         var secondStrings = second.Select(FormatValue).ToArray();
 
         var diffLines = ComputeDiffLines(firstStrings, secondStrings);
 
-        return BuildDiffLines(diffLines, hasComparer);
+        return BuildDiffLines(diffLines, out truncated);
     }
 
     static List<string> ComputeDiffLines(string[] first, string[] second)
@@ -87,29 +89,11 @@ static class SequenceEqualFormatter
         return GenerateUnifiedDiffLines(first, second, diffResult);
     }
 
-    static IReadOnlyList<string> BuildDiffLines(List<string> diffLines, bool hasComparer)
+    static IReadOnlyList<SequenceDiffLine> BuildDiffLines(List<string> diffLines, out bool truncated)
     {
-        var lines = new List<string>
-        {
-            "SequenceEqual failed: sequences differ"
-        };
-
-        if (hasComparer)
-            lines.Add("(using custom comparer)");
-
-        lines.Add("Unified diff:");
-
-        if (diffLines.Count > MaxDiffLines)
-        {
-            lines.AddRange(diffLines.Take(MaxDiffLines));
-            lines.Add("... (diff truncated)");
-        }
-        else
-        {
-            lines.AddRange(diffLines);
-        }
-
-        return lines;
+        truncated = diffLines.Count > MaxDiffLines;
+        var slice = truncated ? diffLines.Take(MaxDiffLines) : diffLines;
+        return slice.Select(ToDiffLine).ToList();
     }
     
     static List<string> GenerateUnifiedDiffLines(string[] first, string[] second, DiffResult diffResult)
@@ -122,7 +106,7 @@ static class SequenceEqualFormatter
             var contextStart = CalculateContextStart(lastShownIndex, block.DeleteStartA);
 
             for (var i = contextStart; i < block.DeleteStartA; i++)
-                lines.Add($"   [{i}] {first[i]}");
+                lines.Add($" {i} {first[i]}");
 
             AddDiffLines(lines, first, block.DeleteStartA, block.DeleteCountA, '-');
             AddDiffLines(lines, second, block.InsertStartB, block.InsertCountB, '+');
@@ -138,36 +122,53 @@ static class SequenceEqualFormatter
         for (var i = 0; i < count; i++)
         {
             var index = start + i;
-            lines.Add($"  {prefix}[{index}] {sequence[index]}");
+            lines.Add($"{prefix}{index} {sequence[index]}");
         }
     }
 
     static int CalculateContextStart(int lastShown, int blockStart) =>
         Math.Max(lastShown, blockStart - ContextLinesBefore);
 
-    static string FormatSequencePreview(List<object?> sequence)
+    static IReadOnlyList<object?> FormatSequencePreview(List<object?> sequence)
     {
         if (sequence.Count == 0)
-            return "[]";
+            return Array.Empty<object?>();
         
-        var preview = sequence.Take(MaxSequencePreview).Select(FormatValue);
-        var result = $"[{string.Join(", ", preview)}";
-        
-        if (sequence.Count > MaxSequencePreview)
-            result += ", ...";
-            
-        result += "]";
-        return result;
+        var preview = sequence.Take(MaxSequencePreview - 1).ToList();
+
+        if (sequence.Count > MaxSequencePreview - 1)
+            preview.Add("...");
+
+        return preview;
     }
     
-    static string FormatValue(object? value) => value switch
+    static string FormatValue(object? value) => ValueFormatter.Format(value);
+    static SequenceDiffLine ToDiffLine(string line)
     {
-        null => "null",
-        string s => $"\"{s}\"",
-        DateTime dt => dt.ToString("M/d/yyyy", System.Globalization.CultureInfo.InvariantCulture),
-        _ => value.ToString()!
-    };
-    
+        if (line.StartsWith("-"))
+        {
+            var parts = line[1..].TrimStart();
+            var spaceIndex = parts.IndexOf(' ');
+            var index = int.Parse(parts[..spaceIndex]);
+            var value = parts[(spaceIndex + 1)..];
+            return new SequenceDiffLine(SequenceDiffOperation.Removed, index, value);
+        }
+
+        if (line.StartsWith("+"))
+        {
+            var parts = line[1..].TrimStart();
+            var spaceIndex = parts.IndexOf(' ');
+            var index = int.Parse(parts[..spaceIndex]);
+            var value = parts[(spaceIndex + 1)..];
+            return new SequenceDiffLine(SequenceDiffOperation.Added, index, value);
+        }
+
+        var trimmed = line.TrimStart();
+        var idxSpace = trimmed.IndexOf(' ');
+        var idx = int.Parse(trimmed[..idxSpace]);
+        var val = trimmed[(idxSpace + 1)..];
+        return new SequenceDiffLine(SequenceDiffOperation.Context, idx, val);
+    }
     static object? GetValue(Expression expression)
     {
         var compiled = Expression.Lambda(expression).Compile();

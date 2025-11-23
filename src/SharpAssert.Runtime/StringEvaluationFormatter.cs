@@ -1,5 +1,6 @@
-using System.Globalization;
 using System.Text;
+using System.Linq;
+using DiffPlex.DiffBuilder.Model;
 
 namespace SharpAssert;
 
@@ -153,62 +154,188 @@ class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<Rendere
         }
     }
 
-    static string FormatValue(object? value) => value switch
-    {
-        null => "null",
-        string s => $"\"{s}\"",
-        DateTime dt => dt.ToString("M/d/yyyy", System.Globalization.CultureInfo.InvariantCulture),
-        _ => value.ToString()!
-    };
+    static string FormatValue(object? value) => ValueFormatter.Format(value);
 
     // Comparison result visitor implementations
     public IReadOnlyList<RenderedLine> Visit(DefaultComparisonResult result)
     {
         return new List<RenderedLine>
         {
-            new(0, $"Left:  {FormatValue(result.Left.Value)}"),
-            new(0, $"Right: {FormatValue(result.Right.Value)}")
+            new(0, $"Left:  {FormatValue(result.LeftOperand.Value)}"),
+            new(0, $"Right: {FormatValue(result.RightOperand.Value)}")
         };
     }
 
     public IReadOnlyList<RenderedLine> Visit(NullableComparisonResult result)
     {
-        return new List<RenderedLine>
+        var lines = new List<RenderedLine>
         {
-            new(0, $"Left:  {result.LeftDisplay}"),
-            new(0, $"Right: {result.RightDisplay}")
+            new(0, $"Left:  {FormatNullableValue(result.LeftValue, result.LeftIsNull, result.LeftExpressionType)}"),
+            new(0, $"Right: {FormatNullableValue(result.RightValue, result.RightIsNull, result.RightExpressionType)}")
         };
+        return lines;
     }
 
     public IReadOnlyList<RenderedLine> Visit(StringComparisonResult result)
     {
-        return result.Lines.Select(l => new RenderedLine(0, l)).ToList();
+        var lines = new List<RenderedLine>();
+
+        if (result.Diff is InlineStringDiff inline)
+        {
+            lines.Add(new RenderedLine(0, $"Left:  {FormatStringValue(result.LeftText)}"));
+            lines.Add(new RenderedLine(0, $"Right: {FormatStringValue(result.RightText)}"));
+            var diffText = RenderInlineDiff(inline.Segments);
+            lines.Add(new RenderedLine(0, $"Diff: {diffText}"));
+            return lines;
+        }
+
+        if (result.Diff is MultilineStringDiff multi)
+        {
+            lines.Add(new RenderedLine(0, "Left:"));
+            foreach (var line in (result.LeftText ?? string.Empty).Split('\n'))
+                lines.Add(new RenderedLine(1, line));
+
+            lines.Add(new RenderedLine(0, "Right:"));
+            foreach (var line in (result.RightText ?? string.Empty).Split('\n'))
+                lines.Add(new RenderedLine(1, line));
+
+            lines.Add(new RenderedLine(0, "Diff:"));
+            foreach (var diffLine in multi.Lines)
+                lines.Add(new RenderedLine(1, RenderMultilineDiffLine(diffLine)));
+        }
+
+        return lines;
     }
 
     public IReadOnlyList<RenderedLine> Visit(CollectionComparisonResult result)
     {
         var lines = new List<RenderedLine>
         {
-            new(0, $"Left:  {result.LeftPreview}"),
-            new(0, $"Right: {result.RightPreview}")
+            new(0, $"Left:  {FormatCollection(result.LeftPreview)}"),
+            new(0, $"Right: {FormatCollection(result.RightPreview)}")
         };
 
         if (result.FirstDifference is not null)
-            lines.Add(new RenderedLine(0, result.FirstDifference));
+            lines.Add(new RenderedLine(0,
+                $"First difference at index {result.FirstDifference.Index}: expected {FormatValue(result.FirstDifference.LeftValue)}, got {FormatValue(result.FirstDifference.RightValue)}"));
 
         if (result.LengthDifference is not null)
-            lines.Add(new RenderedLine(0, result.LengthDifference));
+        {
+            if (result.LengthDifference.Extra is not null)
+                lines.Add(new RenderedLine(0, $"Extra elements: {FormatCollection(result.LengthDifference.Extra)}"));
+            if (result.LengthDifference.Missing is not null)
+                lines.Add(new RenderedLine(0, $"Missing elements: {FormatCollection(result.LengthDifference.Missing)}"));
+        }
 
         return lines;
     }
 
     public IReadOnlyList<RenderedLine> Visit(ObjectComparisonResult result)
     {
-        return result.Lines.Select(l => new RenderedLine(0, l)).ToList();
+        var lines = new List<RenderedLine>();
+
+        if (result.Differences.Count == 0)
+            return lines;
+
+        lines.Add(new RenderedLine(0, "Property differences:"));
+
+        foreach (var diff in result.Differences)
+        {
+            lines.Add(new RenderedLine(1,
+                $"{diff.Path}: expected {FormatValue(diff.Expected)}, got {FormatValue(diff.Actual)}"));
+        }
+
+        if (result.TruncatedCount > 0)
+            lines.Add(new RenderedLine(1, $"... ({result.TruncatedCount} more differences)"));
+
+        return lines;
     }
 
     public IReadOnlyList<RenderedLine> Visit(SequenceEqualComparisonResult result)
     {
-        return result.Lines.Select(l => new RenderedLine(0, l)).ToList();
+        var lines = new List<RenderedLine>();
+
+        if (result.Error is not null)
+        {
+            lines.Add(new RenderedLine(0, result.Error));
+            return lines;
+        }
+
+        if (result.LengthMismatch is not null)
+        {
+            lines.Add(new RenderedLine(0, "SequenceEqual failed: length mismatch"));
+            lines.Add(new RenderedLine(0, $"Expected length: {result.LengthMismatch.ExpectedLength}"));
+            lines.Add(new RenderedLine(0, $"Actual length:   {result.LengthMismatch.ActualLength}"));
+            lines.Add(new RenderedLine(0, $"First:  {FormatCollection(result.LengthMismatch.FirstPreview)}"));
+            lines.Add(new RenderedLine(0, $"Second: {FormatCollection(result.LengthMismatch.SecondPreview)}"));
+            return lines;
+        }
+
+        lines.Add(new RenderedLine(0, "SequenceEqual failed: sequences differ"));
+        if (result.HasComparer)
+            lines.Add(new RenderedLine(0, "(using custom comparer)"));
+
+        lines.Add(new RenderedLine(0, "Unified diff:"));
+        if (result.DiffLines is not null)
+        {
+            foreach (var diff in result.DiffLines)
+                lines.Add(new RenderedLine(1, RenderSequenceDiffLine(diff)));
+        }
+
+        if (result.DiffTruncated)
+            lines.Add(new RenderedLine(1, "... (diff truncated)"));
+
+        return lines;
     }
+
+    static string FormatNullableValue(object? value, bool isNull, Type? expressionType)
+    {
+        if (isNull)
+            return "null";
+
+        return expressionType is not null
+            ? ValueFormatter.FormatWithType(value, expressionType)
+            : ValueFormatter.Format(value);
+    }
+
+    static string FormatStringValue(string? value) => value == null ? "null" : $"\"{value}\"";
+
+    static string RenderInlineDiff(IReadOnlyList<DiffSegment> segments)
+    {
+        var sb = new StringBuilder();
+        foreach (var segment in segments)
+        {
+            sb.Append(segment.Operation switch
+            {
+                StringDiffOperation.Deleted => $"[-{segment.Text}]",
+                StringDiffOperation.Inserted => $"[+{segment.Text}]",
+                _ => segment.Text
+            });
+        }
+        return sb.ToString();
+    }
+
+    static string RenderMultilineDiffLine(TextDiffLine line) => line.Type switch
+    {
+        ChangeType.Unchanged => line.Text,
+        ChangeType.Deleted => $"- {line.Text}",
+        ChangeType.Inserted => $"+ {line.Text}",
+        ChangeType.Modified => $"~ {line.Text}",
+        _ => line.Text
+    };
+
+    static string FormatCollection(IReadOnlyList<object?> items)
+    {
+        if (items.Count == 0)
+            return "[]";
+
+        return $"[{string.Join(", ", items.Select(FormatValue))}]";
+    }
+
+    static string RenderSequenceDiffLine(SequenceDiffLine diff) => diff.Operation switch
+    {
+        SequenceDiffOperation.Added => $"+[{diff.Index}] {diff.Value}",
+        SequenceDiffOperation.Removed => $"-[{diff.Index}] {diff.Value}",
+        _ => $" [{diff.Index}] {diff.Value}"
+    };
 }

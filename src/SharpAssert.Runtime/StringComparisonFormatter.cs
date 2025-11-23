@@ -10,6 +10,8 @@ class StringComparisonFormatter : IComparisonFormatter
         return new StringComparisonResult(
             new AssertionOperand(leftValue, leftValue?.GetType() ?? typeof(string)),
             new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(string)),
-            StringDiffer.FormatDiffLines(leftValue as string, rightValue as string));
+            leftValue as string,
+            rightValue as string,
+            StringDiffer.FormatDiff(leftValue as string, rightValue as string));
     }
 }

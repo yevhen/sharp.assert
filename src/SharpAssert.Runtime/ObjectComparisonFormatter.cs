@@ -23,46 +23,42 @@ class ObjectComparisonFormatter : IComparisonFormatter
 
         var result = compareLogic.Compare(leftValue, rightValue);
 
-        var lines = result.AreEqual ? Array.Empty<string>() : FormatObjectDifferences(result.Differences);
+        int truncated;
+        IReadOnlyList<ObjectDifference> diffs;
+        if (result.AreEqual)
+        {
+            diffs = Array.Empty<ObjectDifference>();
+            truncated = 0;
+        }
+        else
+        {
+            diffs = FormatObjectDifferences(result.Differences, out truncated);
+        }
 
         return new ObjectComparisonResult(
             new AssertionOperand(leftValue, leftValue?.GetType() ?? typeof(object)),
             new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)),
-            lines);
+            diffs,
+            truncated);
     }
 
     static ComparisonResult? FormatNullComparison(object? leftValue, object? rightValue)
     {
         if (leftValue == null && rightValue == null)
-        {
-            return new ObjectComparisonResult(
-                new AssertionOperand(null, typeof(object)),
-                new AssertionOperand(null, typeof(object)),
-                Array.Empty<string>());
-        }
+            return new DefaultComparisonResult(new AssertionOperand(null, typeof(object)), new AssertionOperand(null, typeof(object)));
 
         if (leftValue == null)
         {
-            return new ObjectComparisonResult(
+            return new DefaultComparisonResult(
                 new AssertionOperand(null, typeof(object)),
-                new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)),
-                new[]
-                {
-                    "Left:  null",
-                    "Right: " + FormatObjectValue(rightValue)
-                });
+                new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)));
         }
 
         if (rightValue == null)
         {
-            return new ObjectComparisonResult(
+            return new DefaultComparisonResult(
                 new AssertionOperand(leftValue, leftValue.GetType()),
-                new AssertionOperand(null, typeof(object)),
-                new[]
-                {
-                    "Left:  " + FormatObjectValue(leftValue),
-                    "Right: null"
-                });
+                new AssertionOperand(null, typeof(object)));
         }
         return null;
     }
@@ -78,64 +74,13 @@ class ObjectComparisonFormatter : IComparisonFormatter
         return true;
     }
 
-    static string? FormatObjectValue(object? value)
+    static IReadOnlyList<ObjectDifference> FormatObjectDifferences(IList<Difference> differences, out int truncated)
     {
-        if (value == null) return "null";
+        truncated = Math.Max(0, differences.Count - MaxObjectDifferences);
 
-        var str = value.ToString();
-
-        return IsDefaultToString(value, str) ? FormatObjectProperties(value) : str;
-    }
-
-    static bool IsDefaultToString(object value, string? str) =>
-        str == value.GetType().ToString() || str == value.GetType().Name;
-
-    static string FormatObjectProperties(object obj)
-    {
-        try
-        {
-            var properties = obj.GetType().GetProperties();
-            if (properties.Length == 0)
-                return obj.GetType().Name;
-
-            var props = properties
-                .Where(p => p.CanRead && p.GetIndexParameters().Length == 0)
-                .Take(MaxPropertiesDisplayed)
-                .Select(p => $"{p.Name} = {p.GetValue(obj)}")
-                .ToArray();
-
-            return props.Length > 0 ? "{ " + string.Join(", ", props) + " }" : obj.GetType().Name;
-        }
-        catch
-        {
-            return obj.GetType().Name;
-        }
-    }
-
-    static IReadOnlyList<string> FormatObjectDifferences(IList<Difference> differences)
-    {
-        var lines = new List<string>
-        {
-            "Property differences:"
-        };
-
-        lines.AddRange(
-            from diff in differences.Take(MaxObjectDifferences)
-            let propertyPath = diff.PropertyName
-            let expectedValue = FormatValue(diff.Object1Value)
-            let actualValue = FormatValue(diff.Object2Value)
-            select $"  {propertyPath}: expected {expectedValue}, got {actualValue}");
-
-        if (differences.Count > MaxObjectDifferences)
-            lines.Add($"  ... ({differences.Count - MaxObjectDifferences} more differences)");
-
-        return lines;
-    }
-
-    static string FormatValue(string? value)
-    {
-        if (value == null) return "null";
-        if (string.IsNullOrEmpty(value)) return "\"\"";
-        return $"'{value}'";
+        return differences
+            .Take(MaxObjectDifferences)
+            .Select(diff => new ObjectDifference(diff.PropertyName, diff.Object1Value, diff.Object2Value))
+            .ToArray();
     }
 }
