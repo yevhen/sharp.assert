@@ -25,7 +25,7 @@ class ObjectComparisonFormatter : IComparisonFormatter
 
         var lines = result.AreEqual ? Array.Empty<string>() : FormatObjectDifferences(result.Differences);
 
-        return new ComparisonResult(
+        return new ObjectComparisonResult(
             new AssertionOperand(leftValue, leftValue?.GetType() ?? typeof(object)),
             new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)),
             lines);
@@ -35,7 +35,7 @@ class ObjectComparisonFormatter : IComparisonFormatter
     {
         if (leftValue == null && rightValue == null)
         {
-            return new ComparisonResult(
+            return new ObjectComparisonResult(
                 new AssertionOperand(null, typeof(object)),
                 new AssertionOperand(null, typeof(object)),
                 Array.Empty<string>());
@@ -43,7 +43,7 @@ class ObjectComparisonFormatter : IComparisonFormatter
 
         if (leftValue == null)
         {
-            return new ComparisonResult(
+            return new ObjectComparisonResult(
                 new AssertionOperand(null, typeof(object)),
                 new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)),
                 new[]
@@ -55,7 +55,7 @@ class ObjectComparisonFormatter : IComparisonFormatter
 
         if (rightValue == null)
         {
-            return new ComparisonResult(
+            return new ObjectComparisonResult(
                 new AssertionOperand(leftValue, leftValue.GetType()),
                 new AssertionOperand(null, typeof(object)),
                 new[]

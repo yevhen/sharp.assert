@@ -3,7 +3,7 @@ using System.Text;
 
 namespace SharpAssert;
 
-class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<RenderedLine>>
+class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<RenderedLine>>, IComparisonResultVisitor<IReadOnlyList<RenderedLine>>
 {
     readonly string indent;
     bool suppressHeader;
@@ -87,8 +87,9 @@ class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<Rendere
 
         var detailIndent = wasSuppressed ? 0 : 1;
 
-        foreach (var line in result.Comparison.Lines)
-            lines.Add(new RenderedLine(detailIndent, line));
+        var comparisonLines = result.Comparison.Accept(this);
+        foreach (var line in comparisonLines)
+            lines.Add(new RenderedLine(detailIndent + line.IndentLevel, line.Text));
 
         return lines;
     }
@@ -159,4 +160,55 @@ class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<Rendere
         DateTime dt => dt.ToString("M/d/yyyy", System.Globalization.CultureInfo.InvariantCulture),
         _ => value.ToString()!
     };
+
+    // Comparison result visitor implementations
+    public IReadOnlyList<RenderedLine> Visit(DefaultComparisonResult result)
+    {
+        return new List<RenderedLine>
+        {
+            new(0, $"Left:  {FormatValue(result.Left.Value)}"),
+            new(0, $"Right: {FormatValue(result.Right.Value)}")
+        };
+    }
+
+    public IReadOnlyList<RenderedLine> Visit(NullableComparisonResult result)
+    {
+        return new List<RenderedLine>
+        {
+            new(0, $"Left:  {result.LeftDisplay}"),
+            new(0, $"Right: {result.RightDisplay}")
+        };
+    }
+
+    public IReadOnlyList<RenderedLine> Visit(StringComparisonResult result)
+    {
+        return result.Lines.Select(l => new RenderedLine(0, l)).ToList();
+    }
+
+    public IReadOnlyList<RenderedLine> Visit(CollectionComparisonResult result)
+    {
+        var lines = new List<RenderedLine>
+        {
+            new(0, $"Left:  {result.LeftPreview}"),
+            new(0, $"Right: {result.RightPreview}")
+        };
+
+        if (result.FirstDifference is not null)
+            lines.Add(new RenderedLine(0, result.FirstDifference));
+
+        if (result.LengthDifference is not null)
+            lines.Add(new RenderedLine(0, result.LengthDifference));
+
+        return lines;
+    }
+
+    public IReadOnlyList<RenderedLine> Visit(ObjectComparisonResult result)
+    {
+        return result.Lines.Select(l => new RenderedLine(0, l)).ToList();
+    }
+
+    public IReadOnlyList<RenderedLine> Visit(SequenceEqualComparisonResult result)
+    {
+        return result.Lines.Select(l => new RenderedLine(0, l)).ToList();
+    }
 }

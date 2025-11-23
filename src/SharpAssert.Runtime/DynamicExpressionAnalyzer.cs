@@ -65,7 +65,9 @@ static class DynamicExpressionAnalyzer
         var right = new AssertionOperand(rightValue);
 
         var comparison = ComparisonFormatterService.GetComparisonResult(left, right);
-        var details = string.Join("\n", comparison.Lines.Select(l => $"  {l}"));
+        var formatter = new StringEvaluationFormatter();
+        var comparisonLines = comparison.Accept(formatter);
+        var details = string.Join("\n", comparisonLines.Select(l => $"  {l.Text}"));
 
         return string.IsNullOrEmpty(details) ? baseMessage.TrimEnd('\n') : baseMessage + details;
     }

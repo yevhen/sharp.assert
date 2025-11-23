@@ -6,23 +6,8 @@ class DefaultComparisonFormatter : IComparisonFormatter
 
     public ComparisonResult CreateComparison(object? leftValue, object? rightValue)
     {
-        var lines = new[]
-        {
-            $"Left:  {FormatValue(leftValue)}",
-            $"Right: {FormatValue(rightValue)}"
-        };
-
-        return new ComparisonResult(
+        return new DefaultComparisonResult(
             new AssertionOperand(leftValue, leftValue?.GetType() ?? typeof(object)),
-            new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)),
-            lines);
+            new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)));
     }
-    
-    static string FormatValue(object? value) => value switch
-    {
-        null => "null",
-        string s => $"\"{s}\"",
-        DateTime dt => dt.ToString("M/d/yyyy", System.Globalization.CultureInfo.InvariantCulture),
-        _ => value.ToString()!
-    };
 }

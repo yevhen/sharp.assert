@@ -116,7 +116,10 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
             return LinqOperationFormatter.BuildResult(methodCall, exprText, value);
 
         if (methodName == SequenceEqualMethod)
-            return SequenceEqualFormatter.BuildResult(methodCall, exprText, value);
+        {
+            var comparison = SequenceEqualFormatter.BuildResult(methodCall, exprText, value);
+            return new BinaryComparisonEvaluationResult(exprText, Equal, comparison, value);
+        }
 
         return new ValueEvaluationResult(exprText, value, methodCall.Type);
     }

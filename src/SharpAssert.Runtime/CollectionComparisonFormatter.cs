@@ -10,58 +10,50 @@ class CollectionComparisonFormatter : IComparisonFormatter
 
     public ComparisonResult CreateComparison(object? leftValue, object? rightValue)
     {
-        if (leftValue == null && rightValue == null)
-        {
-            return new ComparisonResult(
-                new AssertionOperand(null, typeof(object)),
-                new AssertionOperand(null, typeof(object)),
-                Array.Empty<string>());
-        }
         if (leftValue == null)
         {
-            return new ComparisonResult(
+            return new CollectionComparisonResult(
                 new AssertionOperand(leftValue, typeof(object)),
                 new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)),
-                new[] { "Left:  null", "Right: Collection" });
+                "null",
+                "Collection",
+                null,
+                null);
         }
         if (rightValue == null)
         {
-            return new ComparisonResult(
+            return new CollectionComparisonResult(
                 new AssertionOperand(leftValue, leftValue.GetType()),
                 new AssertionOperand(rightValue, typeof(object)),
-                new[] { "Left:  Collection", "Right: null" });
+                "Collection",
+                "null",
+                null,
+                null);
         }
 
         var leftList = MaterializeToList(leftValue);
         var rightList = MaterializeToList(rightValue);
 
-        var lines = AnalyzeCollectionDifferences(leftList, rightList);
-        return new ComparisonResult(
+        var (firstDiff, lengthDiff, leftPreview, rightPreview) = AnalyzeCollectionDifferences(leftList, rightList);
+        return new CollectionComparisonResult(
             new AssertionOperand(leftValue, leftValue.GetType()),
             new AssertionOperand(rightValue, rightValue.GetType()),
-            lines);
+            leftPreview,
+            rightPreview,
+            firstDiff,
+            lengthDiff);
     }
 
     static List<object?> MaterializeToList(object collection) =>
         ((IEnumerable)collection).Cast<object?>().ToList();
 
-    static IReadOnlyList<string> AnalyzeCollectionDifferences(List<object?> left, List<object?> right)
+    static (string? firstDiff, string? lengthDiff, string leftPreview, string rightPreview) AnalyzeCollectionDifferences(List<object?> left, List<object?> right)
     {
-        var result = new List<string>
-        {
-            $"Left:  {FormatCollectionPreview(left)}",
-            $"Right: {FormatCollectionPreview(right)}"
-        };
-
         var differenceMessage = FindFirstDifference(left, right);
-        if (differenceMessage != null)
-            result.Add(differenceMessage);
 
         var lengthDifferenceMessage = DescribeLengthDifference(left, right);
-        if (lengthDifferenceMessage != null)
-            result.Add(lengthDifferenceMessage);
 
-        return result;
+        return (differenceMessage, lengthDifferenceMessage, FormatCollectionPreview(left), FormatCollectionPreview(right));
     }
 
     static string? FindFirstDifference(List<object?> left, List<object?> right)

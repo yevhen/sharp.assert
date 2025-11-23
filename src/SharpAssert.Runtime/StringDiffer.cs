@@ -20,14 +20,7 @@ static class StringDiffer
         if (IsMultiline(left) || IsMultiline(right))
             return FormatMultilineComparisonLines(leftTruncated, rightTruncated);
 
-        var result = new List<string>
-        {
-            $"Left:  {FormatStringValue(leftTruncated)}",
-            $"Right: {FormatStringValue(rightTruncated)}"
-        };
-
-        result.AddRange(GenerateInlineDiffLines(leftTruncated, rightTruncated));
-        return result;
+        return GenerateInlineDiffLines(leftTruncated, rightTruncated, FormatStringValue(leftTruncated), FormatStringValue(rightTruncated));
     }
 
     static IReadOnlyList<string> FormatNullComparisonLines(string? left, string? right)
@@ -61,13 +54,13 @@ static class StringDiffer
     
     static bool IsMultiline(string input) => input.Contains('\n');
     
-    static IReadOnlyList<string> GenerateInlineDiffLines(string left, string right)
+    static IReadOnlyList<string> GenerateInlineDiffLines(string left, string right, string leftDisplay, string rightDisplay)
     {
         var differ = new Differ();
         var diffResult = differ.CreateCharacterDiffs(left, right, ignoreWhitespace: false);
 
         var leftPos = 0;
-        var resultBuilder = new System.Text.StringBuilder("Diff: ");
+        var resultBuilder = new System.Text.StringBuilder();
 
         foreach (var block in diffResult.DiffBlocks)
         {
@@ -79,7 +72,12 @@ static class StringDiffer
         }
 
         AppendRemainingText(resultBuilder, left, leftPos);
-        return new[] { resultBuilder.ToString() };
+        return new[]
+        {
+            $"Left:  {leftDisplay}",
+            $"Right: {rightDisplay}",
+            "Diff: " + resultBuilder
+        };
     }
 
     static void AppendUnchangedText(System.Text.StringBuilder builder, string source, int start, int end)

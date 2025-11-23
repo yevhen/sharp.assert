@@ -28,14 +28,11 @@ class NullableComparisonFormatter : IComparisonFormatter
         var leftDisplay = FormatRuntimeValue(leftValue);
         var rightDisplay = FormatRuntimeValue(rightValue);
 
-        return new ComparisonResult(
+        return new NullableComparisonResult(
             new AssertionOperand(leftValue, leftValue?.GetType() ?? typeof(object)),
             new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(object)),
-            new[]
-            {
-                $"Left:  {leftDisplay}",
-                $"Right: {rightDisplay}"
-            });
+            leftDisplay,
+            rightDisplay);
     }
 
     static ComparisonResult FormatWithTypes(AssertionOperand left, AssertionOperand right)
@@ -43,14 +40,7 @@ class NullableComparisonFormatter : IComparisonFormatter
         var leftDisplay = FormatWithType(left.Value, left.ExpressionType!);
         var rightDisplay = FormatWithType(right.Value, right.ExpressionType!);
 
-        return new ComparisonResult(
-            left,
-            right,
-            new[]
-            {
-                $"Left:  {leftDisplay}",
-                $"Right: {rightDisplay}"
-            });
+        return new NullableComparisonResult(left, right, leftDisplay, rightDisplay);
     }
 
     static string FormatWithType(object? value, Type expressionType)

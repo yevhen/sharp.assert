@@ -92,5 +92,3 @@ record FormattedEvaluationResult(string ExpressionText, bool Value, IReadOnlyLis
     public override bool? BooleanValue => Value;
     public override T Accept<T>(IEvaluationResultVisitor<T> visitor) => visitor.Visit(this);
 }
-
-record ComparisonResult(AssertionOperand Left, AssertionOperand Right, IReadOnlyList<string> Lines);

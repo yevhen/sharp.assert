@@ -7,11 +7,9 @@ class StringComparisonFormatter : IComparisonFormatter
 
     public ComparisonResult CreateComparison(object? leftValue, object? rightValue)
     {
-        var lines = StringDiffer.FormatDiffLines(leftValue as string, rightValue as string);
-
-        return new ComparisonResult(
+        return new StringComparisonResult(
             new AssertionOperand(leftValue, leftValue?.GetType() ?? typeof(string)),
             new AssertionOperand(rightValue, rightValue?.GetType() ?? typeof(string)),
-            lines);
+            StringDiffer.FormatDiffLines(leftValue as string, rightValue as string));
     }
 }

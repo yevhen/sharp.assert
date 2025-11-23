@@ -14,7 +14,7 @@ static class SequenceEqualFormatter
     const int MaxDiffLines = 50;
     const int ContextLinesBefore = 3;
     
-    public static FormattedEvaluationResult BuildResult(MethodCallExpression methodCall, string expressionText, bool value)
+    public static SequenceEqualComparisonResult BuildResult(MethodCallExpression methodCall, string expressionText, bool value)
     {
         var firstSequence = GetValue(methodCall.Object ?? methodCall.Arguments[0]);
         var secondSequence = GetValue(methodCall.Arguments.Count > 1 ? methodCall.Arguments[1] : methodCall.Arguments[0]);
@@ -24,9 +24,10 @@ static class SequenceEqualFormatter
         
         if (firstSequence is not IEnumerable firstEnum || secondSequence is not IEnumerable secondEnum)
         {
-            return new FormattedEvaluationResult(
-                expressionText,
-                value,
+            return new SequenceEqualComparisonResult(
+                new AssertionOperand(firstSequence, firstSequence?.GetType() ?? typeof(object)),
+                new AssertionOperand(secondSequence, secondSequence?.GetType() ?? typeof(object)),
+                hasComparer,
                 new[]
                 {
                     "SequenceEqual failed: one or both operands are not sequences"
@@ -41,7 +42,11 @@ static class SequenceEqualFormatter
             ? FormatLengthMismatch(firstList, secondList)
             : FormatUnifiedDiff(firstList, secondList, hasComparer);
 
-        return new FormattedEvaluationResult(expressionText, value, lines);
+        return new SequenceEqualComparisonResult(
+            new AssertionOperand(firstSequence, firstSequence.GetType()),
+            new AssertionOperand(secondSequence, secondSequence.GetType()),
+            hasComparer,
+            lines);
     }
     
     static List<object?> MaterializeSequence(IEnumerable sequence) => sequence.Cast<object?>().ToList();
