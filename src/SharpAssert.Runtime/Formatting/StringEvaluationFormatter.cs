@@ -33,92 +33,20 @@ class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor
     public IReadOnlyList<RenderedLine> Visit(AssertionEvaluationResult result) =>
         result.Result.Accept(this);
 
-    public IReadOnlyList<RenderedLine> Visit(LogicalEvaluationResult result)
-    {
-        var lines = new List<RenderedLine>();
+    public IReadOnlyList<RenderedLine> Visit(LogicalEvaluationResult result) =>
+        result.Render(RenderChild);
 
-        if (!string.IsNullOrEmpty(result.ExpressionText))
-            lines.Add(new RenderedLine(0, result.ExpressionText));
+    public IReadOnlyList<RenderedLine> Visit(UnaryEvaluationResult result) =>
+        result.Render(RenderChild);
 
-        lines.AddRange(RenderLabeled(result.Left, "Left"));
+    public IReadOnlyList<RenderedLine> Visit(BinaryComparisonEvaluationResult result) =>
+        result.Render(RenderComparison);
 
-        if (result is { ShortCircuited: false, Right: not null })
-            lines.AddRange(RenderLabeled(result.Right, "Right"));
+    public IReadOnlyList<RenderedLine> Visit(ValueEvaluationResult result) =>
+        result.Render();
 
-        lines.Add(new RenderedLine(0, GetLogicalExplanation(result)));
-
-        return lines;
-    }
-
-    public IReadOnlyList<RenderedLine> Visit(UnaryEvaluationResult result)
-    {
-        var lines = new List<RenderedLine>();
-
-        if (result.ExpressionText is { Length: > 0 })
-            lines.Add(new RenderedLine(0, result.ExpressionText));
-
-        lines.AddRange(RenderLabeled(result.Operand, "Operand"));
-        lines.Add(new RenderedLine(0, $"!: Operand was {FormatValue(result.OperandValue)}"));
-
-        return lines;
-    }
-
-    public IReadOnlyList<RenderedLine> Visit(BinaryComparisonEvaluationResult result)
-    {
-        var lines = new List<RenderedLine>();
-
-        if (result.ExpressionText is { Length: > 0 })
-            lines.Add(new RenderedLine(0, result.ExpressionText));
-
-        var comparisonLines = result.Comparison.Accept(this);
-        foreach (var line in comparisonLines)
-            lines.Add(line with { IndentLevel = 1 + line.IndentLevel });
-
-        return lines;
-    }
-
-    public IReadOnlyList<RenderedLine> Visit(ValueEvaluationResult result)
-    {
-        var valueText = FormatValue(result.Value);
-        return new List<RenderedLine> { new(0, valueText) };
-    }
-
-    public IReadOnlyList<RenderedLine> Visit(FormattedEvaluationResult result)
-    {
-        var lines = new List<RenderedLine>();
-
-        if (!string.IsNullOrEmpty(result.ExpressionText))
-            lines.Add(new RenderedLine(0, result.ExpressionText));
-
-        foreach (var line in result.Lines)
-            lines.Add(new RenderedLine(1, line));
-
-        return lines;
-    }
-
-    static string GetLogicalExplanation(LogicalEvaluationResult result) => result.Operator switch
-    {
-        LogicalOperator.AndAlso when result.ShortCircuited => "&&: Left operand was false",
-        LogicalOperator.AndAlso => "&&: Right operand was false",
-        _ => "||: Both operands were false"
-    };
-
-    IReadOnlyList<RenderedLine> RenderLabeled(EvaluationResult child, string label)
-    {
-        var childLines = child.Accept(this);
-        if (childLines.Count == 0)
-            return [];
-
-        var lines = new List<RenderedLine>
-        {
-            new(0, $"{label}: {childLines[0].Text}")
-        };
-
-        for (var i = 1; i < childLines.Count; i++)
-            lines.Add(new RenderedLine(childLines[i].IndentLevel, childLines[i].Text));
-
-        return lines;
-    }
+    public IReadOnlyList<RenderedLine> Visit(FormattedEvaluationResult result) =>
+        result.Render();
 
     void AppendLines(StringBuilder sb, IReadOnlyList<RenderedLine> lines, int baseIndent)
     {
@@ -131,7 +59,8 @@ class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor
         }
     }
 
-    static string FormatValue(object? value) => ValueFormatter.Format(value);
+    IReadOnlyList<RenderedLine> RenderChild(EvaluationResult child) => child.Accept(this);
+    IReadOnlyList<RenderedLine> RenderComparison(ComparisonResult comparison) => comparison.Accept(this);
 
     public IReadOnlyList<RenderedLine> Visit(DefaultComparisonResult result)
     {

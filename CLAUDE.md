@@ -45,6 +45,7 @@ SharpAssert is a Pytest‑style assertions library for .NET
 - ObjectComparisonResult now renders its differences through `Render()`, simplifying callers that need object diff lines.
 - SequenceEqualComparisonResult now renders unified diff/length mismatch via `Render()`, keeping SequenceEqual formatting inside the result.
 - DefaultComparisonResult and NullableComparisonResult now expose `Render()` for their output; prefer those over formatter-side duplication.
+- Logical, unary, binary, value, and formatted evaluation results now render themselves via `Render()` helpers, with StringEvaluationFormatter delegating to them.
 
 # CRITICAL: NAMING IS EVERYTHING
 
