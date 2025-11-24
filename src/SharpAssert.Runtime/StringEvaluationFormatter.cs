@@ -45,12 +45,10 @@ class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<Rendere
     {
         var lines = new List<RenderedLine>();
 
-        // Only include the expression header when rendering as a nested block
         var wasSuppressed = suppressHeader;
         suppressHeader = false;
-        var includeHeader = !wasSuppressed && result.ExpressionText is { Length: > 0 };
-        if (includeHeader)
-            lines.Add(new RenderedLine(0, result.ExpressionText));
+        if (!wasSuppressed)
+            lines.Add(new RenderedLine(0, RenderLogicalExpression(result)));
 
         lines.AddRange(RenderLabeled(result.Left, "Left"));
 
@@ -125,6 +123,41 @@ class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<Rendere
         LogicalOperator.AndAlso => "&&: Right operand was false",
         _ => "||: Both operands were false"
     };
+
+    string RenderLogicalExpression(LogicalEvaluationResult logical)
+    {
+        if (logical.ShortCircuited && logical.Operator == LogicalOperator.AndAlso && logical.Right == null)
+            return $"{logical.Left.ExpressionText} && {logical.ExpressionText}";
+
+        if (logical.Operator == LogicalOperator.OrElse && logical.Right != null)
+        {
+            var left = WrapLogical(logical.Left, logical.Operator);
+            var right = WrapLogical(logical.Right, logical.Operator);
+            return $"{left} || {right}";
+        }
+
+        if (logical.Operator == LogicalOperator.AndAlso && logical.Right != null)
+        {
+            var left = WrapLogical(logical.Left, logical.Operator);
+            var right = WrapLogical(logical.Right, logical.Operator);
+            return $"{left} && {right}";
+        }
+
+        return logical.ExpressionText;
+    }
+
+    string WrapLogical(EvaluationResult result, LogicalOperator parentOp)
+    {
+        if (result is LogicalEvaluationResult logical)
+        {
+            var childPrec = logical.Operator == LogicalOperator.AndAlso ? 2 : 1;
+            var parentPrec = parentOp == LogicalOperator.AndAlso ? 2 : 1;
+            var rendered = RenderLogicalExpression(logical);
+            return childPrec < parentPrec ? $"({rendered})" : rendered;
+        }
+
+        return result.ExpressionText;
+    }
 
     IReadOnlyList<RenderedLine> RenderLabeled(EvaluationResult child, string label)
     {

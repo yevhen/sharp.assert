@@ -20,6 +20,14 @@ static class ExpressionDisplay
     public static string FormatUnary(string op, string operand, bool needsParens) =>
         needsParens ? $"{op}({operand})" : $"{op}{operand}";
 
+    public static string FormatMethodCall(string? objectText, string methodName, IEnumerable<string> argumentTexts)
+    {
+        var args = string.Join(", ", argumentTexts);
+        return objectText is { Length: > 0 }
+            ? $"{objectText}.{methodName}({args})"
+            : $"{methodName}({args})";
+    }
+
     public static string OperatorSymbol(ExpressionType nodeType) => nodeType switch
     {
         Add or AddChecked => "+",
