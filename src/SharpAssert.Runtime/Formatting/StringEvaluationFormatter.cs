@@ -169,39 +169,7 @@ class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor
 
     public IReadOnlyList<RenderedLine> Visit(SequenceEqualComparisonResult result)
     {
-        var lines = new List<RenderedLine>();
-
-        if (result.Error is not null)
-        {
-            lines.Add(new RenderedLine(0, result.Error));
-            return lines;
-        }
-
-        if (result.LengthMismatch is not null)
-        {
-            lines.Add(new RenderedLine(0, "SequenceEqual failed: length mismatch"));
-            lines.Add(new RenderedLine(0, $"Expected length: {result.LengthMismatch.ExpectedLength}"));
-            lines.Add(new RenderedLine(0, $"Actual length:   {result.LengthMismatch.ActualLength}"));
-            lines.Add(new RenderedLine(0, $"First:  {FormatCollection(result.LengthMismatch.FirstPreview)}"));
-            lines.Add(new RenderedLine(0, $"Second: {FormatCollection(result.LengthMismatch.SecondPreview)}"));
-            return lines;
-        }
-
-        lines.Add(new RenderedLine(0, "SequenceEqual failed: sequences differ"));
-        if (result.HasComparer)
-            lines.Add(new RenderedLine(0, "(using custom comparer)"));
-
-        lines.Add(new RenderedLine(0, "Unified diff:"));
-        if (result.DiffLines is not null)
-        {
-            foreach (var diff in result.DiffLines)
-                lines.Add(new RenderedLine(1, RenderSequenceDiffLine(diff)));
-        }
-
-        if (result.DiffTruncated)
-            lines.Add(new RenderedLine(1, "... (diff truncated)"));
-
-        return lines;
+        return result.Render();
     }
 
     static string FormatNullableValue(object? value, bool isNull, Type? expressionType)
@@ -214,18 +182,4 @@ class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor
             : ValueFormatter.Format(value);
     }
 
-    static string FormatCollection(IReadOnlyList<object?> items)
-    {
-        if (items.Count == 0)
-            return "[]";
-
-        return $"[{string.Join(", ", items.Select(FormatValue))}]";
-    }
-
-    static string RenderSequenceDiffLine(SequenceDiffLine diff) => diff.Operation switch
-    {
-        SequenceDiffOperation.Added => $"+[{diff.Index}] {FormatValue(diff.Value)}",
-        SequenceDiffOperation.Removed => $"-[{diff.Index}] {FormatValue(diff.Value)}",
-        _ => $" [{diff.Index}] {FormatValue(diff.Value)}"
-    };
 }
