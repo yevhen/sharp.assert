@@ -164,23 +164,7 @@ class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor
 
     public IReadOnlyList<RenderedLine> Visit(ObjectComparisonResult result)
     {
-        var lines = new List<RenderedLine>();
-
-        if (result.Differences.Count == 0)
-            return lines;
-
-        lines.Add(new RenderedLine(0, "Property differences:"));
-
-        foreach (var diff in result.Differences)
-        {
-            lines.Add(new RenderedLine(1,
-                $"{diff.Path}: expected {FormatValue(diff.Expected)}, got {FormatValue(diff.Actual)}"));
-        }
-
-        if (result.TruncatedCount > 0)
-            lines.Add(new RenderedLine(1, $"... ({result.TruncatedCount} more differences)"));
-
-        return lines;
+        return result.Render();
     }
 
     public IReadOnlyList<RenderedLine> Visit(SequenceEqualComparisonResult result)

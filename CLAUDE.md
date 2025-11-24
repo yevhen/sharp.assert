@@ -42,6 +42,7 @@ SharpAssert is a Pytest‑style assertions library for .NET
 
 - StringComparisonResult now renders its own lines via `Render()`; prefer using it instead of duplicating string diff formatting elsewhere.
 - CollectionComparisonResult now owns its rendering via `Render()`, so formatters should delegate to it for collection diffs.
+- ObjectComparisonResult now renders its differences through `Render()`, simplifying callers that need object diff lines.
 
 # CRITICAL: NAMING IS EVERYTHING
 
