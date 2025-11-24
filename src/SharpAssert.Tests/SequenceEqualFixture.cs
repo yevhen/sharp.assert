@@ -37,7 +37,7 @@ public class SequenceEqualFixture : TestBase
         {
             var seq1 = new[] { "Hello", "World" };
             var seq2 = new[] { "hello", "world" };
-            var comparer = StringComparer.OrdinalIgnoreCase;
+            var comparer = System.StringComparer.OrdinalIgnoreCase;
             AssertDoesNotThrow(() => Assert(seq1.SequenceEqual(seq2, comparer)));
         }
 
@@ -85,7 +85,7 @@ public class SequenceEqualFixture : TestBase
         {
             var seq1 = new[] { "Hello", "World" };
             var seq2 = new[] { "hello", "DIFFERENT" };
-            var comparer = StringComparer.OrdinalIgnoreCase;
+            var comparer = System.StringComparer.OrdinalIgnoreCase;
 
             AssertThrows(() => Assert(seq1.SequenceEqual(seq2, comparer)), "*SequenceEqual failed*");
         }

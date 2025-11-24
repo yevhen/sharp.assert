@@ -61,7 +61,7 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
 
         var leftOperand = new AssertionOperand(leftValue, binaryExpr.Left.Type);
         var rightOperand = new AssertionOperand(rightValue, binaryExpr.Right.Type);
-        var comparison = ComparisonFormatterService.GetComparisonResult(leftOperand, rightOperand);
+        var comparison = ComparerService.GetComparisonResult(leftOperand, rightOperand);
 
         var resultValue = EvaluateBinaryExpression(binaryExpr.NodeType, leftValue, rightValue);
 
@@ -147,7 +147,7 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
 
         if (methodName == SequenceEqualMethod)
         {
-            var comparison = SequenceEqualFormatter.BuildResult(methodCall, exprText, value);
+            var comparison = SequenceEqualComparer.BuildResult(methodCall);
             return new BinaryComparisonEvaluationResult(exprText, Equal, comparison, value);
         }
 

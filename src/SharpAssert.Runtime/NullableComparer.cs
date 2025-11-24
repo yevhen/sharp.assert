@@ -1,24 +1,24 @@
 namespace SharpAssert;
 
-class NullableComparisonFormatter : IComparisonFormatter
+class NullableComparer : IOperandComparer
 {
-    public bool CanFormat(AssertionOperand left, AssertionOperand right)
+    public bool CanCompare(AssertionOperand left, AssertionOperand right)
     {
         if (left.IsNullableValueType || right.IsNullableValueType)
             return true;
 
-        return CanFormat(left.Value, right.Value);
+        return CanCompare(left.Value, right.Value);
     }
 
     public ComparisonResult CreateComparison(AssertionOperand left, AssertionOperand right)
     {
         if (left.IsNullableValueType || right.IsNullableValueType)
-            return FormatWithTypes(left, right);
+            return CompareWithTypes(left, right);
 
         return CreateComparison(left.Value, right.Value);
     }
 
-    public bool CanFormat(object? leftValue, object? rightValue)
+    public bool CanCompare(object? leftValue, object? rightValue)
     {
         return IsNullableType(leftValue?.GetType()) || IsNullableType(rightValue?.GetType());
     }
@@ -36,7 +36,7 @@ class NullableComparisonFormatter : IComparisonFormatter
             rightValue?.GetType());
     }
 
-    static ComparisonResult FormatWithTypes(AssertionOperand left, AssertionOperand right)
+    static ComparisonResult CompareWithTypes(AssertionOperand left, AssertionOperand right)
     {
         return new NullableComparisonResult(
             left,

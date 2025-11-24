@@ -3,12 +3,12 @@ using System.Linq;
 
 namespace SharpAssert;
 
-class CollectionComparisonFormatter : IComparisonFormatter
+class CollectionComparer : IOperandComparer
 {
     const int MaxPreview = 10;
     const int MaxDifferencePreview = 5;
 
-    public bool CanFormat(object? leftValue, object? rightValue) =>
+    public bool CanCompare(object? leftValue, object? rightValue) =>
         IsEnumerable(leftValue) && IsEnumerable(rightValue);
 
     public ComparisonResult CreateComparison(object? leftValue, object? rightValue)

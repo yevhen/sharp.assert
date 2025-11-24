@@ -1,20 +1,17 @@
 using System.Collections;
-using System.Linq;
 using System.Linq.Expressions;
 using DiffPlex;
-using DiffPlex.DiffBuilder;
-using DiffPlex.DiffBuilder.Model;
 using DiffPlex.Model;
 
 namespace SharpAssert;
 
-static class SequenceEqualFormatter
+static class SequenceEqualComparer
 {
     const int MaxSequencePreview = 20;
     const int MaxDiffLines = 50;
     const int ContextLinesBefore = 3;
     
-    public static SequenceEqualComparisonResult BuildResult(MethodCallExpression methodCall, string expressionText, bool value)
+    public static SequenceEqualComparisonResult BuildResult(MethodCallExpression methodCall)
     {
         var firstSequence = GetValue(methodCall.Object ?? methodCall.Arguments[0]);
         var secondSequence = GetValue(methodCall.Arguments.Count > 1 ? methodCall.Arguments[1] : methodCall.Arguments[0]);
@@ -40,7 +37,7 @@ static class SequenceEqualFormatter
 
         if (firstList.Count != secondList.Count)
         {
-            var lengthMismatch = FormatLengthMismatch(firstList, secondList);
+            var lengthMismatch = BuildLengthMismatch(firstList, secondList);
             return new SequenceEqualComparisonResult(
                 new AssertionOperand(firstSequence, firstSequence.GetType()),
                 new AssertionOperand(secondSequence, secondSequence.GetType()),
@@ -50,7 +47,7 @@ static class SequenceEqualFormatter
                 false);
         }
 
-        var diffLines = FormatUnifiedDiff(firstList, secondList, out var truncated);
+        var diffLines = BuildUnifiedDiff(firstList, secondList, out var truncated);
 
         return new SequenceEqualComparisonResult(
             new AssertionOperand(firstSequence, firstSequence.GetType()),
@@ -63,12 +60,12 @@ static class SequenceEqualFormatter
     
     static List<object?> MaterializeSequence(IEnumerable sequence) => sequence.Cast<object?>().ToList();
 
-    static SequenceLengthMismatch FormatLengthMismatch(List<object?> first, List<object?> second)
+    static SequenceLengthMismatch BuildLengthMismatch(List<object?> first, List<object?> second)
     {
-        return new SequenceLengthMismatch(second.Count, first.Count, FormatSequencePreview(first), FormatSequencePreview(second));
+        return new SequenceLengthMismatch(second.Count, first.Count, BuildSequencePreview(first), BuildSequencePreview(second));
     }
     
-    static IReadOnlyList<SequenceDiffLine> FormatUnifiedDiff(List<object?> first, List<object?> second, out bool truncated)
+    static IReadOnlyList<SequenceDiffLine> BuildUnifiedDiff(List<object?> first, List<object?> second, out bool truncated)
     {
         var firstStrings = first.Select(FormatValue).ToArray();
         var secondStrings = second.Select(FormatValue).ToArray();
@@ -129,10 +126,10 @@ static class SequenceEqualFormatter
     static int CalculateContextStart(int lastShown, int blockStart) =>
         Math.Max(lastShown, blockStart - ContextLinesBefore);
 
-    static IReadOnlyList<object?> FormatSequencePreview(List<object?> sequence)
+    static IReadOnlyList<object?> BuildSequencePreview(List<object?> sequence)
     {
         if (sequence.Count == 0)
-            return Array.Empty<object?>();
+            return [];
         
         var preview = sequence.Take(MaxSequencePreview - 1).ToList();
 
@@ -143,6 +140,7 @@ static class SequenceEqualFormatter
     }
     
     static string FormatValue(object? value) => ValueFormatter.Format(value);
+
     static SequenceDiffLine ToDiffLine(string line, IReadOnlyList<object?> firstValues, IReadOnlyList<object?> secondValues)
     {
         if (line.StartsWith("-"))
@@ -169,10 +167,10 @@ static class SequenceEqualFormatter
         var val = firstValues[idx];
         return new SequenceDiffLine(SequenceDiffOperation.Context, idx, val);
     }
+
     static object? GetValue(Expression expression)
     {
         var compiled = Expression.Lambda(expression).Compile();
         return compiled.DynamicInvoke();
     }
-    
 }

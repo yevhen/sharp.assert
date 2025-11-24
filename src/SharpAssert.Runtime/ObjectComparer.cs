@@ -4,12 +4,12 @@ using KellermanSoftware.CompareNetObjects;
 
 namespace SharpAssert;
 
-class ObjectComparisonFormatter : IComparisonFormatter
+class ObjectComparer : IOperandComparer
 {
     const int MaxObjectDifferences = 20;
     const int MaxPropertiesDisplayed = 5;
     
-    public bool CanFormat(object? leftValue, object? rightValue) =>
+    public bool CanCompare(object? leftValue, object? rightValue) =>
         IsObject(leftValue) || IsObject(rightValue);
 
     public ComparisonResult CreateComparison(object? leftValue, object? rightValue)

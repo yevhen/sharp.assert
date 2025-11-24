@@ -1,8 +1,8 @@
 namespace SharpAssert;
 
-class DefaultComparisonFormatter : IComparisonFormatter
+class DefaultComparer : IOperandComparer
 {
-    public bool CanFormat(object? leftValue, object? rightValue) => true;
+    public bool CanCompare(object? leftValue, object? rightValue) => true;
 
     public ComparisonResult CreateComparison(object? leftValue, object? rightValue)
     {
