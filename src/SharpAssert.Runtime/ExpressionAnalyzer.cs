@@ -68,14 +68,6 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
 
     static EvaluationResult AnalyzeLogicalBinary(BinaryExpression binaryExpr, Dictionary<Expression, object?> cache)
     {
-        var leftText = ExpressionDisplay.GetIdentifierOrPath(binaryExpr.Left);
-        var rightText = ExpressionDisplay.GetIdentifierOrPath(binaryExpr.Right);
-        var needsParens = ExpressionDisplay.IsLogical(binaryExpr.Right.NodeType);
-        var exprText = ExpressionDisplay.FormatBinary(
-            leftText,
-            ExpressionDisplay.OperatorSymbol(binaryExpr.NodeType),
-            needsParens ? $"({rightText})" : rightText,
-            false);
         var leftValue = GetValue(binaryExpr.Left, cache);
         var leftBool = (bool)leftValue!;
 
@@ -85,14 +77,19 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
             var rightAnalysis = AnalyzeExpression(binaryExpr.Right, cache);
             var orValue = leftBool || (bool)GetValue(binaryExpr.Right, cache)!;
 
-            return new LogicalEvaluationResult(exprText, LogicalOperator.OrElse, leftAnalysis, rightAnalysis, orValue, false, binaryExpr.NodeType);
+            var leftWrappedOr = WrapIfNeeded(leftAnalysis, LogicalOperator.OrElse);
+            var rightWrappedOr = WrapIfNeeded(rightAnalysis, LogicalOperator.OrElse);
+            var exprTextFormatted = ExpressionDisplay.FormatBinary(leftWrappedOr, "||", rightWrappedOr, false);
+
+            return new LogicalEvaluationResult(exprTextFormatted, LogicalOperator.OrElse, leftAnalysis, rightAnalysis, orValue, false, binaryExpr.NodeType);
         }
 
         // AND
         if (!leftBool)
         {
             var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache);
-            return new LogicalEvaluationResult(exprText, LogicalOperator.AndAlso, leftAnalysis, null, false, true, binaryExpr.NodeType);
+            var exprTextAndShort = ExpressionDisplay.FormatBinary(leftAnalysis.ExpressionText, "&&", ExpressionDisplay.GetIdentifierOrPath(binaryExpr.Right), false);
+            return new LogicalEvaluationResult(exprTextAndShort, LogicalOperator.AndAlso, leftAnalysis, null, false, true, binaryExpr.NodeType);
         }
 
         var leftResult = AnalyzeExpression(binaryExpr.Left, cache);
@@ -100,7 +97,24 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
         var rightBool = (bool)GetValue(binaryExpr.Right, cache)!;
         var andValue = leftBool && rightBool;
 
-        return new LogicalEvaluationResult(exprText, LogicalOperator.AndAlso, leftResult, rightResult, andValue, false, binaryExpr.NodeType);
+        var leftWrappedAnd = WrapIfNeeded(leftResult, LogicalOperator.AndAlso);
+        var rightWrappedAnd = WrapIfNeeded(rightResult, LogicalOperator.AndAlso);
+        var exprTextFormattedAnd = ExpressionDisplay.FormatBinary(leftWrappedAnd, "&&", rightWrappedAnd, false);
+
+        return new LogicalEvaluationResult(exprTextFormattedAnd, LogicalOperator.AndAlso, leftResult, rightResult, andValue, false, binaryExpr.NodeType);
+    }
+
+    static string WrapIfNeeded(EvaluationResult result, LogicalOperator parentOperator)
+    {
+        if (result is LogicalEvaluationResult logical)
+        {
+            var childPrecedence = logical.Operator == LogicalOperator.AndAlso ? 2 : 1;
+            var parentPrecedence = parentOperator == LogicalOperator.AndAlso ? 2 : 1;
+            if (childPrecedence < parentPrecedence)
+                return $"({logical.ExpressionText})";
+        }
+
+        return result.ExpressionText;
     }
 
     static EvaluationResult AnalyzeNot(UnaryExpression unaryExpr, Dictionary<Expression, object?> cache)
