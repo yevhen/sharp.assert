@@ -26,6 +26,17 @@ record DefaultComparisonResult(AssertionOperand LeftOperand, AssertionOperand Ri
     : ComparisonResult(LeftOperand, RightOperand)
 {
     public override T Accept<T>(IComparisonResultVisitor<T> visitor) => visitor.Visit(this);
+
+    public IReadOnlyList<RenderedLine> Render()
+    {
+        return new List<RenderedLine>
+        {
+            new(0, $"Left:  {FormatValue(LeftOperand.Value)}"),
+            new(0, $"Right: {FormatValue(RightOperand.Value)}")
+        };
+    }
+
+    static string FormatValue(object? value) => ValueFormatter.Format(value);
 }
 
 record NullableComparisonResult(
@@ -40,6 +51,26 @@ record NullableComparisonResult(
     : ComparisonResult(LeftOperand, RightOperand)
 {
     public override T Accept<T>(IComparisonResultVisitor<T> visitor) => visitor.Visit(this);
+
+    public IReadOnlyList<RenderedLine> Render()
+    {
+        var lines = new List<RenderedLine>
+        {
+            new(0, $"Left:  {FormatNullableValue(LeftValue, LeftIsNull, LeftExpressionType)}"),
+            new(0, $"Right: {FormatNullableValue(RightValue, RightIsNull, RightExpressionType)}")
+        };
+        return lines;
+    }
+
+    static string FormatNullableValue(object? value, bool isNull, Type? expressionType)
+    {
+        if (isNull)
+            return "null";
+
+        return expressionType is not null
+            ? ValueFormatter.FormatWithType(value, expressionType)
+            : ValueFormatter.Format(value);
+    }
 }
 
 record StringComparisonResult(

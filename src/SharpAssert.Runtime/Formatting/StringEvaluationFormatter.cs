@@ -135,21 +135,12 @@ class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor
 
     public IReadOnlyList<RenderedLine> Visit(DefaultComparisonResult result)
     {
-        return new List<RenderedLine>
-        {
-            new(0, $"Left:  {FormatValue(result.LeftOperand.Value)}"),
-            new(0, $"Right: {FormatValue(result.RightOperand.Value)}")
-        };
+        return result.Render();
     }
 
     public IReadOnlyList<RenderedLine> Visit(NullableComparisonResult result)
     {
-        var lines = new List<RenderedLine>
-        {
-            new(0, $"Left:  {FormatNullableValue(result.LeftValue, result.LeftIsNull, result.LeftExpressionType)}"),
-            new(0, $"Right: {FormatNullableValue(result.RightValue, result.RightIsNull, result.RightExpressionType)}")
-        };
-        return lines;
+        return result.Render();
     }
 
     public IReadOnlyList<RenderedLine> Visit(StringComparisonResult result)
@@ -170,16 +161,6 @@ class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor
     public IReadOnlyList<RenderedLine> Visit(SequenceEqualComparisonResult result)
     {
         return result.Render();
-    }
-
-    static string FormatNullableValue(object? value, bool isNull, Type? expressionType)
-    {
-        if (isNull)
-            return "null";
-
-        return expressionType is not null
-            ? ValueFormatter.FormatWithType(value, expressionType)
-            : ValueFormatter.Format(value);
     }
 
 }
