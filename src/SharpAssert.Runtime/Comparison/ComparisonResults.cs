@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using DiffPlex.DiffBuilder.Model;
+using SharpAssert;
 using SharpAssert.Runtime.Evaluation;
 
 namespace SharpAssert.Runtime.Comparison;
@@ -135,6 +137,39 @@ record CollectionComparisonResult(
     : ComparisonResult(LeftOperand, RightOperand)
 {
     public override T Accept<T>(IComparisonResultVisitor<T> visitor) => visitor.Visit(this);
+
+    public IReadOnlyList<RenderedLine> Render()
+    {
+        var lines = new List<RenderedLine>
+        {
+            new(0, $"Left:  {FormatCollection(LeftPreview)}"),
+            new(0, $"Right: {FormatCollection(RightPreview)}")
+        };
+
+        if (FirstDifference is not null)
+            lines.Add(new RenderedLine(0,
+                $"First difference at index {FirstDifference.Index}: expected {FormatValue(FirstDifference.LeftValue)}, got {FormatValue(FirstDifference.RightValue)}"));
+
+        if (LengthDifference is not null)
+        {
+            if (LengthDifference.Extra is not null)
+                lines.Add(new RenderedLine(0, $"Extra elements: {FormatCollection(LengthDifference.Extra)}"));
+            if (LengthDifference.Missing is not null)
+                lines.Add(new RenderedLine(0, $"Missing elements: {FormatCollection(LengthDifference.Missing)}"));
+        }
+
+        return lines;
+    }
+
+    static string FormatCollection(IReadOnlyList<object?> items)
+    {
+        if (items.Count == 0)
+            return "[]";
+
+        return $"[{string.Join(", ", items.Select(FormatValue))}]";
+    }
+
+    static string FormatValue(object? value) => ValueFormatter.Format(value);
 }
 
 record CollectionMismatch(int Index, object? LeftValue, object? RightValue);

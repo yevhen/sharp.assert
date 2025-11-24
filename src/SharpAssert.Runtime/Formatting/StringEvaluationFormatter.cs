@@ -159,25 +159,7 @@ class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor
 
     public IReadOnlyList<RenderedLine> Visit(CollectionComparisonResult result)
     {
-        var lines = new List<RenderedLine>
-        {
-            new(0, $"Left:  {FormatCollection(result.LeftPreview)}"),
-            new(0, $"Right: {FormatCollection(result.RightPreview)}")
-        };
-
-        if (result.FirstDifference is not null)
-            lines.Add(new RenderedLine(0,
-                $"First difference at index {result.FirstDifference.Index}: expected {FormatValue(result.FirstDifference.LeftValue)}, got {FormatValue(result.FirstDifference.RightValue)}"));
-
-        if (result.LengthDifference is not null)
-        {
-            if (result.LengthDifference.Extra is not null)
-                lines.Add(new RenderedLine(0, $"Extra elements: {FormatCollection(result.LengthDifference.Extra)}"));
-            if (result.LengthDifference.Missing is not null)
-                lines.Add(new RenderedLine(0, $"Missing elements: {FormatCollection(result.LengthDifference.Missing)}"));
-        }
-
-        return lines;
+        return result.Render();
     }
 
     public IReadOnlyList<RenderedLine> Visit(ObjectComparisonResult result)
