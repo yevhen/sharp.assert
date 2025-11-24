@@ -1,19 +1,11 @@
 using System.Text;
-using System.Linq;
 using DiffPlex.DiffBuilder.Model;
 
 namespace SharpAssert;
 
-class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<RenderedLine>>, IComparisonResultVisitor<IReadOnlyList<RenderedLine>>
+class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor<IReadOnlyList<RenderedLine>>,
+    IComparisonResultVisitor<IReadOnlyList<RenderedLine>>
 {
-    readonly string indent;
-    bool suppressHeader;
-
-    public StringEvaluationFormatter(string indent = "  ")
-    {
-        this.indent = indent;
-    }
-
     public string Format(AssertionEvaluationResult result)
     {
         if (result.Passed)
@@ -31,7 +23,6 @@ class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<Rendere
         sb.Append("  at ");
         sb.AppendLine(locationPart);
 
-        suppressHeader = true;
         var lines = result.Result.Accept(this);
         AppendLines(sb, lines, baseIndent: 1);
 
@@ -45,14 +36,12 @@ class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<Rendere
     {
         var lines = new List<RenderedLine>();
 
-        var wasSuppressed = suppressHeader;
-        suppressHeader = false;
-        if (!wasSuppressed && !string.IsNullOrEmpty(result.ExpressionText))
+        if (!string.IsNullOrEmpty(result.ExpressionText))
             lines.Add(new RenderedLine(0, result.ExpressionText));
 
         lines.AddRange(RenderLabeled(result.Left, "Left"));
 
-        if (!result.ShortCircuited && result.Right is not null)
+        if (result is { ShortCircuited: false, Right: not null })
             lines.AddRange(RenderLabeled(result.Right, "Right"));
 
         lines.Add(new RenderedLine(0, GetLogicalExplanation(result)));
@@ -62,11 +51,9 @@ class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<Rendere
 
     public IReadOnlyList<RenderedLine> Visit(UnaryEvaluationResult result)
     {
-        var wasSuppressed = suppressHeader;
-        suppressHeader = false;
         var lines = new List<RenderedLine>();
 
-        if (!wasSuppressed && result.ExpressionText is { Length: > 0 })
+        if (result.ExpressionText is { Length: > 0 })
             lines.Add(new RenderedLine(0, result.ExpressionText));
 
         lines.AddRange(RenderLabeled(result.Operand, "Operand"));
@@ -77,42 +64,33 @@ class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<Rendere
 
     public IReadOnlyList<RenderedLine> Visit(BinaryComparisonEvaluationResult result)
     {
-        var wasSuppressed = suppressHeader;
-        suppressHeader = false;
         var lines = new List<RenderedLine>();
 
-        if (!wasSuppressed && result.ExpressionText is { Length: > 0 })
+        if (result.ExpressionText is { Length: > 0 })
             lines.Add(new RenderedLine(0, result.ExpressionText));
-
-        var detailIndent = wasSuppressed ? 0 : 1;
 
         var comparisonLines = result.Comparison.Accept(this);
         foreach (var line in comparisonLines)
-            lines.Add(new RenderedLine(detailIndent + line.IndentLevel, line.Text));
+            lines.Add(line with { IndentLevel = 1 + line.IndentLevel });
 
         return lines;
     }
 
     public IReadOnlyList<RenderedLine> Visit(ValueEvaluationResult result)
     {
-        suppressHeader = false;
         var valueText = FormatValue(result.Value);
         return new List<RenderedLine> { new(0, valueText) };
     }
 
     public IReadOnlyList<RenderedLine> Visit(FormattedEvaluationResult result)
     {
-        var wasSuppressed = suppressHeader;
-        suppressHeader = false;
         var lines = new List<RenderedLine>();
 
-        if (!wasSuppressed && !string.IsNullOrEmpty(result.ExpressionText))
+        if (!string.IsNullOrEmpty(result.ExpressionText))
             lines.Add(new RenderedLine(0, result.ExpressionText));
 
-        var detailIndent = wasSuppressed ? 0 : 1;
-
         foreach (var line in result.Lines)
-            lines.Add(new RenderedLine(detailIndent, line));
+            lines.Add(new RenderedLine(1, line));
 
         return lines;
     }
@@ -128,7 +106,7 @@ class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<Rendere
     {
         var childLines = child.Accept(this);
         if (childLines.Count == 0)
-            return Array.Empty<RenderedLine>();
+            return [];
 
         var lines = new List<RenderedLine>
         {
@@ -154,7 +132,6 @@ class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<Rendere
 
     static string FormatValue(object? value) => ValueFormatter.Format(value);
 
-    // Comparison result visitor implementations
     public IReadOnlyList<RenderedLine> Visit(DefaultComparisonResult result)
     {
         return new List<RenderedLine>
@@ -332,8 +309,8 @@ class StringEvaluationFormatter : IEvaluationResultVisitor<IReadOnlyList<Rendere
 
     static string RenderSequenceDiffLine(SequenceDiffLine diff) => diff.Operation switch
     {
-        SequenceDiffOperation.Added => $"+[{diff.Index}] {diff.Value}",
-        SequenceDiffOperation.Removed => $"-[{diff.Index}] {diff.Value}",
-        _ => $" [{diff.Index}] {diff.Value}"
+        SequenceDiffOperation.Added => $"+[{diff.Index}] {FormatValue(diff.Value)}",
+        SequenceDiffOperation.Removed => $"-[{diff.Index}] {FormatValue(diff.Value)}",
+        _ => $" [{diff.Index}] {FormatValue(diff.Value)}"
     };
 }
