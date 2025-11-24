@@ -18,20 +18,9 @@ enum UnaryOperator
 
 record RenderedLine(int IndentLevel, string Text);
 
-interface IEvaluationResultVisitor<out T>
-{
-    T Visit(AssertionEvaluationResult result);
-    T Visit(LogicalEvaluationResult result);
-    T Visit(UnaryEvaluationResult result);
-    T Visit(BinaryComparisonEvaluationResult result);
-    T Visit(ValueEvaluationResult result);
-    T Visit(FormattedEvaluationResult result);
-}
-
 abstract record EvaluationResult(string ExpressionText)
 {
     public virtual bool? BooleanValue => null;
-    public abstract T Accept<T>(IEvaluationResultVisitor<T> visitor);
 }
 
 record AssertionEvaluationResult(AssertionContext Context, EvaluationResult Result)
@@ -39,7 +28,6 @@ record AssertionEvaluationResult(AssertionContext Context, EvaluationResult Resu
 {
     public bool Passed => Result.BooleanValue == true;
     public override bool? BooleanValue => Result.BooleanValue;
-    public override T Accept<T>(IEvaluationResultVisitor<T> visitor) => visitor.Visit(this);
 }
 
 record LogicalEvaluationResult(
@@ -53,7 +41,6 @@ record LogicalEvaluationResult(
     : EvaluationResult(ExpressionText)
 {
     public override bool? BooleanValue => Value;
-    public override T Accept<T>(IEvaluationResultVisitor<T> visitor) => visitor.Visit(this);
 
     public IReadOnlyList<RenderedLine> Render(Func<EvaluationResult, IReadOnlyList<RenderedLine>> renderChild)
     {
@@ -109,7 +96,6 @@ record UnaryEvaluationResult(
     : EvaluationResult(ExpressionText)
 {
     public override bool? BooleanValue => Value;
-    public override T Accept<T>(IEvaluationResultVisitor<T> visitor) => visitor.Visit(this);
 
     public IReadOnlyList<RenderedLine> Render(Func<EvaluationResult, IReadOnlyList<RenderedLine>> renderChild)
     {
@@ -155,7 +141,6 @@ record BinaryComparisonEvaluationResult(
     : EvaluationResult(ExpressionText)
 {
     public override bool? BooleanValue => Value;
-    public override T Accept<T>(IEvaluationResultVisitor<T> visitor) => visitor.Visit(this);
 
     public IReadOnlyList<RenderedLine> Render(Func<ComparisonResult, IReadOnlyList<RenderedLine>> renderComparison)
     {
@@ -176,7 +161,6 @@ record ValueEvaluationResult(string ExpressionText, object? Value, Type ValueTyp
     : EvaluationResult(ExpressionText)
 {
     public override bool? BooleanValue => Value as bool?;
-    public override T Accept<T>(IEvaluationResultVisitor<T> visitor) => visitor.Visit(this);
 
     public IReadOnlyList<RenderedLine> Render()
     {
@@ -192,7 +176,6 @@ record FormattedEvaluationResult(string ExpressionText, bool Value, IReadOnlyLis
     : EvaluationResult(ExpressionText)
 {
     public override bool? BooleanValue => Value;
-    public override T Accept<T>(IEvaluationResultVisitor<T> visitor) => visitor.Visit(this);
 
     public IReadOnlyList<RenderedLine> Render()
     {

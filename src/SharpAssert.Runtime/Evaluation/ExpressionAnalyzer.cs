@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using SharpAssert.Formatting;
 using SharpAssert.Runtime.Comparison;
-using SharpAssert.Runtime.Formatting;
 using static System.Linq.Expressions.ExpressionType;
 
 namespace SharpAssert.Runtime.Evaluation;

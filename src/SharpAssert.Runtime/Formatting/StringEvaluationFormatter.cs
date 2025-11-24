@@ -2,10 +2,9 @@ using System.Text;
 using SharpAssert.Runtime.Comparison;
 using SharpAssert.Runtime.Evaluation;
 
-namespace SharpAssert.Runtime.Formatting;
+namespace SharpAssert.Formatting;
 
-class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor<IReadOnlyList<RenderedLine>>,
-    IComparisonResultVisitor<IReadOnlyList<RenderedLine>>
+class StringEvaluationFormatter(string indent = "  ")
 {
     public string Format(AssertionEvaluationResult result)
     {
@@ -24,29 +23,33 @@ class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor
         sb.Append("  at ");
         sb.AppendLine(locationPart);
 
-        var lines = result.Result.Accept(this);
+        var lines = RenderEvaluation(result.Result);
         AppendLines(sb, lines, baseIndent: 1);
 
         return sb.ToString().TrimEnd();
     }
 
-    public IReadOnlyList<RenderedLine> Visit(AssertionEvaluationResult result) =>
-        result.Result.Accept(this);
+    IReadOnlyList<RenderedLine> RenderEvaluation(EvaluationResult result) => result switch
+    {
+        AssertionEvaluationResult assertion => RenderEvaluation(assertion.Result),
+        LogicalEvaluationResult logical => logical.Render(RenderEvaluation),
+        UnaryEvaluationResult unary => unary.Render(RenderEvaluation),
+        BinaryComparisonEvaluationResult binary => binary.Render(RenderComparison),
+        ValueEvaluationResult value => value.Render(),
+        FormattedEvaluationResult formatted => formatted.Render(),
+        _ => []
+    };
 
-    public IReadOnlyList<RenderedLine> Visit(LogicalEvaluationResult result) =>
-        result.Render(RenderChild);
-
-    public IReadOnlyList<RenderedLine> Visit(UnaryEvaluationResult result) =>
-        result.Render(RenderChild);
-
-    public IReadOnlyList<RenderedLine> Visit(BinaryComparisonEvaluationResult result) =>
-        result.Render(RenderComparison);
-
-    public IReadOnlyList<RenderedLine> Visit(ValueEvaluationResult result) =>
-        result.Render();
-
-    public IReadOnlyList<RenderedLine> Visit(FormattedEvaluationResult result) =>
-        result.Render();
+    IReadOnlyList<RenderedLine> RenderComparison(ComparisonResult comparison) => comparison switch
+    {
+        DefaultComparisonResult defaultResult => defaultResult.Render(),
+        NullableComparisonResult nullable => nullable.Render(),
+        StringComparisonResult stringResult => stringResult.Render(),
+        CollectionComparisonResult collection => collection.Render(),
+        ObjectComparisonResult @object => @object.Render(),
+        SequenceEqualComparisonResult sequence => sequence.Render(),
+        _ => []
+    };
 
     void AppendLines(StringBuilder sb, IReadOnlyList<RenderedLine> lines, int baseIndent)
     {
@@ -58,38 +61,4 @@ class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor
             sb.AppendLine(line.Text);
         }
     }
-
-    IReadOnlyList<RenderedLine> RenderChild(EvaluationResult child) => child.Accept(this);
-    IReadOnlyList<RenderedLine> RenderComparison(ComparisonResult comparison) => comparison.Accept(this);
-
-    public IReadOnlyList<RenderedLine> Visit(DefaultComparisonResult result)
-    {
-        return result.Render();
-    }
-
-    public IReadOnlyList<RenderedLine> Visit(NullableComparisonResult result)
-    {
-        return result.Render();
-    }
-
-    public IReadOnlyList<RenderedLine> Visit(StringComparisonResult result)
-    {
-        return result.Render();
-    }
-
-    public IReadOnlyList<RenderedLine> Visit(CollectionComparisonResult result)
-    {
-        return result.Render();
-    }
-
-    public IReadOnlyList<RenderedLine> Visit(ObjectComparisonResult result)
-    {
-        return result.Render();
-    }
-
-    public IReadOnlyList<RenderedLine> Visit(SequenceEqualComparisonResult result)
-    {
-        return result.Render();
-    }
-
 }

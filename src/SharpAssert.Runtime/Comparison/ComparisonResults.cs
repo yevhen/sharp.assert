@@ -7,27 +7,15 @@ using SharpAssert.Runtime.Evaluation;
 
 namespace SharpAssert.Runtime.Comparison;
 
-interface IComparisonResultVisitor<out T>
-{
-    T Visit(DefaultComparisonResult result);
-    T Visit(NullableComparisonResult result);
-    T Visit(StringComparisonResult result);
-    T Visit(CollectionComparisonResult result);
-    T Visit(ObjectComparisonResult result);
-    T Visit(SequenceEqualComparisonResult result);
-}
-
 abstract record ComparisonResult(AssertionOperand Left, AssertionOperand Right)
 {
-    public abstract T Accept<T>(IComparisonResultVisitor<T> visitor);
+    public abstract IReadOnlyList<RenderedLine> Render();
 }
 
 record DefaultComparisonResult(AssertionOperand LeftOperand, AssertionOperand RightOperand)
     : ComparisonResult(LeftOperand, RightOperand)
 {
-    public override T Accept<T>(IComparisonResultVisitor<T> visitor) => visitor.Visit(this);
-
-    public IReadOnlyList<RenderedLine> Render()
+    public override IReadOnlyList<RenderedLine> Render()
     {
         return new List<RenderedLine>
         {
@@ -50,9 +38,7 @@ record NullableComparisonResult(
     Type? RightExpressionType)
     : ComparisonResult(LeftOperand, RightOperand)
 {
-    public override T Accept<T>(IComparisonResultVisitor<T> visitor) => visitor.Visit(this);
-
-    public IReadOnlyList<RenderedLine> Render()
+    public override IReadOnlyList<RenderedLine> Render()
     {
         var lines = new List<RenderedLine>
         {
@@ -81,9 +67,7 @@ record StringComparisonResult(
     StringDiff Diff)
     : ComparisonResult(LeftOperand, RightOperand)
 {
-    public override T Accept<T>(IComparisonResultVisitor<T> visitor) => visitor.Visit(this);
-
-    public IReadOnlyList<RenderedLine> Render()
+    public override IReadOnlyList<RenderedLine> Render()
     {
         var lines = new List<RenderedLine>();
 
@@ -167,9 +151,7 @@ record CollectionComparisonResult(
     CollectionLengthDelta? LengthDifference)
     : ComparisonResult(LeftOperand, RightOperand)
 {
-    public override T Accept<T>(IComparisonResultVisitor<T> visitor) => visitor.Visit(this);
-
-    public IReadOnlyList<RenderedLine> Render()
+    public override IReadOnlyList<RenderedLine> Render()
     {
         var lines = new List<RenderedLine>
         {
@@ -214,9 +196,7 @@ record ObjectComparisonResult(
     int TruncatedCount)
     : ComparisonResult(LeftOperand, RightOperand)
 {
-    public override T Accept<T>(IComparisonResultVisitor<T> visitor) => visitor.Visit(this);
-
-    public IReadOnlyList<RenderedLine> Render()
+    public override IReadOnlyList<RenderedLine> Render()
     {
         var lines = new List<RenderedLine>();
 
@@ -252,9 +232,7 @@ record SequenceEqualComparisonResult(
     string? Error = null)
     : ComparisonResult(LeftOperand, RightOperand)
 {
-    public override T Accept<T>(IComparisonResultVisitor<T> visitor) => visitor.Visit(this);
-
-    public IReadOnlyList<RenderedLine> Render()
+    public override IReadOnlyList<RenderedLine> Render()
     {
         var lines = new List<RenderedLine>();
 

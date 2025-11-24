@@ -1,6 +1,5 @@
 using System.Linq;
 using SharpAssert.Runtime.Comparison;
-using SharpAssert.Runtime.Formatting;
 
 namespace SharpAssert.Runtime.Evaluation;
 
@@ -67,8 +66,7 @@ static class DynamicExpressionAnalyzer
         var right = new AssertionOperand(rightValue);
 
         var comparison = ComparerService.GetComparisonResult(left, right);
-        var formatter = new StringEvaluationFormatter();
-        var comparisonLines = comparison.Accept(formatter);
+        var comparisonLines = comparison.Render();
         var details = string.Join("\n", comparisonLines.Select(l => $"  {l.Text}"));
 
         return string.IsNullOrEmpty(details) ? baseMessage.TrimEnd('\n') : baseMessage + details;
