@@ -1,5 +1,4 @@
 using System.Text;
-using DiffPlex.DiffBuilder.Model;
 using SharpAssert.Runtime.Comparison;
 using SharpAssert.Runtime.Evaluation;
 
@@ -155,33 +154,7 @@ class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor
 
     public IReadOnlyList<RenderedLine> Visit(StringComparisonResult result)
     {
-        var lines = new List<RenderedLine>();
-
-        if (result.Diff is InlineStringDiff inline)
-        {
-            lines.Add(new RenderedLine(0, $"Left:  {FormatStringValue(result.LeftText)}"));
-            lines.Add(new RenderedLine(0, $"Right: {FormatStringValue(result.RightText)}"));
-            var diffText = RenderInlineDiff(inline.Segments);
-            lines.Add(new RenderedLine(0, $"Diff: {diffText}"));
-            return lines;
-        }
-
-        if (result.Diff is MultilineStringDiff multi)
-        {
-            lines.Add(new RenderedLine(0, "Left:"));
-            foreach (var line in (result.LeftText ?? string.Empty).Split('\n'))
-                lines.Add(new RenderedLine(1, line));
-
-            lines.Add(new RenderedLine(0, "Right:"));
-            foreach (var line in (result.RightText ?? string.Empty).Split('\n'))
-                lines.Add(new RenderedLine(1, line));
-
-            lines.Add(new RenderedLine(0, "Diff:"));
-            foreach (var diffLine in multi.Lines)
-                lines.Add(new RenderedLine(1, RenderMultilineDiffLine(diffLine)));
-        }
-
-        return lines;
+        return result.Render();
     }
 
     public IReadOnlyList<RenderedLine> Visit(CollectionComparisonResult result)
@@ -274,32 +247,6 @@ class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor
             ? ValueFormatter.FormatWithType(value, expressionType)
             : ValueFormatter.Format(value);
     }
-
-    static string FormatStringValue(string? value) => value == null ? "null" : $"\"{value}\"";
-
-    static string RenderInlineDiff(IReadOnlyList<DiffSegment> segments)
-    {
-        var sb = new StringBuilder();
-        foreach (var segment in segments)
-        {
-            sb.Append(segment.Operation switch
-            {
-                StringDiffOperation.Deleted => $"[-{segment.Text}]",
-                StringDiffOperation.Inserted => $"[+{segment.Text}]",
-                _ => segment.Text
-            });
-        }
-        return sb.ToString();
-    }
-
-    static string RenderMultilineDiffLine(TextDiffLine line) => line.Type switch
-    {
-        ChangeType.Unchanged => line.Text,
-        ChangeType.Deleted => $"- {line.Text}",
-        ChangeType.Inserted => $"+ {line.Text}",
-        ChangeType.Modified => $"~ {line.Text}",
-        _ => line.Text
-    };
 
     static string FormatCollection(IReadOnlyList<object?> items)
     {
