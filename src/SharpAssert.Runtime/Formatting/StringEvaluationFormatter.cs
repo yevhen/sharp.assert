@@ -1,7 +1,9 @@
 using System.Text;
 using DiffPlex.DiffBuilder.Model;
+using SharpAssert.Runtime.Comparison;
+using SharpAssert.Runtime.Evaluation;
 
-namespace SharpAssert;
+namespace SharpAssert.Runtime.Formatting;
 
 class StringEvaluationFormatter(string indent = "  ") : IEvaluationResultVisitor<IReadOnlyList<RenderedLine>>,
     IComparisonResultVisitor<IReadOnlyList<RenderedLine>>

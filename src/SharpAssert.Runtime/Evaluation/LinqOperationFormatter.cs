@@ -3,7 +3,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace SharpAssert;
+namespace SharpAssert.Runtime.Evaluation;
 
 static class LinqOperationFormatter
 {

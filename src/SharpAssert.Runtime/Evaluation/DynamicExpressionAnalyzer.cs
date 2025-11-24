@@ -1,6 +1,8 @@
 using System.Linq;
+using SharpAssert.Runtime.Comparison;
+using SharpAssert.Runtime.Formatting;
 
-namespace SharpAssert;
+namespace SharpAssert.Runtime.Evaluation;
 
 static class DynamicExpressionAnalyzer
 {

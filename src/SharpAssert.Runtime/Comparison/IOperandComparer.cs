@@ -1,4 +1,4 @@
-namespace SharpAssert;
+namespace SharpAssert.Runtime.Comparison;
 
 interface IOperandComparer
 {

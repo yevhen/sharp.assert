@@ -1,4 +1,6 @@
-namespace SharpAssert;
+using SharpAssert.Runtime.Evaluation;
+
+namespace SharpAssert.Runtime.Comparison;
 
 class StringComparer : IOperandComparer
 {

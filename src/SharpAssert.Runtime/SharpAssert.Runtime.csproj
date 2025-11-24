@@ -30,6 +30,6 @@
     <ItemGroup>
         <PackageReference Include="CompareNETObjects" Version="4.84.0" />
         <PackageReference Include="DiffPlex" Version="1.8.0" />
-    </ItemGroup>
+  </ItemGroup>
 
 </Project>

@@ -2,8 +2,9 @@ using System.Collections;
 using System.Linq.Expressions;
 using DiffPlex;
 using DiffPlex.Model;
+using SharpAssert.Runtime.Evaluation;
 
-namespace SharpAssert;
+namespace SharpAssert.Runtime.Comparison;
 
 static class SequenceEqualComparer
 {

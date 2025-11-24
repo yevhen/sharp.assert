@@ -2,7 +2,7 @@ using System.Collections;
 using System.Linq;
 using KellermanSoftware.CompareNetObjects;
 
-namespace SharpAssert;
+namespace SharpAssert.Runtime.Comparison;
 
 class ObjectComparer : IOperandComparer
 {

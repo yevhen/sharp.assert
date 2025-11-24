@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using SharpAssert.Runtime.Comparison;
 
-namespace SharpAssert;
+namespace SharpAssert.Runtime.Evaluation;
 
 enum LogicalOperator
 {

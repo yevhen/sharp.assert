@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Linq;
 
-namespace SharpAssert;
+namespace SharpAssert.Runtime.Comparison;
 
 class CollectionComparer : IOperandComparer
 {

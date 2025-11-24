@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Linq;
+using SharpAssert.Runtime.Comparison;
+using SharpAssert.Runtime.Formatting;
 
-namespace SharpAssert;
+namespace SharpAssert.Runtime.Evaluation;
 
 class AsyncExpressionAnalyzer
 {

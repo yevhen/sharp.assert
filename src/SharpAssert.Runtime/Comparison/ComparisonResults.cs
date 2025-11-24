@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using DiffPlex.DiffBuilder.Model;
 
-namespace SharpAssert;
+namespace SharpAssert.Runtime.Comparison;
 
 interface IComparisonResultVisitor<out T>
 {

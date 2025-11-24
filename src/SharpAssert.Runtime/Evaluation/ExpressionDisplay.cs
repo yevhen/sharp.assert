@@ -1,7 +1,8 @@
 using System.Linq.Expressions;
+using SharpAssert.Runtime.Comparison;
 using static System.Linq.Expressions.ExpressionType;
 
-namespace SharpAssert;
+namespace SharpAssert.Runtime.Evaluation;
 
 static class ExpressionDisplay
 {
