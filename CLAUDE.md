@@ -47,6 +47,7 @@ SharpAssert is a Pytest‑style assertions library for .NET
 - DefaultComparisonResult and NullableComparisonResult now expose `Render()` for their output; prefer those over formatter-side duplication.
 - Logical, unary, binary, value, and formatted evaluation results now render themselves via `Render()` helpers, with StringEvaluationFormatter delegating to them.
 - Visitor pattern removed: StringEvaluationFormatter now directly pattern-matches evaluation/comparison results and calls their `Render()` methods; comparison results have abstract `Render()` on the base type.
+- Formatter is split: header building is in `AssertionHeaderBuilder`, rendering glue in `EvaluationRenderer` + `RenderedLineWriter`, keeping `StringEvaluationFormatter` as a thin orchestrator.
 
 # CRITICAL: NAMING IS EVERYTHING
 

@@ -6,41 +6,35 @@ namespace SharpAssert.Formatting;
 
 class StringEvaluationFormatter(string indent = "  ")
 {
+    readonly EvaluationRenderer renderer = new();
+
     public string Format(AssertionEvaluationResult result)
     {
         if (result.Passed)
             return string.Empty;
 
-        var sb = new StringBuilder();
-        var context = result.Context;
-        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
-
-        if (context.Message is not null)
-            sb.AppendLine(context.Message);
-
-        sb.Append("Assertion failed: ");
-        sb.Append(context.Expression);
-        sb.Append("  at ");
-        sb.AppendLine(locationPart);
-
-        var lines = RenderEvaluation(result.Result);
-        AppendLines(sb, lines, baseIndent: 1);
+        var sb = new StringBuilder(AssertionHeaderBuilder.Build(result.Context));
+        var lines = renderer.Render(result.Result);
+        RenderedLineWriter.Append(sb, lines, indent, baseIndent: 1);
 
         return sb.ToString().TrimEnd();
     }
+}
 
-    IReadOnlyList<RenderedLine> RenderEvaluation(EvaluationResult result) => result switch
+class EvaluationRenderer
+{
+    public IReadOnlyList<RenderedLine> Render(EvaluationResult result) => result switch
     {
-        AssertionEvaluationResult assertion => RenderEvaluation(assertion.Result),
-        LogicalEvaluationResult logical => logical.Render(RenderEvaluation),
-        UnaryEvaluationResult unary => unary.Render(RenderEvaluation),
-        BinaryComparisonEvaluationResult binary => binary.Render(RenderComparison),
+        AssertionEvaluationResult assertion => Render(assertion.Result),
+        LogicalEvaluationResult logical => logical.Render(Render),
+        UnaryEvaluationResult unary => unary.Render(Render),
+        BinaryComparisonEvaluationResult binary => binary.Render(Render),
         ValueEvaluationResult value => value.Render(),
         FormattedEvaluationResult formatted => formatted.Render(),
-        _ => []
+        _ => Array.Empty<RenderedLine>()
     };
 
-    IReadOnlyList<RenderedLine> RenderComparison(ComparisonResult comparison) => comparison switch
+    IReadOnlyList<RenderedLine> Render(ComparisonResult comparison) => comparison switch
     {
         DefaultComparisonResult defaultResult => defaultResult.Render(),
         NullableComparisonResult nullable => nullable.Render(),
@@ -48,10 +42,30 @@ class StringEvaluationFormatter(string indent = "  ")
         CollectionComparisonResult collection => collection.Render(),
         ObjectComparisonResult @object => @object.Render(),
         SequenceEqualComparisonResult sequence => sequence.Render(),
-        _ => []
+        _ => Array.Empty<RenderedLine>()
     };
+}
 
-    void AppendLines(StringBuilder sb, IReadOnlyList<RenderedLine> lines, int baseIndent)
+static class AssertionHeaderBuilder
+{
+    public static string Build(AssertionContext context)
+    {
+        var sb = new StringBuilder();
+        if (context.Message is not null)
+            sb.AppendLine(context.Message);
+
+        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
+        sb.Append("Assertion failed: ");
+        sb.Append(context.Expression);
+        sb.Append("  at ");
+        sb.AppendLine(locationPart);
+        return sb.ToString();
+    }
+}
+
+static class RenderedLineWriter
+{
+    public static void Append(StringBuilder sb, IReadOnlyList<RenderedLine> lines, string indent, int baseIndent)
     {
         foreach (var line in lines)
         {
