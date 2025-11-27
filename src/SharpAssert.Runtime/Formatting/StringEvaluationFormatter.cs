@@ -1,20 +1,17 @@
 using System.Text;
 using SharpAssert.Runtime.Evaluation;
-using SharpAssert.Runtime.Formatting;
 
-namespace SharpAssert.Formatting;
+namespace SharpAssert.Runtime.Formatting;
 
 class StringEvaluationFormatter(string indent = "  ")
 {
-    readonly EvaluationRenderer renderer = new();
-
     public string Format(AssertionEvaluationResult result)
     {
         if (result.Passed)
             return string.Empty;
 
         var sb = new StringBuilder(AssertionHeaderBuilder.Build(result.Context));
-        var lines = renderer.Render(result.Result);
+        var lines = result.Result.Render();
         Append(sb, lines, indent, baseIndent: 1);
 
         return sb.ToString().TrimEnd();

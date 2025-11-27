@@ -21,6 +21,7 @@ record RenderedLine(int IndentLevel, string Text);
 abstract record EvaluationResult(string ExpressionText)
 {
     public virtual bool? BooleanValue => null;
+    public abstract IReadOnlyList<RenderedLine> Render();
 }
 
 record AssertionEvaluationResult(AssertionContext Context, EvaluationResult Result)
@@ -28,6 +29,7 @@ record AssertionEvaluationResult(AssertionContext Context, EvaluationResult Resu
 {
     public bool Passed => Result.BooleanValue == true;
     public override bool? BooleanValue => Result.BooleanValue;
+    public override IReadOnlyList<RenderedLine> Render() => Result.Render();
 }
 
 record LogicalEvaluationResult(
@@ -42,29 +44,26 @@ record LogicalEvaluationResult(
 {
     public override bool? BooleanValue => Value;
 
-    public IReadOnlyList<RenderedLine> Render(Func<EvaluationResult, IReadOnlyList<RenderedLine>> renderChild)
+    public override IReadOnlyList<RenderedLine> Render()
     {
         var lines = new List<RenderedLine>();
 
         if (!string.IsNullOrEmpty(ExpressionText))
             lines.Add(new RenderedLine(0, ExpressionText));
 
-        lines.AddRange(RenderLabeled(renderChild, Left, "Left"));
+        lines.AddRange(RenderLabeled(Left, "Left"));
 
         if (ShortCircuited == false && Right is not null)
-            lines.AddRange(RenderLabeled(renderChild, Right, "Right"));
+            lines.AddRange(RenderLabeled(Right, "Right"));
 
         lines.Add(new RenderedLine(0, GetLogicalExplanation()));
 
         return lines;
     }
 
-    static IReadOnlyList<RenderedLine> RenderLabeled(
-        Func<EvaluationResult, IReadOnlyList<RenderedLine>> renderChild,
-        EvaluationResult child,
-        string label)
+    IReadOnlyList<RenderedLine> RenderLabeled(EvaluationResult child, string label)
     {
-        var childLines = renderChild(child);
+        var childLines = child.Render();
         if (childLines.Count == 0)
             return [];
 
@@ -97,25 +96,22 @@ record UnaryEvaluationResult(
 {
     public override bool? BooleanValue => Value;
 
-    public IReadOnlyList<RenderedLine> Render(Func<EvaluationResult, IReadOnlyList<RenderedLine>> renderChild)
+    public override IReadOnlyList<RenderedLine> Render()
     {
         var lines = new List<RenderedLine>();
 
         if (ExpressionText is { Length: > 0 })
             lines.Add(new RenderedLine(0, ExpressionText));
 
-        lines.AddRange(RenderLabeled(renderChild, Operand, "Operand"));
+        lines.AddRange(RenderLabeled(Operand, "Operand"));
         lines.Add(new RenderedLine(0, $"!: Operand was {FormatValue(OperandValue)}"));
 
         return lines;
     }
 
-    static IReadOnlyList<RenderedLine> RenderLabeled(
-        Func<EvaluationResult, IReadOnlyList<RenderedLine>> renderChild,
-        EvaluationResult child,
-        string label)
+    IReadOnlyList<RenderedLine> RenderLabeled(EvaluationResult child, string label)
     {
-        var childLines = renderChild(child);
+        var childLines = child.Render();
         if (childLines.Count == 0)
             return [];
 
@@ -142,14 +138,14 @@ record BinaryComparisonEvaluationResult(
 {
     public override bool? BooleanValue => Value;
 
-    public IReadOnlyList<RenderedLine> Render(Func<ComparisonResult, IReadOnlyList<RenderedLine>> renderComparison)
+    public override IReadOnlyList<RenderedLine> Render()
     {
         var lines = new List<RenderedLine>();
 
         if (ExpressionText is { Length: > 0 })
             lines.Add(new RenderedLine(0, ExpressionText));
 
-        var comparisonLines = renderComparison(Comparison);
+        var comparisonLines = Comparison.Render();
         foreach (var line in comparisonLines)
             lines.Add(line with { IndentLevel = 1 + line.IndentLevel });
 
@@ -162,7 +158,7 @@ record ValueEvaluationResult(string ExpressionText, object? Value, Type ValueTyp
 {
     public override bool? BooleanValue => Value as bool?;
 
-    public IReadOnlyList<RenderedLine> Render()
+    public override IReadOnlyList<RenderedLine> Render()
     {
         var valueText = ValueFormatter.Format(Value);
         return new List<RenderedLine> { new(0, valueText) };
@@ -177,7 +173,7 @@ record FormattedEvaluationResult(string ExpressionText, bool Value, IReadOnlyLis
 {
     public override bool? BooleanValue => Value;
 
-    public IReadOnlyList<RenderedLine> Render()
+    public override IReadOnlyList<RenderedLine> Render()
     {
         var lines = new List<RenderedLine>();
 

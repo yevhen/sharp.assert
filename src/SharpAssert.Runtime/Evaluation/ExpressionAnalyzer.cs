@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using SharpAssert.Formatting;
 using SharpAssert.Runtime.Formatting;
 using SharpAssert.Runtime.Comparison;
 using static System.Linq.Expressions.ExpressionType;
