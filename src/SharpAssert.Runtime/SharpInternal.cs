@@ -2,6 +2,7 @@
 using System.Linq.Expressions;
 using SharpAssert.Evaluation;
 using SharpAssert.Runtime.Evaluation;
+using SharpAssert.Runtime.Features.Async;
 
 namespace SharpAssert;
 

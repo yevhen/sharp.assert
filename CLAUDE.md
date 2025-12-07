@@ -49,6 +49,7 @@ SharpAssert is a Pytest‑style assertions library for .NET
 - Visitor pattern removed: StringEvaluationFormatter now directly pattern-matches evaluation/comparison results and calls their `Render()` methods; comparison results have abstract `Render()` on the base type.
 - Formatter is split: header building is in `AssertionHeaderBuilder`, rendering glue in `EvaluationRenderer` + `RenderedLineWriter`, keeping `StringEvaluationFormatter` as a thin orchestrator.
 - Helper placement now simplified: rendering recursion lives in `EvaluationResult.Render()`, comparison `Render()` on results, and StringEvaluationFormatter just builds the header and asks the result to render; removed extra renderer/line-writer helpers.
+- Feature move kickoff: Async moved to `Features/Async/AsyncExpressionAnalyzer.cs`; `SharpInternal` references it via new namespace. ExpressionAnalyzer namespace remains `SharpAssert.Evaluation` for now, so keep that using until it’s relocated.
 
 # CRITICAL: NAMING IS EVERYTHING
 
