@@ -51,6 +51,7 @@ SharpAssert is a Pytest‑style assertions library for .NET
 - Helper placement now simplified: rendering recursion lives in `EvaluationResult.Render()`, comparison `Render()` on results, and StringEvaluationFormatter just builds the header and asks the result to render; removed extra renderer/line-writer helpers.
 - Feature move kickoff: Async moved to `Features/Async/AsyncExpressionAnalyzer.cs`; `SharpInternal` references it via new namespace. ExpressionAnalyzer namespace remains `SharpAssert.Evaluation` for now, so keep that using until it’s relocated.
 - SequenceEqual feature started: `SequenceEqualComparer` lives under `Features/SequenceEqual` with namespace `SharpAssert.Runtime.Features.SequenceEqual`; ExpressionAnalyzer imports it.
+- String comparison feature started: `StringComparer` and `StringDiffer` live under `Features/StringComparison`; ComparerService uses an alias to avoid `System.StringComparer` ambiguity.
 
 # CRITICAL: NAMING IS EVERYTHING
 

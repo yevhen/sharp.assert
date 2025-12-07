@@ -1,3 +1,6 @@
+using SharpAssert.Runtime.Features.StringComparison;
+using StringComparisonComparer = SharpAssert.Runtime.Features.StringComparison.StringComparer;
+
 namespace SharpAssert.Runtime.Comparison;
 
 static class ComparerService
@@ -7,7 +10,7 @@ static class ComparerService
     static readonly IOperandComparer[] Comparers =
     [
         new NullableComparer(),
-        new StringComparer(),
+        new StringComparisonComparer(),
         new CollectionComparer(),
         new ObjectComparer(),
     ];

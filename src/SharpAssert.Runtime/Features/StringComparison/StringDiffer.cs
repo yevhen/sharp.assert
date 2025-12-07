@@ -3,7 +3,7 @@ using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
 using SharpAssert.Runtime.Comparison;
 
-namespace SharpAssert.Runtime.Evaluation;
+namespace SharpAssert.Runtime.Features.StringComparison;
 
 static class StringDiffer
 {
