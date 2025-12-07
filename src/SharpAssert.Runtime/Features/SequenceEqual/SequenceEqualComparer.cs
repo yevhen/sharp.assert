@@ -3,8 +3,9 @@ using System.Linq.Expressions;
 using DiffPlex;
 using DiffPlex.Model;
 using SharpAssert.Runtime.Evaluation;
+using SharpAssert.Runtime.Comparison;
 
-namespace SharpAssert.Runtime.Comparison;
+namespace SharpAssert.Runtime.Features.SequenceEqual;
 
 static class SequenceEqualComparer
 {
