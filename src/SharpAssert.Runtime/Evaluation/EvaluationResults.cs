@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Text;
 using SharpAssert;
 using SharpAssert.Runtime.Comparison;
 
@@ -30,6 +31,29 @@ record AssertionEvaluationResult(AssertionContext Context, EvaluationResult Resu
     public bool Passed => Result.BooleanValue == true;
     public override bool? BooleanValue => Result.BooleanValue;
     public override IReadOnlyList<RenderedLine> Render() => Result.Render();
+
+    public string Format(string indent = "  ")
+    {
+        if (Passed)
+            return string.Empty;
+
+        var sb = new StringBuilder(Context.FormatMessage());
+        var lines = Result.Render();
+        Append(sb, lines, indent, baseIndent: 1);
+
+        return sb.ToString().TrimEnd();
+    }
+
+    static void Append(StringBuilder sb, IReadOnlyList<RenderedLine> lines, string indent, int baseIndent)
+    {
+        foreach (var line in lines)
+        {
+            var totalIndent = baseIndent + line.IndentLevel;
+            for (var i = 0; i < totalIndent; i++)
+                sb.Append(indent);
+            sb.AppendLine(line.Text);
+        }
+    }
 }
 
 record LogicalEvaluationResult(

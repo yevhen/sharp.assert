@@ -1,11 +1,10 @@
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq.Expressions;
-using SharpAssert.Runtime.Formatting;
 using SharpAssert.Runtime.Comparison;
+using SharpAssert.Runtime.Evaluation;
 using static System.Linq.Expressions.ExpressionType;
 
-namespace SharpAssert.Runtime.Evaluation;
+namespace SharpAssert.Evaluation;
 
 abstract class ExpressionAnalyzer : ExpressionVisitor
 {
@@ -20,8 +19,7 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
         if (analysis.Passed)
             return string.Empty;
 
-        var formatter = new StringEvaluationFormatter();
-        return formatter.Format(analysis);
+        return analysis.Format();
     }
 
     internal static AssertionEvaluationResult Analyze(Expression<Func<bool>> expression, AssertionContext context)
