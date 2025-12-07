@@ -40,19 +40,6 @@ dotnet clean         # Clean build artifacts
 
 SharpAssert is a Pytest‑style assertions library for .NET
 
-- StringComparisonResult now renders its own lines via `Render()`; prefer using it instead of duplicating string diff formatting elsewhere.
-- CollectionComparisonResult now owns its rendering via `Render()`, so formatters should delegate to it for collection diffs.
-- ObjectComparisonResult now renders its differences through `Render()`, simplifying callers that need object diff lines.
-- SequenceEqualComparisonResult now renders unified diff/length mismatch via `Render()`, keeping SequenceEqual formatting inside the result.
-- DefaultComparisonResult and NullableComparisonResult now expose `Render()` for their output; prefer those over formatter-side duplication.
-- Logical, unary, binary, value, and formatted evaluation results now render themselves via `Render()` helpers, with StringEvaluationFormatter delegating to them.
-- Visitor pattern removed: StringEvaluationFormatter now directly pattern-matches evaluation/comparison results and calls their `Render()` methods; comparison results have abstract `Render()` on the base type.
-- Formatter is split: header building is in `AssertionHeaderBuilder`, rendering glue in `EvaluationRenderer` + `RenderedLineWriter`, keeping `StringEvaluationFormatter` as a thin orchestrator.
-- Helper placement now simplified: rendering recursion lives in `EvaluationResult.Render()`, comparison `Render()` on results, and StringEvaluationFormatter just builds the header and asks the result to render; removed extra renderer/line-writer helpers.
-- Feature move kickoff: Async moved to `Features/Async/AsyncExpressionAnalyzer.cs`; `SharpInternal` references it via new namespace. ExpressionAnalyzer namespace remains `SharpAssert.Evaluation` for now, so keep that using until it’s relocated.
-- SequenceEqual feature started: `SequenceEqualComparer` lives under `Features/SequenceEqual` with namespace `SharpAssert.Runtime.Features.SequenceEqual`; ExpressionAnalyzer imports it.
-- String comparison feature started: `StringComparer` and `StringDiffer` live under `Features/StringComparison`; ComparerService uses an alias to avoid `System.StringComparer` ambiguity.
-
 # CRITICAL: NAMING IS EVERYTHING
 
 1.  Variable names should communicate ROLE, not type or implementation.
