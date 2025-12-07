@@ -54,9 +54,23 @@ record NullableComparisonResult(
             return "null";
 
         return expressionType is not null
-            ? ValueFormatter.FormatWithType(value, expressionType)
+            ? FormatWithType(value, expressionType)
             : ValueFormatter.Format(value);
     }
+
+    public static string FormatWithType(object? value, Type expressionType)
+    {
+        if (value == null)
+            return "null";
+
+        if (IsNullableType(expressionType))
+            return $"{ValueFormatter.Format(value)}";
+
+        return ValueFormatter.Format(value);
+    }
+
+    static bool IsNullableType(Type type) =>
+        type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
 }
 
 record StringComparisonResult(
