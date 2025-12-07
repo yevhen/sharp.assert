@@ -104,7 +104,7 @@ public static class Sharp
             return;
 
         var context = new AssertionContext(expr ?? "condition", file ?? "unknown", line, message);
-        var formattedMessage = AssertionFormatter.FormatAssertionFailure(context);
+        var formattedMessage = context.FormatMessage();
 
         throw new SharpAssertionException(formattedMessage);
     }
