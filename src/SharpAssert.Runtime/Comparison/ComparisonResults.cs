@@ -1,8 +1,5 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using DiffPlex.DiffBuilder.Model;
-using SharpAssert;
 using SharpAssert.Runtime.Evaluation;
 
 namespace SharpAssert.Runtime.Comparison;
