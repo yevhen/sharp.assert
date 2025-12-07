@@ -132,13 +132,7 @@ static class LinqOperationFormatter
         _ => 0
     };
     
-    static string FormatValue(object? value) => value switch
-    {
-        null => "null",
-        string s => $"\"{s}\"",
-        DateTime dt => dt.ToString("M/d/yyyy", System.Globalization.CultureInfo.InvariantCulture),
-        _ => value.ToString()!
-    };
+    static string FormatValue(object? value) => ValueFormatter.Format(value);
     
     static object? GetValue(Expression expression)
     {
