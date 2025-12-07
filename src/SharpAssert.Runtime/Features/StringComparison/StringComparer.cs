@@ -1,7 +1,6 @@
-using SharpAssert.Runtime.Comparison;
-using SharpAssert.Runtime.Features.StringComparison;
+using SharpAssert.Features.Shared;
 
-namespace SharpAssert.Runtime.Features.StringComparison;
+namespace SharpAssert.Features.StringComparison;
 
 class StringComparer : IOperandComparer
 {

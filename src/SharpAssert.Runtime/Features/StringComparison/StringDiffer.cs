@@ -1,9 +1,8 @@
 using DiffPlex;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
-using SharpAssert.Runtime.Comparison;
 
-namespace SharpAssert.Runtime.Features.StringComparison;
+namespace SharpAssert.Features.StringComparison;
 
 static class StringDiffer
 {

@@ -1,9 +1,8 @@
 using System.Collections;
-using System.Linq;
-using SharpAssert.Runtime.Comparison;
-using SharpAssert.Runtime.Evaluation;
+using SharpAssert.Core;
+using SharpAssert.Features.Shared;
 
-namespace SharpAssert.Runtime.Features.Async;
+namespace SharpAssert.Features.Async;
 
 class AsyncExpressionAnalyzer
 {
@@ -44,7 +43,7 @@ class AsyncExpressionAnalyzer
 
     static string FormatBaseMessage(AssertionContext context, string? suffix = null)
     {
-        var locationPart = AssertionFormatter.FormatLocation(context.File, context.Line);
+        var locationPart = context.FormatLocation();
         var basePart = context.Message is not null
             ? $"{context.Message}\nAssertion failed: {context.Expression}  at {locationPart}\n"
             : $"Assertion failed: {context.Expression}  at {locationPart}\n";

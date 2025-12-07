@@ -60,6 +60,6 @@ sealed class DemoRunner(IDemoRenderer renderer)
     static DemoCategory? FindCategoryByName(IEnumerable<DemoCategory> categories, string name)
     {
         return categories.FirstOrDefault(c =>
-            c.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            c.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
     }
 }

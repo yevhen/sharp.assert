@@ -1,8 +1,8 @@
 #pragma warning disable CS1591
 using System.Linq.Expressions;
-using SharpAssert.Evaluation;
-using SharpAssert.Runtime.Evaluation;
-using SharpAssert.Runtime.Features.Async;
+using SharpAssert.Core;
+using SharpAssert.Features.Async;
+using SharpAssert.Features.Dynamic;
 
 namespace SharpAssert;
 

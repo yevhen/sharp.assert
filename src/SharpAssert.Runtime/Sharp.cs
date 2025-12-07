@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
-using SharpAssert.Runtime.Evaluation;
+using SharpAssert.Core;
 
 namespace SharpAssert;
 

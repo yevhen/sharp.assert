@@ -227,9 +227,9 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
     }
 
     bool IsCommonGeneratedFile(string fileName) =>
-        fileName.EndsWith(".AssemblyInfo.cs", StringComparison.OrdinalIgnoreCase) ||
-        fileName.EndsWith(".AssemblyAttributes.cs", StringComparison.OrdinalIgnoreCase) ||
-        fileName.EndsWith(".GlobalUsings.g.cs", StringComparison.OrdinalIgnoreCase) ||
+        fileName.EndsWith(".AssemblyInfo.cs", System.StringComparison.OrdinalIgnoreCase) ||
+        fileName.EndsWith(".AssemblyAttributes.cs", System.StringComparison.OrdinalIgnoreCase) ||
+        fileName.EndsWith(".GlobalUsings.g.cs", System.StringComparison.OrdinalIgnoreCase) ||
         fileName.Contains("Microsoft.NET.Test.Sdk.Program.cs");
 
     bool HasGeneratedFilePattern(string fileName) =>
