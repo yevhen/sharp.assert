@@ -253,4 +253,17 @@ public class BinaryComparisonFixture : TestBase
         action.Should().Throw<SharpAssertionException>()
             .Which.Message.Should().NotContain("DisplayClass");
     }
+
+    [Test]
+    public void Should_show_computed_values_for_complex_arithmetic()
+    {
+        var a = 2;
+        var b = 3;
+        var c = 4;
+        var d = 5;
+
+        // (a + c) = 6, (b * (d + 5)) = 30, so 6 > 30 is false
+        AssertThrows(() => Assert((a + c) > (b * (d + 5))),
+            "*(a + c) > (b * (d + 5))*Left:  6*Right: 30*");
+    }
 }
