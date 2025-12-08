@@ -2,7 +2,7 @@ using System.Text;
 
 namespace SharpAssert.Core;
 
-record AssertionContext(string Expression, string File, int Line, string? Message, ExprNode ExprNode)
+public record AssertionContext(string Expression, string File, int Line, string? Message, ExprNode ExprNode)
 {
     public string FormatMessage()
     {

@@ -15,7 +15,7 @@ enum UnaryOperator
     Not
 }
 
-record AssertionEvaluationResult(AssertionContext Context, EvaluationResult Result)
+public record AssertionEvaluationResult(AssertionContext Context, EvaluationResult Result)
     : EvaluationResult(Context.Expression)
 {
     public bool Passed => Result.BooleanValue == true;
