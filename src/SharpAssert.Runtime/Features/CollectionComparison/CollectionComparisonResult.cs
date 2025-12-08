@@ -23,12 +23,7 @@ record CollectionComparisonResult(
             lines.AddRange(FirstDifference.Render());
 
         if (LengthDifference is not null)
-        {
-            if (LengthDifference.Extra is not null)
-                lines.Add(new RenderedLine(0, $"Extra elements: {FormatCollection(LengthDifference.Extra)}"));
-            if (LengthDifference.Missing is not null)
-                lines.Add(new RenderedLine(0, $"Missing elements: {FormatCollection(LengthDifference.Missing)}"));
-        }
+            lines.AddRange(LengthDifference.Render());
 
         return lines;
     }
@@ -38,10 +33,8 @@ record CollectionComparisonResult(
         if (items.Count == 0)
             return "[]";
 
-        return $"[{string.Join(", ", items.Select(FormatValue))}]";
+        return $"[{string.Join(", ", items.Select(ValueFormatter.Format))}]";
     }
-
-    static string FormatValue(object? value) => ValueFormatter.Format(value);
 }
 
 record CollectionMismatch(int Index, object? LeftValue, object? RightValue)
@@ -50,4 +43,22 @@ record CollectionMismatch(int Index, object? LeftValue, object? RightValue)
         [new(0, $"First difference at index {Index}: expected {ValueFormatter.Format(LeftValue)}, got {ValueFormatter.Format(RightValue)}")];
 }
 
-record CollectionLengthDelta(IReadOnlyList<object?>? Missing, IReadOnlyList<object?>? Extra);
+record CollectionLengthDelta(IReadOnlyList<object?>? Missing, IReadOnlyList<object?>? Extra)
+{
+    public IReadOnlyList<RenderedLine> Render()
+    {
+        var lines = new List<RenderedLine>();
+        if (Extra is not null)
+            lines.Add(new RenderedLine(0, $"Extra elements: {FormatCollection(Extra)}"));
+        if (Missing is not null)
+            lines.Add(new RenderedLine(0, $"Missing elements: {FormatCollection(Missing)}"));
+        return lines;
+    }
+
+    static string FormatCollection(IReadOnlyList<object?> items)
+    {
+        if (items.Count == 0)
+            return "[]";
+        return $"[{string.Join(", ", items.Select(ValueFormatter.Format))}]";
+    }
+}
