@@ -20,8 +20,9 @@ record ObjectComparisonResult(
 
         foreach (var diff in Differences)
         {
-            lines.Add(new RenderedLine(1,
-                $"{diff.Path}: expected {FormatValue(diff.Expected)}, got {FormatValue(diff.Actual)}"));
+            var diffLines = diff.Render();
+            foreach (var line in diffLines)
+                lines.Add(line with { IndentLevel = 1 });
         }
 
         if (TruncatedCount > 0)
@@ -33,4 +34,8 @@ record ObjectComparisonResult(
     static string FormatValue(object? value) => ValueFormatter.Format(value);
 }
 
-record ObjectDifference(string Path, object? Expected, object? Actual);
+record ObjectDifference(string Path, object? Expected, object? Actual)
+{
+    public IReadOnlyList<RenderedLine> Render() =>
+        [new(0, $"{Path}: expected {ValueFormatter.Format(Expected)}, got {ValueFormatter.Format(Actual)}")];
+}
