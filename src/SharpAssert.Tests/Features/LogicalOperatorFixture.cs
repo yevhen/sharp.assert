@@ -1,3 +1,4 @@
+using FluentAssertions;
 using static SharpAssert.Sharp;
 
 namespace SharpAssert.Features;
@@ -145,24 +146,106 @@ public class LogicalOperatorFixture : TestBase
         var d = 4;
 
         AssertThrows(() => Assert((a == 1 && (b == 3 || b == 8)) || (c == 3 && d == 5)),
-            "*||*" +                                    // Top-level OR operator
-            "*Left: a == 1 && (b == 3 || b == 8)*" +    // Left side - clean parens only on nested OR
-            "*Left: a == 1*" +                          // First operand of AND
-            "*Left:  1*Right: 1*" +                     // Values of a == 1
-            "*Right: b == 3 || b == 8*" +               // Second operand - nested OR
-            "*Left: b == 3*" +                          // Left of nested OR
-            "*Left:  2*Right: 3*" +                     // Values of b == 3
-            "*Right: b == 8*" +                         // Right of nested OR
-            "*Left:  2*Right: 8*" +                     // Values of b == 8
-            "*||: Both operands were false*" +          // Nested OR failed
-            "*&&: Right operand was false*" +           // Left AND failed
-            "*Right: c == 3 && d == 5*" +               // Right side - no extra parens
-            "*Left: c == 3*" +                          // First operand
-            "*Left:  3*Right: 3*" +                     // Values of c == 3
-            "*Right: d == 5*" +                         // Second operand
-            "*Left:  4*Right: 5*" +                     // Values of d == 5
-            "*&&: Right operand was false*" +           // Right AND failed
-            "*||: Both operands were false*");          // Top-level OR failed
+            "*||*" +                                        // Top-level OR operator
+            "*Left: (a == 1 && (b == 3 || b == 8))*" +      // Left side - preserves source parens
+            "*Left: a == 1*" +                              // First operand of AND
+            "*Left:  1*Right: 1*" +                         // Values of a == 1
+            "*Right: (b == 3 || b == 8)*" +                 // Second operand - nested OR with source parens
+            "*Left: b == 3*" +                              // Left of nested OR
+            "*Left:  2*Right: 3*" +                         // Values of b == 3
+            "*Right: b == 8*" +                             // Right of nested OR
+            "*Left:  2*Right: 8*" +                         // Values of b == 8
+            "*||: Both operands were false*" +              // Nested OR failed
+            "*&&: Right operand was false*" +               // Left AND failed
+            "*Right: (c == 3 && d == 5)*" +                 // Right side - preserves source parens
+            "*Left: c == 3*" +                              // First operand
+            "*Left:  3*Right: 3*" +                         // Values of c == 3
+            "*Right: d == 5*" +                             // Second operand
+            "*Left:  4*Right: 5*" +                         // Values of d == 5
+            "*&&: Right operand was false*" +               // Right AND failed
+            "*||: Both operands were false*");              // Top-level OR failed
+    }
+
+    [Test]
+    public void Should_show_clean_expression_text_for_NOT_operator()
+    {
+        var value = true;
+
+        var action = () => Assert(!value);
+
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().Contain("!value");
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().NotContain("Convert");
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().NotContain("DisplayClass");
+    }
+
+    [Test]
+    public void Should_show_clean_expression_text_for_NOT_with_comparison()
+    {
+        var x = 5;
+        var y = 5;
+
+        var action = () => Assert(!(x == y));
+
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().Contain("x == y");
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().NotContain("Convert");
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().NotContain("DisplayClass");
+    }
+
+    [Test]
+    public void Should_show_clean_expression_text_for_AND_operator()
+    {
+        var a = true;
+        var b = false;
+
+        var action = () => Assert(a && b);
+
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().Contain("a && b");
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().NotContain("Convert");
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().NotContain("DisplayClass");
+    }
+
+    [Test]
+    public void Should_show_clean_expression_text_for_OR_operator()
+    {
+        var x = false;
+        var y = false;
+
+        var action = () => Assert(x || y);
+
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().Contain("x || y");
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().NotContain("Convert");
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().NotContain("DisplayClass");
+    }
+
+    [Test]
+    public void Should_show_clean_expression_text_for_nested_logical_operators()
+    {
+        var a = true;
+        var b = false;
+        var c = false;
+
+        var action = () => Assert(a && (b || c));
+
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().Contain("a && (b || c)");
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().Contain("b || c");
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().NotContain("Convert");
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().NotContain("DisplayClass");
     }
 
     static bool ThrowException() => throw new InvalidOperationException("This should not be called due to short-circuit evaluation");

@@ -12,7 +12,8 @@ public static class SharpInternal
 {
     public static void Assert(
         Expression<Func<bool>> condition,
-        string expr,
+        ExprNode? exprNode,
+        string exprString,
         string file,
         int line,
         string? message = null)
@@ -20,7 +21,8 @@ public static class SharpInternal
         if (message is not null && string.IsNullOrWhiteSpace(message))
             throw new ArgumentException("Message must be either null or non-empty", nameof(message));
 
-        var context = new AssertionContext(expr, file, line, message);
+        var expr = exprNode?.Text ?? exprString;
+        var context = new AssertionContext(expr, file, line, message, exprNode);
         var failureMessage = ExpressionAnalyzer.AnalyzeFailure(condition, context);
 
         if (string.IsNullOrEmpty(failureMessage))
@@ -35,7 +37,7 @@ public static class SharpInternal
         string file,
         int line)
     {
-        var context = new AssertionContext(expr, file, line, null);
+        var context = new AssertionContext(expr, file, line, null, new ExprNode(expr));
         var failureMessage = await AsyncExpressionAnalyzer.AnalyzeSimpleAsyncFailure(conditionAsync, context);
 
         if (!string.IsNullOrEmpty(failureMessage))
@@ -50,7 +52,7 @@ public static class SharpInternal
         string file,
         int line)
     {
-        var context = new AssertionContext(expr, file, line, null);
+        var context = new AssertionContext(expr, file, line, null, new ExprNode(expr));
         var failureMessage = await AsyncExpressionAnalyzer.AnalyzeAsyncBinaryFailure(leftAsync, rightAsync, op, context);
 
         if (!string.IsNullOrEmpty(failureMessage))
@@ -65,7 +67,7 @@ public static class SharpInternal
         string file,
         int line)
     {
-        var context = new AssertionContext(expr, file, line, null);
+        var context = new AssertionContext(expr, file, line, null, new ExprNode(expr));
         var failureMessage = DynamicExpressionAnalyzer.AnalyzeDynamicBinaryFailure(left, right, op, context);
 
         if (!string.IsNullOrEmpty(failureMessage))
@@ -78,7 +80,7 @@ public static class SharpInternal
         string file,
         int line)
     {
-        var context = new AssertionContext(expr, file, line, null);
+        var context = new AssertionContext(expr, file, line, null, new ExprNode(expr));
         var failureMessage = DynamicExpressionAnalyzer.AnalyzeSimpleDynamicFailure(condition, context);
 
         if (!string.IsNullOrEmpty(failureMessage))

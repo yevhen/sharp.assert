@@ -26,39 +26,37 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
     internal static AssertionEvaluationResult Analyze(Expression<Func<bool>> expression, AssertionContext context)
     {
         var cache = new Dictionary<Expression, object?>(ExprComparer);
-        var result = AnalyzeExpression(expression.Body, cache);
+        var result = AnalyzeExpression(expression.Body, cache, context);
         return new AssertionEvaluationResult(context, result);
     }
 
-    static EvaluationResult AnalyzeExpression(Expression expression, Dictionary<Expression, object?> cache)
+    static EvaluationResult AnalyzeExpression(Expression expression, Dictionary<Expression, object?> cache, AssertionContext context)
     {
         switch (expression)
         {
             case BinaryExpression binaryExpr:
-                return AnalyzeBinaryExpression(binaryExpr, cache);
+                return AnalyzeBinaryExpression(binaryExpr, cache, context);
             case UnaryExpression { NodeType: Not } unaryExpr:
-                return AnalyzeNot(unaryExpr, cache);
+                return AnalyzeNot(unaryExpr, cache, context);
             case MethodCallExpression methodCall:
-                return AnalyzeMethodCall(methodCall, cache);
+                return AnalyzeMethodCall(methodCall, cache, context);
         }
 
-        var exprText = ExpressionDisplay.GetIdentifierOrPath(expression);
+        var exprText = context.ExprNode!.Text;
         var value = GetValue(expression, cache);
 
         return new ValueEvaluationResult(exprText, value, expression.Type);
     }
 
-    static EvaluationResult AnalyzeBinaryExpression(BinaryExpression binaryExpr, Dictionary<Expression, object?> cache)
+    static EvaluationResult AnalyzeBinaryExpression(BinaryExpression binaryExpr, Dictionary<Expression, object?> cache, AssertionContext context)
     {
         if (binaryExpr.NodeType is AndAlso or OrElse)
-            return AnalyzeLogicalBinary(binaryExpr, cache);
+            return AnalyzeLogicalBinary(binaryExpr, cache, context);
 
         var leftValue = GetValue(binaryExpr.Left, cache);
         var rightValue = GetValue(binaryExpr.Right, cache);
 
-        var leftText = ExpressionDisplay.GetIdentifierOrPath(binaryExpr.Left);
-        var rightText = ExpressionDisplay.GetIdentifierOrPath(binaryExpr.Right);
-        var exprText = ExpressionDisplay.FormatBinary(leftText, ExpressionDisplay.OperatorSymbol(binaryExpr.NodeType), rightText, false);
+        var exprText = context.ExprNode!.Text;
 
         var leftOperand = new AssertionOperand(leftValue, binaryExpr.Left.Type);
         var rightOperand = new AssertionOperand(rightValue, binaryExpr.Right.Type);
@@ -69,75 +67,47 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
         return new BinaryComparisonEvaluationResult(exprText, binaryExpr.NodeType, comparison, resultValue);
     }
 
-    static EvaluationResult AnalyzeLogicalBinary(BinaryExpression binaryExpr, Dictionary<Expression, object?> cache)
+    static EvaluationResult AnalyzeLogicalBinary(BinaryExpression binaryExpr, Dictionary<Expression, object?> cache, AssertionContext context)
     {
         var leftValue = GetValue(binaryExpr.Left, cache);
         var leftBool = (bool)leftValue!;
 
         if (binaryExpr.NodeType == OrElse)
         {
-            var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache);
-            var rightAnalysis = AnalyzeExpression(binaryExpr.Right, cache);
+            var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache, context with { ExprNode = context.ExprNode!.Left });
+            var rightAnalysis = AnalyzeExpression(binaryExpr.Right, cache, context with { ExprNode = context.ExprNode!.Right });
             var orValue = leftBool || (bool)GetValue(binaryExpr.Right, cache)!;
 
-            var exprText = FormatLogicalText(leftAnalysis, rightAnalysis, LogicalOperator.OrElse);
-            return new LogicalEvaluationResult(exprText, LogicalOperator.OrElse, leftAnalysis, rightAnalysis, orValue, false, binaryExpr.NodeType);
+            return new LogicalEvaluationResult(context.ExprNode!.Text, LogicalOperator.OrElse, leftAnalysis, rightAnalysis, orValue, false, binaryExpr.NodeType);
         }
 
         // AND
         if (!leftBool)
         {
-            var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache);
-            var rightText = ExpressionDisplay.GetIdentifierOrPath(binaryExpr.Right);
-            var exprText = ExpressionDisplay.FormatBinary(leftAnalysis.ExpressionText, "&&", rightText, false);
-            return new LogicalEvaluationResult(exprText, LogicalOperator.AndAlso, leftAnalysis, null, false, true, binaryExpr.NodeType);
+            var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache, context with { ExprNode = context.ExprNode!.Left });
+            return new LogicalEvaluationResult(context.ExprNode!.Text, LogicalOperator.AndAlso, leftAnalysis, null, false, true, binaryExpr.NodeType);
         }
 
-        var leftResult = AnalyzeExpression(binaryExpr.Left, cache);
-        var rightResult = AnalyzeExpression(binaryExpr.Right, cache);
+        var leftResult = AnalyzeExpression(binaryExpr.Left, cache, context with { ExprNode = context.ExprNode!.Left });
+        var rightResult = AnalyzeExpression(binaryExpr.Right, cache, context with { ExprNode = context.ExprNode!.Right });
         var rightBool = (bool)GetValue(binaryExpr.Right, cache)!;
         var andValue = leftBool && rightBool;
 
-        var exprTextAnd = FormatLogicalText(leftResult, rightResult, LogicalOperator.AndAlso);
-        return new LogicalEvaluationResult(exprTextAnd, LogicalOperator.AndAlso, leftResult, rightResult, andValue, false, binaryExpr.NodeType);
+        return new LogicalEvaluationResult(context.ExprNode!.Text, LogicalOperator.AndAlso, leftResult, rightResult, andValue, false, binaryExpr.NodeType);
     }
 
-    static string FormatLogicalText(EvaluationResult left, EvaluationResult right, LogicalOperator op)
+    static EvaluationResult AnalyzeNot(UnaryExpression unaryExpr, Dictionary<Expression, object?> cache, AssertionContext context)
     {
-        var leftText = WrapLogicalText(left, op);
-        var rightText = WrapLogicalText(right, op);
-        var symbol = op == LogicalOperator.AndAlso ? "&&" : "||";
-        return $"{leftText} {symbol} {rightText}";
-    }
-
-    static string WrapLogicalText(EvaluationResult node, LogicalOperator parent)
-    {
-        if (node is LogicalEvaluationResult logical)
-        {
-            var childPrec = logical.Operator == LogicalOperator.AndAlso ? 2 : 1;
-            var parentPrec = parent == LogicalOperator.AndAlso ? 2 : 1;
-            var rendered = logical.ExpressionText;
-            return childPrec < parentPrec ? $"({rendered})" : rendered;
-        }
-
-        return node.ExpressionText;
-    }
-
-    static EvaluationResult AnalyzeNot(UnaryExpression unaryExpr, Dictionary<Expression, object?> cache)
-    {
-        var operand = AnalyzeExpression(unaryExpr.Operand, cache);
-        var exprText = ExpressionDisplay.FormatUnary("!", operand.ExpressionText, operand is LogicalEvaluationResult);
+        var operand = AnalyzeExpression(unaryExpr.Operand, cache, context with { ExprNode = context.ExprNode!.Operand });
         var operandValue = GetValue(unaryExpr.Operand, cache);
 
-        return new UnaryEvaluationResult(exprText, UnaryOperator.Not, operand, operandValue, !(bool)operandValue!);
+        return new UnaryEvaluationResult(context.ExprNode!.Text, UnaryOperator.Not, operand, operandValue, !(bool)operandValue!);
     }
 
-    static EvaluationResult AnalyzeMethodCall(MethodCallExpression methodCall, Dictionary<Expression, object?> cache)
+    static EvaluationResult AnalyzeMethodCall(MethodCallExpression methodCall, Dictionary<Expression, object?> cache, AssertionContext context)
     {
         var methodName = methodCall.Method.Name;
-        var objectText = methodCall.Object is null ? string.Empty : ExpressionDisplay.GetIdentifierOrPath(methodCall.Object);
-        var argTexts = methodCall.Arguments.Select(ExpressionDisplay.GetIdentifierOrPath);
-        var exprText = ExpressionDisplay.FormatMethodCall(objectText, methodName, argTexts);
+        var exprText = context.ExprNode!.Text;
         var value = (bool)GetValue(methodCall, cache)!;
 
         if (value)

@@ -245,14 +245,197 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
             SyntaxFactory.IdentifierName(SharpInternalNamespace),
             SyntaxFactory.IdentifierName(AssertMethodName));
 
-    SeparatedSyntaxList<ArgumentSyntax> CreateInvocationArguments(ParenthesizedLambdaExpressionSyntax lambdaExpression, RewriteData data) =>
-        SyntaxFactory.SeparatedList([
+    SeparatedSyntaxList<ArgumentSyntax> CreateInvocationArguments(ParenthesizedLambdaExpressionSyntax lambdaExpression, RewriteData data)
+    {
+        var exprNodeSyntax = GenerateExprNodeSyntax(data.Expression);
+
+        return SyntaxFactory.SeparatedList([
             SyntaxFactory.Argument(lambdaExpression),
+            SyntaxFactory.Argument(exprNodeSyntax),
             CreateStringLiteralArgument(data.ExpressionText),
             CreateStringLiteralArgument(fileName),
             CreateNumericLiteralArgument(data.LineNumber),
             CreateMessageArgument(data.MessageExpression)
         ]);
+    }
+
+    static ExpressionSyntax GenerateExprNodeSyntax(ExpressionSyntax expression)
+    {
+        var unwrapped = expression;
+        while (unwrapped is ParenthesizedExpressionSyntax parenthesized)
+            unwrapped = parenthesized.Expression;
+
+        if (unwrapped is BinaryExpressionSyntax binaryExpr && IsBinaryComparisonExpression(binaryExpr))
+            return CreateExprNodeObjectCreation(binaryExpr, expression);
+
+        if (unwrapped is PrefixUnaryExpressionSyntax unaryExpr && unaryExpr.OperatorToken.IsKind(SyntaxKind.ExclamationToken))
+            return CreateUnaryExprNodeObjectCreation(unaryExpr, expression);
+
+        if (unwrapped is InvocationExpressionSyntax invocationExpr)
+            return CreateMethodCallExprNodeObjectCreation(invocationExpr, expression);
+
+        // Generate simple ExprNode for all other expressions (variables, arithmetic, etc.)
+        return CreateSimpleExprNode(expression);
+    }
+
+    static bool IsBinaryComparisonExpression(BinaryExpressionSyntax binaryExpr) =>
+        binaryExpr.OperatorToken.IsKind(SyntaxKind.EqualsEqualsToken) ||
+        binaryExpr.OperatorToken.IsKind(SyntaxKind.ExclamationEqualsToken) ||
+        binaryExpr.OperatorToken.IsKind(SyntaxKind.LessThanToken) ||
+        binaryExpr.OperatorToken.IsKind(SyntaxKind.LessThanEqualsToken) ||
+        binaryExpr.OperatorToken.IsKind(SyntaxKind.GreaterThanToken) ||
+        binaryExpr.OperatorToken.IsKind(SyntaxKind.GreaterThanEqualsToken) ||
+        binaryExpr.OperatorToken.IsKind(SyntaxKind.AmpersandAmpersandToken) ||
+        binaryExpr.OperatorToken.IsKind(SyntaxKind.BarBarToken);
+
+    static ObjectCreationExpressionSyntax CreateExprNodeObjectCreation(BinaryExpressionSyntax binaryExpr, ExpressionSyntax originalExpression)
+    {
+        var text = originalExpression.ToString();
+        var leftNode = GenerateExprNodeSyntax(binaryExpr.Left);
+        var rightNode = GenerateExprNodeSyntax(binaryExpr.Right);
+
+        var leftNameColon = SyntaxFactory.NameColon(
+            SyntaxFactory.IdentifierName("Left"),
+            SyntaxFactory.Token(SyntaxKind.ColonToken).WithTrailingTrivia(SyntaxFactory.Space));
+        var rightNameColon = SyntaxFactory.NameColon(
+            SyntaxFactory.IdentifierName("Right"),
+            SyntaxFactory.Token(SyntaxKind.ColonToken).WithTrailingTrivia(SyntaxFactory.Space));
+
+        var arguments = SyntaxFactory.ArgumentList(
+            SyntaxFactory.SeparatedList([
+                SyntaxFactory.Argument(
+                    SyntaxFactory.LiteralExpression(
+                        SyntaxKind.StringLiteralExpression,
+                        SyntaxFactory.Literal(text))),
+                SyntaxFactory.Argument(leftNode)
+                    .WithNameColon(leftNameColon),
+                SyntaxFactory.Argument(rightNode)
+                    .WithNameColon(rightNameColon)
+            ]));
+
+        return SyntaxFactory.ObjectCreationExpression(
+                SyntaxFactory.Token(SyntaxKind.NewKeyword).WithTrailingTrivia(SyntaxFactory.Space),
+                CreateExprNodeTypeName(),
+                arguments,
+                default);
+    }
+
+    static ObjectCreationExpressionSyntax CreateUnaryExprNodeObjectCreation(PrefixUnaryExpressionSyntax unaryExpr, ExpressionSyntax originalExpression)
+    {
+        var text = originalExpression.ToString();
+        var operandNode = GenerateExprNodeSyntax(unaryExpr.Operand);
+
+        var nameColon = SyntaxFactory.NameColon(
+            SyntaxFactory.IdentifierName("Operand"),
+            SyntaxFactory.Token(SyntaxKind.ColonToken).WithTrailingTrivia(SyntaxFactory.Space));
+
+        var arguments = SyntaxFactory.ArgumentList(
+            SyntaxFactory.SeparatedList([
+                SyntaxFactory.Argument(
+                    SyntaxFactory.LiteralExpression(
+                        SyntaxKind.StringLiteralExpression,
+                        SyntaxFactory.Literal(text))),
+                SyntaxFactory.Argument(operandNode)
+                    .WithNameColon(nameColon)
+            ]));
+
+        return SyntaxFactory.ObjectCreationExpression(
+                SyntaxFactory.Token(SyntaxKind.NewKeyword).WithTrailingTrivia(SyntaxFactory.Space),
+                CreateExprNodeTypeName(),
+                arguments,
+                default);
+    }
+
+    static ObjectCreationExpressionSyntax CreateMethodCallExprNodeObjectCreation(InvocationExpressionSyntax invocationExpr, ExpressionSyntax originalExpression)
+    {
+        var text = originalExpression.ToString();
+        var argumentNodes = invocationExpr.ArgumentList.Arguments
+            .Select(arg => GenerateExprNodeSyntax(arg.Expression))
+            .ToArray();
+
+        var argumentsArray = CreateExprNodeArray(argumentNodes);
+
+        var nameColon = SyntaxFactory.NameColon(
+            SyntaxFactory.IdentifierName("Arguments"),
+            SyntaxFactory.Token(SyntaxKind.ColonToken).WithTrailingTrivia(SyntaxFactory.Space));
+
+        var arguments = SyntaxFactory.ArgumentList(
+            SyntaxFactory.SeparatedList([
+                SyntaxFactory.Argument(
+                    SyntaxFactory.LiteralExpression(
+                        SyntaxKind.StringLiteralExpression,
+                        SyntaxFactory.Literal(text))),
+                SyntaxFactory.Argument(argumentsArray)
+                    .WithNameColon(nameColon)
+            ]));
+
+        return SyntaxFactory.ObjectCreationExpression(
+                SyntaxFactory.Token(SyntaxKind.NewKeyword).WithTrailingTrivia(SyntaxFactory.Space),
+                CreateExprNodeTypeName(),
+                arguments,
+                default);
+    }
+
+    static ExpressionSyntax CreateExprNodeArray(ExpressionSyntax[] nodes)
+    {
+        if (nodes.Length == 0)
+        {
+            var emptyArray = SyntaxFactory.ArrayCreationExpression(
+                SyntaxFactory.ArrayType(
+                    CreateExprNodeTypeName(),
+                    SyntaxFactory.SingletonList(
+                        SyntaxFactory.ArrayRankSpecifier(
+                            SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(
+                                SyntaxFactory.LiteralExpression(
+                                    SyntaxKind.NumericLiteralExpression,
+                                    SyntaxFactory.Literal(0)))))));
+
+            return emptyArray.WithNewKeyword(
+                SyntaxFactory.Token(SyntaxKind.NewKeyword).WithTrailingTrivia(SyntaxFactory.Space));
+        }
+
+        var array = SyntaxFactory.ArrayCreationExpression(
+            SyntaxFactory.ArrayType(
+                CreateExprNodeTypeName(),
+                SyntaxFactory.SingletonList(
+                    SyntaxFactory.ArrayRankSpecifier(
+                        SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(
+                            SyntaxFactory.OmittedArraySizeExpression())))),
+            SyntaxFactory.InitializerExpression(
+                SyntaxKind.ArrayInitializerExpression,
+                SyntaxFactory.SeparatedList<ExpressionSyntax>(nodes)));
+
+        return array.WithNewKeyword(
+            SyntaxFactory.Token(SyntaxKind.NewKeyword).WithTrailingTrivia(SyntaxFactory.Space));
+    }
+
+    static ObjectCreationExpressionSyntax CreateSimpleExprNode(ExpressionSyntax expression)
+    {
+        var text = expression.ToString();
+
+        var arguments = SyntaxFactory.ArgumentList(
+            SyntaxFactory.SingletonSeparatedList(
+                SyntaxFactory.Argument(
+                    SyntaxFactory.LiteralExpression(
+                        SyntaxKind.StringLiteralExpression,
+                        SyntaxFactory.Literal(text)))));
+
+        return SyntaxFactory.ObjectCreationExpression(
+                SyntaxFactory.Token(SyntaxKind.NewKeyword).WithTrailingTrivia(SyntaxFactory.Space),
+                CreateExprNodeTypeName(),
+                arguments,
+                default);
+    }
+
+    static QualifiedNameSyntax CreateExprNodeTypeName() =>
+        SyntaxFactory.QualifiedName(
+            SyntaxFactory.AliasQualifiedName(
+                SyntaxFactory.IdentifierName(SyntaxFactory.Token(SyntaxKind.GlobalKeyword)),
+                SyntaxFactory.IdentifierName("SharpAssert")),
+            SyntaxFactory.IdentifierName("ExprNode"));
+
+    static NullableTypeSyntax CreateNullableExprNodeTypeName() =>
+        SyntaxFactory.NullableType(CreateExprNodeTypeName());
 
     static ArgumentSyntax CreateStringLiteralArgument(string value) =>
         SyntaxFactory.Argument(
