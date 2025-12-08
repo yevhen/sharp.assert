@@ -9,6 +9,7 @@ static class ExpressionDisplay
     public static string GetIdentifierOrPath(Expression expr) =>
         expr switch
         {
+            UnaryExpression { NodeType: ExpressionType.Convert } unary => GetIdentifierOrPath(unary.Operand),
             MemberExpression member => GetMemberPath(member),
             ParameterExpression p => p.Name ?? "param",
             ConstantExpression c => c.Value is null ? "null" : ValueFormatter.Format(c.Value),

@@ -1,3 +1,4 @@
+using FluentAssertions;
 using static SharpAssert.Sharp;
 
 namespace SharpAssert.Features;
@@ -130,5 +131,19 @@ public class NullableTypeFixture : TestBase
 
         AssertThrows(() => Assert(nullable == null),
             "*42*null*");
+    }
+
+    [Test]
+    public void Should_display_clean_expression_for_nullable_vs_non_nullable()
+    {
+        DateTime? value = null;
+        var expected = DateTime.Now;
+
+        var action = () => Assert(value == expected);
+
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().NotContain("Convert(");
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().Contain("value == expected");
     }
 }
