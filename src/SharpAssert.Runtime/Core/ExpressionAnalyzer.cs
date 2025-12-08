@@ -42,7 +42,7 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
                 return AnalyzeMethodCall(methodCall, cache, context);
         }
 
-        var exprText = context.ExprNode!.Text;
+        var exprText = context.ExprNode.Text;
         var value = GetValue(expression, cache);
 
         return new ValueEvaluationResult(exprText, value, expression.Type);
@@ -56,7 +56,7 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
         var leftValue = GetValue(binaryExpr.Left, cache);
         var rightValue = GetValue(binaryExpr.Right, cache);
 
-        var exprText = context.ExprNode!.Text;
+        var exprText = context.ExprNode.Text;
 
         var leftOperand = new AssertionOperand(leftValue, binaryExpr.Left.Type);
         var rightOperand = new AssertionOperand(rightValue, binaryExpr.Right.Type);
@@ -74,40 +74,40 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
 
         if (binaryExpr.NodeType == OrElse)
         {
-            var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache, context with { ExprNode = context.ExprNode!.Left });
-            var rightAnalysis = AnalyzeExpression(binaryExpr.Right, cache, context with { ExprNode = context.ExprNode!.Right });
+            var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache, context with { ExprNode = context.ExprNode.Left! });
+            var rightAnalysis = AnalyzeExpression(binaryExpr.Right, cache, context with { ExprNode = context.ExprNode.Right! });
             var orValue = leftBool || (bool)GetValue(binaryExpr.Right, cache)!;
 
-            return new LogicalEvaluationResult(context.ExprNode!.Text, LogicalOperator.OrElse, leftAnalysis, rightAnalysis, orValue, false, binaryExpr.NodeType);
+            return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.OrElse, leftAnalysis, rightAnalysis, orValue, false, binaryExpr.NodeType);
         }
 
         // AND
         if (!leftBool)
         {
-            var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache, context with { ExprNode = context.ExprNode!.Left });
-            return new LogicalEvaluationResult(context.ExprNode!.Text, LogicalOperator.AndAlso, leftAnalysis, null, false, true, binaryExpr.NodeType);
+            var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache, context with { ExprNode = context.ExprNode.Left! });
+            return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.AndAlso, leftAnalysis, null, false, true, binaryExpr.NodeType);
         }
 
-        var leftResult = AnalyzeExpression(binaryExpr.Left, cache, context with { ExprNode = context.ExprNode!.Left });
-        var rightResult = AnalyzeExpression(binaryExpr.Right, cache, context with { ExprNode = context.ExprNode!.Right });
+        var leftResult = AnalyzeExpression(binaryExpr.Left, cache, context with { ExprNode = context.ExprNode.Left! });
+        var rightResult = AnalyzeExpression(binaryExpr.Right, cache, context with { ExprNode = context.ExprNode.Right! });
         var rightBool = (bool)GetValue(binaryExpr.Right, cache)!;
         var andValue = leftBool && rightBool;
 
-        return new LogicalEvaluationResult(context.ExprNode!.Text, LogicalOperator.AndAlso, leftResult, rightResult, andValue, false, binaryExpr.NodeType);
+        return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.AndAlso, leftResult, rightResult, andValue, false, binaryExpr.NodeType);
     }
 
     static EvaluationResult AnalyzeNot(UnaryExpression unaryExpr, Dictionary<Expression, object?> cache, AssertionContext context)
     {
-        var operand = AnalyzeExpression(unaryExpr.Operand, cache, context with { ExprNode = context.ExprNode!.Operand });
+        var operand = AnalyzeExpression(unaryExpr.Operand, cache, context with { ExprNode = context.ExprNode.Operand! });
         var operandValue = GetValue(unaryExpr.Operand, cache);
 
-        return new UnaryEvaluationResult(context.ExprNode!.Text, UnaryOperator.Not, operand, operandValue, !(bool)operandValue!);
+        return new UnaryEvaluationResult(context.ExprNode.Text, UnaryOperator.Not, operand, operandValue, !(bool)operandValue!);
     }
 
     static EvaluationResult AnalyzeMethodCall(MethodCallExpression methodCall, Dictionary<Expression, object?> cache, AssertionContext context)
     {
         var methodName = methodCall.Method.Name;
-        var exprText = context.ExprNode!.Text;
+        var exprText = context.ExprNode.Text;
         var value = (bool)GetValue(methodCall, cache)!;
 
         if (value)
@@ -122,7 +122,7 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
             return new BinaryComparisonEvaluationResult(exprText, Equal, comparison, value);
         }
 
-        if (context.ExprNode?.Arguments is { Length: > 0 } argumentNodes)
+        if (context.ExprNode.Arguments is { Length: > 0 } argumentNodes)
         {
             var arguments = new List<EvaluationResult>();
             for (var i = 0; i < argumentNodes.Length; i++)

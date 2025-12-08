@@ -12,7 +12,7 @@ public static class SharpInternal
 {
     public static void Assert(
         Expression<Func<bool>> condition,
-        ExprNode? exprNode,
+        ExprNode exprNode,
         string exprString,
         string file,
         int line,
@@ -21,8 +21,7 @@ public static class SharpInternal
         if (message is not null && string.IsNullOrWhiteSpace(message))
             throw new ArgumentException("Message must be either null or non-empty", nameof(message));
 
-        var expr = exprNode?.Text ?? exprString;
-        var context = new AssertionContext(expr, file, line, message, exprNode);
+        var context = new AssertionContext(exprNode.Text, file, line, message, exprNode);
         var failureMessage = ExpressionAnalyzer.AnalyzeFailure(condition, context);
 
         if (string.IsNullOrEmpty(failureMessage))

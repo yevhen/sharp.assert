@@ -103,7 +103,8 @@ public static class Sharp
         if (condition)
             return;
 
-        var context = new AssertionContext(expr ?? "condition", file ?? "unknown", line, message);
+        var exprText = expr ?? "condition";
+        var context = new AssertionContext(exprText, file ?? "unknown", line, message, new ExprNode(exprText));
         var formattedMessage = context.FormatMessage();
 
         throw new SharpAssertionException(formattedMessage);
