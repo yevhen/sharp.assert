@@ -19,6 +19,7 @@ Assert(false);
 **Output:**
 ```
 Assertion failed: false  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/01_BasicAssertionsDemos.cs:12
+  False
 ```
 
 ---
@@ -34,6 +35,7 @@ Assert(1 == 2);
 **Output:**
 ```
 Assertion failed: 1 == 2  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/01_BasicAssertionsDemos.cs:20
+  False
 ```
 
 ---
@@ -50,6 +52,7 @@ Assert(false, "This is a custom failure message");
 ```
 This is a custom failure message
 Assertion failed: false  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/01_BasicAssertionsDemos.cs:28
+  False
 ```
 
 ---
@@ -68,8 +71,9 @@ Assert(x + y * z > 100);
 **Output:**
 ```
 Assertion failed: x + y * z > 100  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/01_BasicAssertionsDemos.cs:39
-  Left:  25
-  Right: 100
+  x + y * z > 100
+    Left:  25
+    Right: 100
 ```
 
 ---
@@ -91,8 +95,9 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/02_BinaryComparisonDemos.cs:14
-  Left:  42
-  Right: 100
+  actual == expected
+    Left:  42
+    Right: 100
 ```
 
 ---
@@ -110,8 +115,9 @@ Assert(value > threshold);
 **Output:**
 ```
 Assertion failed: value > threshold  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/02_BinaryComparisonDemos.cs:24
-  Left:  5
-  Right: 10
+  value > threshold
+    Left:  5
+    Right: 10
 ```
 
 ---
@@ -129,8 +135,10 @@ Assert(nullValue == nonNullValue);
 **Output:**
 ```
 Assertion failed: nullValue == nonNullValue  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/02_BinaryComparisonDemos.cs:34
-  Left:  null
-  Right: "text"
+  nullValue == nonNullValue
+    Left:  null
+    Right: "text"
+    Diff: [-null][+"text"]
 ```
 
 ---
@@ -147,8 +155,9 @@ Assert(GetValue() == 100);
 **Output:**
 ```
 Assertion failed: GetValue() == 100  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/02_BinaryComparisonDemos.cs:50
-  Left:  42
-  Right: 100
+  GetValue() == 100
+    Left:  42
+    Right: 100
 ```
 
 ---
@@ -166,6 +175,9 @@ Assert(intValue.Equals(stringValue));
 **Output:**
 ```
 Assertion failed: intValue.Equals(stringValue)  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/02_BinaryComparisonDemos.cs:60
+  intValue.Equals(stringValue)
+    Argument[0]: "42"
+  Result: False
 ```
 
 ---
@@ -187,7 +199,8 @@ Assert(left && right);
 **Output:**
 ```
 Assertion failed: left && right  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/03_LogicalOperatorDemos.cs:14
-  Left:  True
+  left && right
+  Left: True
   Right: False
   &&: Right operand was false
 ```
@@ -206,7 +219,8 @@ Assert(condition && ThrowsException());
 **Output:**
 ```
 Assertion failed: condition && ThrowsException()  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/03_LogicalOperatorDemos.cs:23
-  Left:  False (short-circuit)
+  condition && ThrowsException()
+  Left: False
   &&: Left operand was false
 ```
 
@@ -225,7 +239,8 @@ Assert(left || right);
 **Output:**
 ```
 Assertion failed: left || right  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/03_LogicalOperatorDemos.cs:38
-  Left:  False
+  left || right
+  Left: False
   Right: False
   ||: Both operands were false
 ```
@@ -244,6 +259,7 @@ Assert(!value);
 **Output:**
 ```
 Assertion failed: !value  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/03_LogicalOperatorDemos.cs:47
+  !value
   Operand: True
   !: Operand was True
 ```
@@ -265,8 +281,15 @@ Assert((a && b) || (c && d));
 **Output:**
 ```
 Assertion failed: (a && b) || (c && d)  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/03_LogicalOperatorDemos.cs:59
-  Left:  False
+  (a && b) || (c && d)
+  Left: (a && b)
+  Left: True
   Right: False
+  &&: Right operand was false
+  Right: (c && d)
+  Left: True
+  Right: False
+  &&: Right operand was false
   ||: Both operands were false
 ```
 
@@ -289,9 +312,10 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/04_StringComparisonDemos.cs:14
-  Left:  "hello world"
-  Right: "hallo world"
-  Diff: h[-e][+a]llo world
+  actual == expected
+    Left:  "hello world"
+    Right: "hallo world"
+    Diff: h[-e][+a]llo world
 ```
 
 ---
@@ -317,19 +341,20 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/04_StringComparisonDemos.cs:32
-  Left:
-Line 1: Introduction
-Line 2: Body content
-Line 3: Conclusion
-  Right:
-Line 1: Introduction
-Line 2: Different content
-Line 3: Conclusion
-  Diff:
-Line 1: Introduction
-- Line 2: Body content
-+ Line 2: Different content
-Line 3: Conclusion
+  actual == expected
+    Left:
+      Line 1: Introduction
+      Line 2: Body content
+      Line 3: Conclusion
+    Right:
+      Line 1: Introduction
+      Line 2: Different content
+      Line 3: Conclusion
+    Diff:
+        Line 1: Introduction
+      - Line 2: Body content
+      + Line 2: Different content
+        Line 3: Conclusion
 ```
 
 ---
@@ -347,8 +372,10 @@ Assert(nullString == nonNullString);
 **Output:**
 ```
 Assertion failed: nullString == nonNullString  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/04_StringComparisonDemos.cs:42
-  Left:  null
-  Right: "text"
+  nullString == nonNullString
+    Left:  null
+    Right: "text"
+    Diff: [-null][+"text"]
 ```
 
 ---
@@ -366,9 +393,10 @@ Assert(empty == nonEmpty);
 **Output:**
 ```
 Assertion failed: empty == nonEmpty  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/04_StringComparisonDemos.cs:52
-  Left:  ""
-  Right: "text"
-  Diff: [+text]
+  empty == nonEmpty
+    Left:  ""
+    Right: "text"
+    Diff: [+text]
 ```
 
 ---
@@ -386,9 +414,10 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/04_StringComparisonDemos.cs:62
-  Left:  "The quick brown fox jumps over the lazy dog. This is a very long string that demonstrates how SharpAssert handles lengthy text comparisons with proper formatting and truncation when necessary."
-  Right: "The quick brown fox jumps over the lazy cat. This is a very long string that demonstrates how SharpAssert handles lengthy text comparisons with proper formatting and truncation when necessary."
-  Diff: The quick brown fox jumps over the lazy [-dog][+cat]. This is a very long string that demonstrates how SharpAssert handles lengthy text comparisons with proper formatting and truncation when necessary.
+  actual == expected
+    Left:  "The quick brown fox jumps over the lazy dog. This is a very long string that demonstrates how SharpAssert handles lengthy text comparisons with proper formatting and truncation when necessary."
+    Right: "The quick brown fox jumps over the lazy cat. This is a very long string that demonstrates how SharpAssert handles lengthy text comparisons with proper formatting and truncation when necessary."
+    Diff: The quick brown fox jumps over the lazy [-dog][+cat]. This is a very long string that demonstrates how SharpAssert handles lengthy text comparisons with proper formatting and truncation when necessary.
 ```
 
 ---
@@ -410,9 +439,10 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/05_CollectionComparisonDemos.cs:14
-  Left:  [1, 2, 3]
-  Right: [1, 2, 4]
-  First difference at index 2: expected 3, got 4
+  actual == expected
+    Left:  [1, 2, 3]
+    Right: [1, 2, 4]
+    First difference at index 2: expected 3, got 4
 ```
 
 ---
@@ -430,9 +460,10 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/05_CollectionComparisonDemos.cs:24
-  Left:  [1, 2]
-  Right: [1, 2, 3]
-  Missing elements: [3]
+  actual == expected
+    Left:  [1, 2]
+    Right: [1, 2, 3]
+    Missing elements: [3]
 ```
 
 ---
@@ -450,9 +481,10 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/05_CollectionComparisonDemos.cs:34
-  Left:  [1, 2, 3]
-  Right: [1, 2]
-  Extra elements: [3]
+  actual == expected
+    Left:  [1, 2, 3]
+    Right: [1, 2]
+    Extra elements: [3]
 ```
 
 ---
@@ -470,9 +502,10 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/05_CollectionComparisonDemos.cs:44
-  Left:  []
-  Right: [1]
-  Missing elements: [1]
+  actual == expected
+    Left:  []
+    Right: [1]
+    Missing elements: [1]
 ```
 
 ---
@@ -490,9 +523,10 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/05_CollectionComparisonDemos.cs:54
-  Left:  [1, 2, 3, 4, 5]
-  Right: [1, 2]
-  Extra elements: [3, 4, 5]
+  actual == expected
+    Left:  [1, 2, 3, 4, 5]
+    Right: [1, 2]
+    Extra elements: [3, 4, 5]
 ```
 
 ---
@@ -510,9 +544,10 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/05_CollectionComparisonDemos.cs:64
-  Left:  [1, 2, 3, 4, 5, 6, 7, 8, 9, ... (100 items)]
-  Right: [1, 2, 3, 4, 5, 6, 7, 8, 9, ... (100 items)]
-  First difference at index 49: expected 50, got 999
+  actual == expected
+    Left:  [1, 2, 3, 4, 5, 6, 7, 8, 9, "..."]
+    Right: [1, 2, 3, 4, 5, 6, 7, 8, 9, "..."]
+    First difference at index 49: expected 50, got 999
 ```
 
 ---
@@ -534,8 +569,9 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/06_ObjectComparisonDemos.cs:18
-  Property differences:
-    Age: expected '30', got '25'
+  actual == expected
+    Property differences:
+      Age: expected "30", got "25"
 ```
 
 ---
@@ -557,9 +593,10 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/06_ObjectComparisonDemos.cs:32
-  Property differences:
-    Address.City: expected 'Boston', got 'New York'
-    Address.ZipCode: expected '02101', got '10001'
+  actual == expected
+    Property differences:
+      Address.City: expected "Boston", got "New York"
+      Address.ZipCode: expected "02101", got "10001"
 ```
 
 ---
@@ -577,8 +614,9 @@ Assert(nullPerson == nonNullPerson);
 **Output:**
 ```
 Assertion failed: nullPerson == nonNullPerson  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/06_ObjectComparisonDemos.cs:42
-  Left:  null
-  Right: Person { Name = Charlie, Age = 35, City = Chicago }
+  nullPerson == nonNullPerson
+    Left:  null
+    Right: Person { Name = Charlie, Age = 35, City = Chicago }
 ```
 
 ---
@@ -596,8 +634,9 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/06_ObjectComparisonDemos.cs:52
-  Property differences:
-    City: expected 'Denver', got 'Detroit'
+  actual == expected
+    Property differences:
+      City: expected "Denver", got "Detroit"
 ```
 
 ---
@@ -615,10 +654,11 @@ Assert(actual == expected);
 **Output:**
 ```
 Assertion failed: actual == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/06_ObjectComparisonDemos.cs:62
-  Property differences:
-    Name: expected 'Eve', got 'Eva'
-    Age: expected '28', got '30'
-    City: expected 'Seattle', got 'Portland'
+  actual == expected
+    Property differences:
+      Name: expected "Eve", got "Eva"
+      Age: expected "28", got "30"
+      City: expected "Seattle", got "Portland"
 ```
 
 ---
@@ -640,8 +680,9 @@ Assert(items.Contains(missingItem));
 **Output:**
 ```
 Assertion failed: items.Contains(missingItem)  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/07_LinqOperationDemos.cs:14
-  Contains failed: searched for 10 in [1, 2, 3, 4, 5]
-  Count: 5
+  items.Contains(missingItem)
+    Contains failed: searched for 10 in [1, 2, 3, 4, 5]
+    Count: 5
 ```
 
 ---
@@ -658,7 +699,8 @@ Assert(items.Any(x => x > 10));
 **Output:**
 ```
 Assertion failed: items.Any(x => x > 10)  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/07_LinqOperationDemos.cs:23
-  Any failed: no items matched x => (x > 10) in [1, 2, 3, 4, 5]
+  items.Any(x => x > 10)
+    Any failed: no items matched x => (x > 10) in [1, 2, 3, 4, 5]
 ```
 
 ---
@@ -675,7 +717,8 @@ Assert(items.All(x => x > 3));
 **Output:**
 ```
 Assertion failed: items.All(x => x > 3)  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/07_LinqOperationDemos.cs:32
-  All failed: items [1, 2, 3] did not match x => (x > 3)
+  items.All(x => x > 3)
+    All failed: items [1, 2, 3] did not match x => (x > 3)
 ```
 
 ---
@@ -692,7 +735,8 @@ Assert(items.Any());
 **Output:**
 ```
 Assertion failed: items.Any()  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/07_LinqOperationDemos.cs:41
-  Any failed: collection is empty
+  items.Any()
+    Any failed: collection is empty
 ```
 
 ---
@@ -714,12 +758,13 @@ Assert(actual.SequenceEqual(expected));
 **Output:**
 ```
 Assertion failed: actual.SequenceEqual(expected)  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/08_SequenceEqualDemos.cs:14
-  SequenceEqual failed: sequences differ
-  Unified diff:
-   [0] 1
-   [1] 2
-  -[2] 3
-  +[2] 9
+  actual.SequenceEqual(expected)
+    SequenceEqual failed: sequences differ
+    Unified diff:
+        [0] = 1
+        [1] = 2
+      - [2] = 3
+      + [2] = 9
 ```
 
 ---
@@ -737,11 +782,12 @@ Assert(actual.SequenceEqual(expected));
 **Output:**
 ```
 Assertion failed: actual.SequenceEqual(expected)  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/08_SequenceEqualDemos.cs:24
-  SequenceEqual failed: length mismatch
-  Expected length: 5
-  Actual length:   3
-  First:  [1, 2, 3]
-  Second: [1, 2, 3, 4, 5]
+  actual.SequenceEqual(expected)
+    SequenceEqual failed: length mismatch
+    Expected length: 5
+    Actual length:   3
+    First:  [1, 2, 3]
+    Second: [1, 2, 3, 4, 5]
 ```
 
 ---
@@ -759,11 +805,12 @@ Assert(actual.SequenceEqual(expected));
 **Output:**
 ```
 Assertion failed: actual.SequenceEqual(expected)  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/08_SequenceEqualDemos.cs:34
-  SequenceEqual failed: sequences differ
-  Unified diff:
-   [0] "apple"
-  -[1] "banana"
-  +[1] "orange"
+  actual.SequenceEqual(expected)
+    SequenceEqual failed: sequences differ
+    Unified diff:
+        [0] = "apple"
+      - [1] = "banana"
+      + [1] = "orange"
 ```
 
 ---
@@ -781,13 +828,14 @@ Assert(actual.SequenceEqual(expected));
 **Output:**
 ```
 Assertion failed: actual.SequenceEqual(expected)  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/08_SequenceEqualDemos.cs:44
-  SequenceEqual failed: sequences differ
-  Unified diff:
-   [21] 22
-   [22] 23
-   [23] 24
-  -[24] 25
-  +[24] 999
+  actual.SequenceEqual(expected)
+    SequenceEqual failed: sequences differ
+    Unified diff:
+        [21] = 22
+        [22] = 23
+        [23] = 24
+      - [24] = 25
+      + [24] = 999
 ```
 
 ---
@@ -807,7 +855,7 @@ Assert(await GetBoolAsync());
 **Output:**
 ```
 Assertion failed: await GetBoolAsync()  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/09_AsyncDemos.cs:36
-  Result: False
+  False
 ```
 
 ---
@@ -823,8 +871,9 @@ Assert(await GetLeftValueAsync() == await GetRightValueAsync());
 **Output:**
 ```
 Assertion failed: await GetLeftValueAsync() == await GetRightValueAsync()  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/09_AsyncDemos.cs:44
-  Left:  42
-  Right: 100
+  await GetLeftValueAsync() == await GetRightValueAsync()
+    Left:  42
+    Right: 100
 ```
 
 ---
@@ -840,8 +889,9 @@ Assert(await GetLeftValueAsync() == 100);
 **Output:**
 ```
 Assertion failed: await GetLeftValueAsync() == 100  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/09_AsyncDemos.cs:52
-  Left:  42
-  Right: 100
+  await GetLeftValueAsync() == 100
+    Left:  42
+    Right: 100
 ```
 
 ---
@@ -857,9 +907,10 @@ Assert(await GetStringAsync() == "expected value");
 **Output:**
 ```
 Assertion failed: await GetStringAsync() == "expected value"  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/09_AsyncDemos.cs:60
-  Left:  "actual value"
-  Right: "expected value"
-  Diff: [-a][+expe]ct[-ual][+ed] value
+  await GetStringAsync() == "expected value"
+    Left:  "actual value"
+    Right: "expected value"
+    Diff: [-a][+expe]ct[-ual][+ed] value
 ```
 
 ---
@@ -880,8 +931,9 @@ Assert(value == 100);
 **Output:**
 ```
 Assertion failed: value == 100  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/10_DynamicDemos.cs:13
-  Left:  42
-  Right: 100
+  value == 100
+    Left:  42
+    Right: 100
 ```
 
 ---
@@ -898,8 +950,9 @@ Assert(obj.GetValue() > 100);
 **Output:**
 ```
 Assertion failed: obj.GetValue() > 100  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/10_DynamicDemos.cs:22
-  Left:  42
-  Right: 100
+  obj.GetValue() > 100
+    Left:  42
+    Right: 100
 ```
 
 ---
@@ -917,8 +970,9 @@ Assert(left > right);
 **Output:**
 ```
 Assertion failed: left > right  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/10_DynamicDemos.cs:32
-  Left:  10
-  Right: 20
+  left > right
+    Left:  10
+    Right: 20
 ```
 
 ---
@@ -939,8 +993,9 @@ Assert(value == 42);
 **Output:**
 ```
 Assertion failed: value == 42  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/11_NullableTypeDemos.cs:13
-  Left:  null
-  Right: 42
+  value == 42
+    Left:  null
+    Right: 42
 ```
 
 ---
@@ -957,8 +1012,9 @@ Assert(value == 100);
 **Output:**
 ```
 Assertion failed: value == 100  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/11_NullableTypeDemos.cs:22
-  Left:  42
-  Right: 100
+  value == 100
+    Left:  42
+    Right: 100
 ```
 
 ---
@@ -975,8 +1031,9 @@ Assert(value == true);
 **Output:**
 ```
 Assertion failed: value == true  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/11_NullableTypeDemos.cs:31
-  Left:  False
-  Right: True
+  value == true
+    Left:  False
+    Right: True
 ```
 
 ---
@@ -994,8 +1051,9 @@ Assert(value == expected);
 **Output:**
 ```
 Assertion failed: value == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/11_NullableTypeDemos.cs:41
-  Left:  null
-  Right: 10/8/2025
+  value == expected
+    Left:  null
+    Right: 12/9/2025
 ```
 
 ---
@@ -1013,8 +1071,10 @@ Assert(value == expected);
 **Output:**
 ```
 Assertion failed: value == expected  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/11_NullableTypeDemos.cs:51
-  Left:  null
-  Right: "text"
+  value == expected
+    Left:  null
+    Right: "text"
+    Diff: [-null][+"text"]
 ```
 
 ---
@@ -1031,8 +1091,9 @@ Assert(value == null);
 **Output:**
 ```
 Assertion failed: value == null  at /Users/yb/work/oss/SharpAssert/src/SharpAssert.Demo/Demos/11_NullableTypeDemos.cs:60
-  Left:  42
-  Right: null
+  value == null
+    Left:  42
+    Right: null
 ```
 
 ---
