@@ -248,5 +248,167 @@ public class LogicalOperatorFixture : TestBase
             .Which.Message.Should().NotContain("DisplayClass");
     }
 
+    [Test]
+    public void Should_handle_deeply_nested_parentheses_passing()
+    {
+        var a = 5;
+        var b = 5;
+
+        AssertDoesNotThrow(() => Assert((((a == b)))));
+    }
+
+    [Test]
+    public void Should_handle_deeply_nested_parentheses_failing()
+    {
+        var a = 5;
+        var b = 10;
+
+        AssertThrows(() => Assert((((a == b)))), "*== *Left:  5*Right: 10*");
+    }
+
+    [Test]
+    public void Should_handle_simple_negation_passing()
+    {
+        var a = false;
+
+        AssertDoesNotThrow(() => Assert(!a));
+    }
+
+    [Test]
+    public void Should_handle_simple_negation_failing()
+    {
+        var a = true;
+
+        AssertThrows(() => Assert(!a), "*!*true*");
+    }
+
+    [Test]
+    public void Should_handle_mixed_logical_operators_passing()
+    {
+        var a = false;
+        var b = true;
+        var c = false;
+        var d = true;
+
+        AssertDoesNotThrow(() => Assert(!a && (b || c) && d));
+    }
+
+    [Test]
+    public void Should_handle_mixed_logical_operators_failing_on_NOT()
+    {
+        var a = true;
+        var b = true;
+        var c = false;
+        var d = true;
+
+        AssertThrows(() => Assert(!a && (b || c) && d), "*!*true*&&*false*");
+    }
+
+    [Test]
+    public void Should_handle_mixed_logical_operators_failing_on_OR()
+    {
+        var a = false;
+        var b = false;
+        var c = false;
+        var d = true;
+
+        AssertThrows(() => Assert(!a && (b || c) && d), "*||*false*false*&&*false*");
+    }
+
+    [Test]
+    public void Should_handle_mixed_logical_operators_failing_on_right_AND()
+    {
+        var a = false;
+        var b = true;
+        var c = false;
+        var d = false;
+
+        AssertThrows(() => Assert(!a && (b || c) && d), "*&&*false*");
+    }
+
+    [Test]
+    public void Should_handle_method_calls_in_logical_expressions_passing()
+    {
+        var list = new List<int> { 1, 2, 3 };
+        var x = 2;
+        var y = 5;
+
+        AssertDoesNotThrow(() => Assert(list.Contains(x) && y > 0));
+    }
+
+    [Test]
+    public void Should_handle_method_calls_in_logical_expressions_failing_on_method()
+    {
+        var list = new List<int> { 1, 2, 3 };
+        var x = 5;
+        var y = 10;
+
+        AssertThrows(() => Assert(list.Contains(x) && y > 0), "*&&*false*");
+    }
+
+    [Test]
+    public void Should_handle_method_calls_in_logical_expressions_failing_on_comparison()
+    {
+        var list = new List<int> { 1, 2, 3 };
+        var x = 2;
+        var y = -5;
+
+        AssertThrows(() => Assert(list.Contains(x) && y > 0), "*>*-5*0*&&*false*");
+    }
+
+    [Test]
+    public void Should_recurse_through_nested_parenthesized_logical_expressions_passing()
+    {
+        var a = true;
+        var b = true;
+        var c = true;
+        var d = true;
+
+        AssertDoesNotThrow(() => Assert(((a && b)) || ((c && d))));
+    }
+
+    [Test]
+    public void Should_recurse_through_nested_parenthesized_logical_expressions_failing()
+    {
+        var a = true;
+        var b = false;
+        var c = true;
+        var d = false;
+
+        AssertThrows(() => Assert(((a && b)) || ((c && d))),
+            "*||*" +
+            "*Left: ((a && b))*" +
+            "*Left: True*" +
+            "*Right: False*" +
+            "*&&: Right operand was false*" +
+            "*Right: ((c && d))*" +
+            "*Left: True*" +
+            "*Right: False*" +
+            "*&&: Right operand was false*" +
+            "*||: Both operands were false*");
+    }
+
+    [Test]
+    public void Should_recurse_through_triple_nested_parenthesized_AND_passing()
+    {
+        var a = true;
+        var b = true;
+
+        AssertDoesNotThrow(() => Assert((((a))) && (((b)))));
+    }
+
+    [Test]
+    public void Should_recurse_through_triple_nested_parenthesized_AND_failing()
+    {
+        var a = true;
+        var b = false;
+
+        AssertThrows(() => Assert((((a))) && (((b)))),
+            "*&&*" +
+            "*Left: True*" +
+            "*Right: False*" +
+            "*&&: Right operand was false*");
+    }
+
     static bool ThrowException() => throw new InvalidOperationException("This should not be called due to short-circuit evaluation");
 }
