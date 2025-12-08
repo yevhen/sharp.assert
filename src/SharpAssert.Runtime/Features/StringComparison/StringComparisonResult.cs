@@ -49,25 +49,11 @@ record StringComparisonResult(
     {
         var builder = new StringBuilder();
         foreach (var segment in segments)
-        {
-            builder.Append(segment.Operation switch
-            {
-                StringDiffOperation.Deleted => $"[-{segment.Text}]",
-                StringDiffOperation.Inserted => $"[+{segment.Text}]",
-                _ => segment.Text
-            });
-        }
+            builder.Append(segment.Render());
         return builder.ToString();
     }
 
-    static string RenderMultilineDiffLine(TextDiffLine line) => line.Type switch
-    {
-        ChangeType.Unchanged => line.Text,
-        ChangeType.Deleted => $"- {line.Text}",
-        ChangeType.Inserted => $"+ {line.Text}",
-        ChangeType.Modified => $"~ {line.Text}",
-        _ => line.Text
-    };
+    static string RenderMultilineDiffLine(TextDiffLine line) => line.Render();
 }
 
 abstract record StringDiff;
@@ -76,9 +62,26 @@ record InlineStringDiff(IReadOnlyList<DiffSegment> Segments) : StringDiff;
 
 record MultilineStringDiff(IReadOnlyList<TextDiffLine> Lines) : StringDiff;
 
-record DiffSegment(StringDiffOperation Operation, string Text);
+record DiffSegment(StringDiffOperation Operation, string Text)
+{
+    public string Render() => Operation switch
+    {
+        StringDiffOperation.Deleted => $"[-{Text}]",
+        StringDiffOperation.Inserted => $"[+{Text}]",
+        _ => Text
+    };
+}
 
-record TextDiffLine(ChangeType Type, string Text);
+record TextDiffLine(ChangeType Type, string Text)
+{
+    public string Render() => Type switch
+    {
+        ChangeType.Deleted => $"- {Text}",
+        ChangeType.Inserted => $"+ {Text}",
+        ChangeType.Modified => $"~ {Text}",
+        _ => Text
+    };
+}
 
 enum StringDiffOperation
 {
