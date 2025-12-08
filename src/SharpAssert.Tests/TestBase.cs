@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using FluentAssertions;
 using static SharpAssert.Sharp;
 
@@ -6,19 +5,6 @@ namespace SharpAssert;
 
 public abstract class TestBase
 {
-    protected static void AssertExpressionThrows(Expression<Func<bool>> expression, string originalExpr, string file,
-        int line, string expectedMessagePattern)
-    {
-        var action = () => SharpInternal.Assert(expression, originalExpr, file, line);
-        action.Should().Throw<SharpAssertionException>().WithMessage(expectedMessagePattern);
-    }
-
-    protected static void AssertExpressionPasses(Expression<Func<bool>> expression)
-    {
-        var action = () => SharpInternal.Assert(expression, expression.ToString(), "TestFile.cs", 1);
-        action.Should().NotThrow();
-    }
-
     /// <summary>
     /// Tests that Sharp.Assert() throws with expected message pattern.
     /// Use this for testing via public API (goes through rewriter).

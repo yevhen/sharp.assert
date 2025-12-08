@@ -1,3 +1,5 @@
+using static SharpAssert.Sharp;
+
 namespace SharpAssert.Features;
 
 [TestFixture]
@@ -8,7 +10,7 @@ public class DynamicAssertionFixture : TestBase
     public void Should_pass_when_dynamic_values_are_equal()
     {
         var simulatedResult = true; // Would be the result of dynamic comparison
-        AssertExpressionPasses(() => simulatedResult);
+        AssertDoesNotThrow(() => Assert(simulatedResult));
     }
 
     [Test]
@@ -16,7 +18,7 @@ public class DynamicAssertionFixture : TestBase
     public void Should_pass_with_dynamic_arithmetic()
     {
         var simulatedArithmeticResult = 10 + 5;
-        AssertExpressionPasses(() => simulatedArithmeticResult == 15);
+        AssertDoesNotThrow(() => Assert(simulatedArithmeticResult == 15));
     }
 
     [Test]
@@ -24,7 +26,7 @@ public class DynamicAssertionFixture : TestBase
     public void Should_pass_with_expandoobject_property_access()
     {
         var expandoSimulation = new { Value = 42, Name = "Test" };
-        AssertExpressionPasses(() => expandoSimulation.Value == 42 && expandoSimulation.Name == "Test");
+        AssertDoesNotThrow(() => Assert(expandoSimulation.Value == 42 && expandoSimulation.Name == "Test"));
     }
 
     [Test]
@@ -32,7 +34,7 @@ public class DynamicAssertionFixture : TestBase
     public void Should_pass_with_dynamic_method_calls()
     {
         var list = new List<int> { 1, 2, 3 };
-        AssertExpressionPasses(() => list.Count == 3);
+        AssertDoesNotThrow(() => Assert(list.Count == 3));
     }
 
     [Test]
@@ -41,7 +43,7 @@ public class DynamicAssertionFixture : TestBase
     {
         var value = "123";
         var converted = int.Parse(value);
-        AssertExpressionPasses(() => converted == 123);
+        AssertDoesNotThrow(() => Assert(converted == 123));
     }
 
     [Test]
@@ -50,7 +52,7 @@ public class DynamicAssertionFixture : TestBase
     {
         object? nullValue = null;
         object nonNullValue = "test";
-        AssertExpressionPasses(() => nullValue == null && nonNullValue != null);
+        AssertDoesNotThrow(() => Assert(nullValue == null && nonNullValue != null));
     }
 
     [Test]
@@ -73,7 +75,7 @@ public class DynamicAssertionFixture : TestBase
     {
         // Assert(dynamic.Method() > 0) should work with dynamic method calls
         // Expected: Dynamic method call results handled
-        Assert.Fail("Dynamic method call assertions not yet implemented");
+        NUnit.Framework.Assert.Fail("Dynamic method call assertions not yet implemented");
     }
 
     [Test]
