@@ -38,10 +38,12 @@ public static class SharpInternal
         int line)
     {
         var context = new AssertionContext(expr, file, line, null, new ExprNode(expr));
-        var failureMessage = await AsyncExpressionAnalyzer.AnalyzeSimpleAsyncFailure(conditionAsync, context);
+        var analysis = await AsyncExpressionAnalyzer.AnalyzeSimple(conditionAsync, context);
 
-        if (!string.IsNullOrEmpty(failureMessage))
-            throw new SharpAssertionException(failureMessage);
+        if (analysis.Passed)
+            return;
+
+        throw new SharpAssertionException(analysis.Format(), analysis);
     }
 
     public static async Task AssertAsyncBinary(
@@ -53,10 +55,12 @@ public static class SharpInternal
         int line)
     {
         var context = new AssertionContext(expr, file, line, null, new ExprNode(expr));
-        var failureMessage = await AsyncExpressionAnalyzer.AnalyzeAsyncBinaryFailure(leftAsync, rightAsync, op, context);
+        var analysis = await AsyncExpressionAnalyzer.AnalyzeBinary(leftAsync, rightAsync, op, context);
 
-        if (!string.IsNullOrEmpty(failureMessage))
-            throw new SharpAssertionException(failureMessage);
+        if (analysis.Passed)
+            return;
+
+        throw new SharpAssertionException(analysis.Format(), analysis);
     }
 
     public static void AssertDynamicBinary(
