@@ -1,3 +1,5 @@
+using System.Collections;
+using SharpAssert.Features.CollectionComparison;
 using static SharpAssert.Sharp;
 
 namespace SharpAssert.Features;
@@ -5,67 +7,253 @@ namespace SharpAssert.Features;
 [TestFixture]
 public class CollectionComparisonFixture : TestBase
 {
-    [Test]
-    public void Should_show_first_mismatch_index()
+    [TestFixture]
+    class LogicTests
     {
-        var left = new List<int> { 1, 2, 3 };
-        var right = new List<int> { 1, 2, 4 };
+        [Test]
+        public void Should_detect_first_mismatch()
+        {
+            var left = new List<int> { 1, 2, 3 };
+            var right = new List<int> { 1, 2, 4 };
 
-        AssertThrows(() => Assert(left == right),
-            "*First difference at index 2: expected 3, got 4*");
+            var expected = BinaryComparison(
+                "left == right",
+                Equal,
+                CollectionComparison(
+                    left, right,
+                    [1, 2, 3],
+                    [1, 2, 4],
+                    firstMismatch: Mismatch(2, 3, 4)));
+
+            AssertFails(() => Assert(left == right), expected);
+        }
+
+        [Test]
+        public void Should_detect_missing_elements()
+        {
+            var left = new List<int> { 1, 2 };
+            var right = new List<int> { 1, 2, 3 };
+
+            var expected = BinaryComparison(
+                "left == right",
+                Equal,
+                CollectionComparison(
+                    left, right,
+                    [1, 2],
+                    [1, 2, 3],
+                    lengthDiff: LengthDiff(missing: [3])));
+
+            AssertFails(() => Assert(left == right), expected);
+        }
+
+        [Test]
+        public void Should_detect_extra_elements()
+        {
+            var left = new List<int> { 1, 2, 3 };
+            var right = new List<int> { 1, 2 };
+
+            var expected = BinaryComparison(
+                "left == right",
+                Equal,
+                CollectionComparison(
+                    left, right,
+                    [1, 2, 3],
+                    [1, 2],
+                    lengthDiff: LengthDiff(extra: [3])));
+
+            AssertFails(() => Assert(left == right), expected);
+        }
+
+        [Test]
+        public void Should_handle_empty_collections()
+        {
+            var left = new List<int>();
+            var right = new List<int> { 1 };
+
+            var expected = BinaryComparison(
+                "left == right",
+                Equal,
+                CollectionComparison(
+                    left, right,
+                    Array.Empty<object?>(),
+                    [1],
+                    lengthDiff: LengthDiff(missing: [1])));
+
+            AssertFails(() => Assert(left == right), expected);
+        }
+
+        [Test]
+        public void Should_pass_when_equal_via_sequence_equal()
+        {
+            var left = new List<int> { 1, 2, 3 };
+            var right = new List<int> { 1, 2, 3 };
+
+            AssertPasses(() => Assert(left.SequenceEqual(right)));
+        }
+
+        [Test]
+        public void Should_pass_when_empty_collections_equal()
+        {
+            var left = new List<int>();
+            var right = new List<int>();
+
+            AssertPasses(() => Assert(left.SequenceEqual(right)));
+        }
+
+        [Test]
+        public void Should_pass_with_different_collection_types()
+        {
+            var list = new List<int> { 1, 2, 3 };
+            var array = new[] { 1, 2, 3 };
+
+            AssertPasses(() => Assert(list.SequenceEqual(array)));
+        }
     }
 
-    [Test]
-    public void Should_show_missing_elements()
+    [TestFixture]
+    class FormattingTests
     {
-        var left = new List<int> { 1, 2 };
-        var right = new List<int> { 1, 2, 3 };
+        [Test]
+        public void Should_render_empty_collections()
+        {
+            var result = CollectionComparison(
+                Array.Empty<object?>(),
+                Array.Empty<object?>());
 
-        AssertThrows(() => Assert(left == right),
-            "*Missing elements: [3]*");
+            AssertRendersExactly(result,
+                "Left:  []",
+                "Right: []");
+        }
+
+        [Test]
+        public void Should_render_collection_previews()
+        {
+            var result = CollectionComparison(
+                [1, 2, 3],
+                [4, 5, 6]);
+
+            AssertRendersExactly(result,
+                "Left:  [1, 2, 3]",
+                "Right: [4, 5, 6]");
+        }
+
+        [Test]
+        public void Should_render_first_mismatch()
+        {
+            var mismatch = Mismatch(2, 3, 4);
+
+            AssertRendersExactly(mismatch,
+                "First difference at index 2: expected 3, got 4");
+        }
+
+        [Test]
+        public void Should_render_missing_elements()
+        {
+            var delta = LengthDiff(missing: [3]);
+
+            AssertRendersExactly(delta,
+                "Missing elements: [3]");
+        }
+
+        [Test]
+        public void Should_render_extra_elements()
+        {
+            var delta = LengthDiff(extra: [3]);
+
+            AssertRendersExactly(delta,
+                "Extra elements: [3]");
+        }
+
+        [Test]
+        public void Should_render_both_missing_and_extra()
+        {
+            var delta = LengthDiff(
+                missing: [4, 5],
+                extra: [1, 2]);
+
+            AssertRendersExactly(delta,
+                "Extra elements: [1, 2]",
+                "Missing elements: [4, 5]");
+        }
+
+        [Test]
+        public void Should_compose_full_comparison_with_mismatch()
+        {
+            var mismatch = Mismatch(2, 3, 4);
+            var result = CollectionComparison(
+                [1, 2, 3],
+                [1, 2, 4],
+                firstMismatch: mismatch);
+
+            AssertRendersExactly(result,
+                "Left:  [1, 2, 3]",
+                "Right: [1, 2, 4]",
+                Rendered(mismatch));
+        }
+
+        [Test]
+        public void Should_compose_with_length_diff()
+        {
+            var delta = LengthDiff(missing: [3]);
+            var result = CollectionComparison(
+                [1, 2],
+                [1, 2, 3],
+                lengthDiff: delta);
+
+            AssertRendersExactly(result,
+                "Left:  [1, 2]",
+                "Right: [1, 2, 3]",
+                Rendered(delta));
+        }
     }
 
-    [Test]
-    public void Should_show_extra_elements()
+    static CollectionComparisonResult CollectionComparison(
+        object? left,
+        object? right,
+        IReadOnlyList<object?>? leftPreview = null,
+        IReadOnlyList<object?>? rightPreview = null,
+        CollectionMismatch? firstMismatch = null,
+        CollectionLengthDelta? lengthDiff = null)
     {
-        var left = new List<int> { 1, 2, 3 };
-        var right = new List<int> { 1, 2 };
+        leftPreview ??= MaterializeOrEmpty(left);
+        rightPreview ??= MaterializeOrEmpty(right);
 
-        AssertThrows(() => Assert(left == right),
-            "*Extra elements: [3]*");
+        return new CollectionComparisonResult(
+            Operand(left),
+            Operand(right),
+            leftPreview,
+            rightPreview,
+            firstMismatch,
+            lengthDiff);
     }
 
-    [Test]
-    public void Should_handle_empty_collections()
-    {
-        var left = new List<int>();
-        var right = new List<int> { 1 };
+    // Simplified for formatting/composition tests (operands irrelevant)
+    static CollectionComparisonResult CollectionComparison(
+        IReadOnlyList<object?> leftPreview,
+        IReadOnlyList<object?> rightPreview,
+        CollectionMismatch? firstMismatch = null,
+        CollectionLengthDelta? lengthDiff = null) =>
+        new(
+            Operand(Array.Empty<object>()),
+            Operand(Array.Empty<object>()),
+            leftPreview,
+            rightPreview,
+            firstMismatch,
+            lengthDiff);
 
-        AssertThrows(() => Assert(left == right),
-            "*Missing elements: [1]*");
-    }
+    static CollectionMismatch Mismatch(int index, object? leftVal, object? rightVal) =>
+        new(index, leftVal, rightVal);
 
-    [Test]
-    public void Should_pass_when_collections_are_equal()
-    {
-        var left = new List<int> { 1, 2, 3 };
-        var right = new List<int> { 1, 2, 3 };
-        AssertDoesNotThrow(() => Assert(left.SequenceEqual(right)));
-    }
+    static CollectionLengthDelta LengthDiff(
+        IReadOnlyList<object?>? missing = null,
+        IReadOnlyList<object?>? extra = null) =>
+        new(missing, extra);
 
-    [Test]
-    public void Should_pass_when_empty_collections_are_equal()
-    {
-        var left = new List<int>();
-        var right = new List<int>();
-        AssertDoesNotThrow(() => Assert(left.SequenceEqual(right)));
-    }
-
-    [Test]
-    public void Should_pass_with_different_collection_types()
-    {
-        var list = new List<int> { 1, 2, 3 };
-        var array = new[] { 1, 2, 3 };
-        AssertDoesNotThrow(() => Assert(list.SequenceEqual(array)));
-    }
+    static IReadOnlyList<object?> MaterializeOrEmpty(object? value) =>
+        value switch
+        {
+            null => [],
+            IEnumerable enumerable => enumerable.Cast<object?>().ToArray(),
+            _ => []
+        };
 }

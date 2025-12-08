@@ -1,105 +1,90 @@
-using static SharpAssert.Sharp;
-
 namespace SharpAssert.Features;
 
 [TestFixture]
 public class DynamicAssertionFixture : TestBase
 {
-    [Test]
-    [Ignore("Feature not yet implemented - Increment 12")]
-    public void Should_pass_when_dynamic_values_are_equal()
+    [TestFixture]
+    class LogicTests
     {
-        var simulatedResult = true; // Would be the result of dynamic comparison
-        AssertDoesNotThrow(() => Assert(simulatedResult));
-    }
+        [Test]
+        public void Should_handle_dynamic_binary_failure()
+        {
+            var expected = BinaryComparison(
+                "d == 5",
+                Equal,
+                Comparison(42, 5));
 
-    [Test]
-    [Ignore("Feature not yet implemented - Increment 12")]
-    public void Should_pass_with_dynamic_arithmetic()
-    {
-        var simulatedArithmeticResult = 10 + 5;
-        AssertDoesNotThrow(() => Assert(simulatedArithmeticResult == 15));
-    }
-
-    [Test]
-    [Ignore("Feature not yet implemented - Increment 12")]
-    public void Should_pass_with_expandoobject_property_access()
-    {
-        var expandoSimulation = new { Value = 42, Name = "Test" };
-        AssertDoesNotThrow(() => Assert(expandoSimulation.Value == 42 && expandoSimulation.Name == "Test"));
-    }
-
-    [Test]
-    [Ignore("Feature not yet implemented - Increment 12")]
-    public void Should_pass_with_dynamic_method_calls()
-    {
-        var list = new List<int> { 1, 2, 3 };
-        AssertDoesNotThrow(() => Assert(list.Count == 3));
-    }
-
-    [Test]
-    [Ignore("Feature not yet implemented - Increment 12")]
-    public void Should_pass_with_dynamic_type_conversion()
-    {
-        var value = "123";
-        var converted = int.Parse(value);
-        AssertDoesNotThrow(() => Assert(converted == 123));
-    }
-
-    [Test]
-    [Ignore("Feature not yet implemented - Increment 12")]
-    public void Should_pass_with_dynamic_null_checks()
-    {
-        object? nullValue = null;
-        object nonNullValue = "test";
-        AssertDoesNotThrow(() => Assert(nullValue == null && nonNullValue != null));
-    }
-
-    [Test]
-    public void Should_handle_dynamic_binary()
-    {
-        AssertThrows(
-            () => SharpInternal.AssertDynamicBinary(
+            AssertFails(() => SharpInternal.AssertDynamicBinary(
                 () => 42,
                 () => 5,
                 BinaryOp.Eq,
-                "dynamic == 5",
-                "TestFile.cs",
-                10),
-            "*42*5*");
-    }
+                "d == 5",
+                "File.cs",
+                1), expected);
+        }
 
-    [Test]
-    [Ignore("Feature not yet implemented - Increment 12")]
-    public void Should_handle_dynamic_method_calls()
-    {
-        // Assert(dynamic.Method() > 0) should work with dynamic method calls
-        // Expected: Dynamic method call results handled
-        NUnit.Framework.Assert.Fail("Dynamic method call assertions not yet implemented");
-    }
+        [Test]
+        public void Should_handle_dynamic_simple_failure()
+        {
+            var expected = Value("d.Method()", false, typeof(bool));
 
-    [Test]
-    public void Should_apply_dynamic_operator_semantics()
-    {
-        AssertDoesNotThrow(
-            () => SharpInternal.AssertDynamicBinary(
+            AssertFails(() => SharpInternal.AssertDynamic(
+                () => false,
+                "d.Method()",
+                "File.cs",
+                1), expected);
+        }
+
+        [Test]
+        public void Should_pass_dynamic_binary()
+        {
+            AssertPasses(() => SharpInternal.AssertDynamicBinary(
                 () => 42,
                 () => 42,
                 BinaryOp.Eq,
-                "dynamic == 42",
-                "TestFile.cs",
-                10));
+                "d == 42",
+                "File.cs",
+                1));
+        }
+
+        [Test]
+        public void Should_pass_dynamic_simple()
+        {
+            AssertPasses(() => SharpInternal.AssertDynamic(
+                () => true,
+                "d.IsValid",
+                "File.cs",
+                1));
+        }
     }
 
-    [Test]
-    public void Should_show_minimal_diagnostics_for_complex_dynamic()
+    [TestFixture]
+    class FormattingTests
     {
-        AssertThrows(
-            () => SharpInternal.AssertDynamic(
-                () => false,
-                "dynamic false expression",
-                "TestFile.cs",
-                20),
-            "*dynamic false expression*TestFile.cs*Result: False*");
+        [Test]
+        public void Should_render_dynamic_binary_failure()
+        {
+            var result = BinaryComparison(
+                "d == 5",
+                Equal,
+                Comparison(42, 5));
+
+            AssertRendersExactly(result,
+                "d == 5",
+                "Left:  42",
+                "Right: 5");
+        }
+
+        [Test]
+        public void Should_render_dynamic_simple_failure()
+        {
+            var result = Value("d.Method()", false, typeof(bool));
+
+            AssertRendersExactly(result,
+                "False");
+        }
     }
+
+    static BinaryComparison.DefaultComparisonResult Comparison(object? left, object? right) =>
+        new(Operand(left), Operand(right));
 }

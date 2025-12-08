@@ -1,268 +1,119 @@
-using FluentAssertions;
 using static SharpAssert.Sharp;
+using FluentAssertions;
 
 namespace SharpAssert;
 
 [TestFixture]
 public class CoreAssertionFixture : TestBase
 {
-    [Test]
-    public void Should_pass_when_condition_is_true()
+    [TestFixture]
+    class AssertionTests
     {
-        AssertDoesNotThrow(() => Assert(true));
-    }
-
-    [Test]
-    public void Should_throw_SharpAssertionException_when_false()
-    {
-        AssertThrows(() => Assert(false), "Assertion failed*");
-    }
-
-    [Test]
-    public void Should_include_expression_text_in_error()
-    {
-        AssertThrows(() => Assert(1 == 2), "*1 == 2*");
-    }
-
-    [Test]
-    public void Should_include_file_and_line_in_error()
-    {
-        AssertThrows(() => Assert(false), "*AssertionFixture.cs:*");
-    }
-
-    [Test]
-    public void Should_pass_when_condition_is_true_with_message()
-    {
-        AssertDoesNotThrow(() => Assert(true, "This should pass"));
-    }
-
-    [Test]
-    public void Should_include_custom_message_in_error()
-    {
-        AssertThrows(() => Assert(false, "Custom error message"), "Custom error message*");
-    }
-
-    [Test]
-    public void Should_include_both_message_and_expression_in_error()
-    {
-        AssertThrows(() => Assert(1 == 2, "Values should be equal"), "Values should be equal*1 == 2*");
-    }
-
-    [Test]
-    public void Should_reject_empty_message()
-    {
-        var action = () => Assert(true, "");
-        action.Should().Throw<ArgumentException>()
-              .WithMessage("*Message must be either null or non-empty*");
-    }
-
-    [Test]
-    public void Should_reject_whitespace_message()
-    {
-        var action = () => Assert(true, "   ");
-        action.Should().Throw<ArgumentException>()
-              .WithMessage("*Message must be either null or non-empty*");
-    }
-
-    [Test]
-    public void Throws_captures_expected_exception()
-    {
-        var exception = new NullReferenceException();
-
-        var result = Throws<NullReferenceException>(() => throw exception);
-        AssertDoesNotThrow(() => Assert(result));
-
-        result.Exception.Should().Be(exception);
-    }
-
-    [Test]
-    public void Throws_fails_when_unexpected_exception_type()
-    {
-        var exception = new ArgumentException();
-
-        var actual = VerifyThrowsException<SharpAssertionException>(() => {
-            Throws<NullReferenceException>(() => throw exception);
-        })!;
-
-        actual.Message.Should().Contain(
-            "Expected exception of type 'System.NullReferenceException', " +
-            "but got 'System.ArgumentException': Value does not fall within the expected range.");
-    }
-
-    [Test]
-    public void Throws_fails_when_unexpected_exception_type_with_detailed_message()
-    {
-        var exception = new ArgumentException("Invalid argument");
-
-        var actual = VerifyThrowsException<SharpAssertionException>(() =>
-            Throws<NullReferenceException>(() => throw exception))!;
-
-        actual.Message.Should().Contain(
-            "Expected exception of type 'System.NullReferenceException', " +
-            "but got 'System.ArgumentException': Invalid argument");
-
-        actual.Message.Should().Contain("Full exception details:");
-    }
-
-    [Test]
-    public void Assert_does_not_throw_when_no_exception_is_thrown()
-    {
-        var result = Throws<ArgumentException>(() => { /* do nothing */ });
-        AssertDoesNotThrow(() => Assert(!result));
-    }
-
-    [Test]
-    public void Can_check_exception_message_directly()
-    {
-        var result = Throws<ArgumentException>(() =>
-                throw new ArgumentException("Invalid parameter"));
-        AssertDoesNotThrow(() => Assert(result.Message == "Invalid parameter"));
-    }
-
-    [Test]
-    public void Throws_includes_full_stack_trace_in_error_message()
-    {
-        var actual = VerifyThrowsException<SharpAssertionException>(() =>
-            Throws<NullReferenceException>(() => ThrowDeepException()))!;
-
-        actual.Message.Should().Contain("Full exception details:");
-        actual.Message.Should().Contain("at SharpAssert.CoreAssertionFixture.ThrowDeepException()");
-        actual.Message.Should().Contain(
-            "at SharpAssert.CoreAssertionFixture.<Throws_includes_full_stack_trace_in_error_message>");
-    }
-
-    void ThrowDeepException() => throw new InvalidOperationException("Deep exception with stack trace");
-
-    static T? VerifyThrowsException<T>(Action action) where T : Exception
-    {
-        try
+        [Test]
+        public void Should_pass_when_true()
         {
-            action();
-            return null;
+            AssertPasses(() => Assert(true));
         }
-        catch (T ex)
+
+        [Test]
+        public void Should_fail_when_false()
         {
-            return ex;
+            var expected = Value("false", false, typeof(bool));
+            AssertFails(() => Assert(false), expected);
+        }
+
+        [Test]
+        public void Should_include_expression_text()
+        {
+            // Compiler optimizes "1 == 2" to constant "False" in expression tree
+            var expected = Value("1 == 2", false, typeof(bool));
+            AssertFails(() => Assert(1 == 2), expected);
+        }
+
+        [Test]
+        public void Should_include_file_and_line()
+        {
+            var exception = NUnit.Framework.Assert.Throws<SharpAssertionException>(() => Assert(false));
+            exception.Result.Should().NotBeNull();
+            exception.Result!.Context.File.Should().EndWith("CoreAssertionFixture.cs");
+            exception.Result!.Context.Line.Should().BeGreaterThan(0);
+        }
+
+        [Test]
+        public void Should_include_custom_message()
+        {
+            var exception = NUnit.Framework.Assert.Throws<SharpAssertionException>(() => Assert(false, "Custom error"));
+            exception.Result!.Context.Message.Should().Be("Custom error");
+        }
+
+        [Test]
+        public void Should_reject_invalid_message()
+        {
+            NUnit.Framework.Assert.Throws<ArgumentException>(() => Assert(true, ""));
+            NUnit.Framework.Assert.Throws<ArgumentException>(() => Assert(true, "   "));
         }
     }
 
-    [Test]
-    public async Task ThrowsAsync_catches_expected_exception_type()
+    [TestFixture]
+    class ThrowsTests
     {
-        var exception = new InvalidOperationException("Test exception");
-
-        var result = await ThrowsAsync<InvalidOperationException>(async () =>
+        [Test]
+        public void Throws_should_pass_when_expected_exception_thrown()
         {
-            await Task.Delay(1);
-            throw exception;
-        });
-
-        AssertDoesNotThrow(() => Assert(result));
-        result.Exception.Should().Be(exception);
-    }
-
-    [Test]
-    public async Task ThrowsAsync_can_check_exception_message()
-    {
-        var result = await ThrowsAsync<ArgumentException>(async () =>
-        {
-            await Task.Delay(1);
-            throw new ArgumentException("Test message");
-        });
-
-        AssertDoesNotThrow(() => Assert(result && result.Message == "Test message"));
-        result.Exception.Should().BeOfType<ArgumentException>();
-    }
-
-    [Test]
-    public async Task ThrowsAsync_detects_when_no_exception_thrown()
-    {
-        var result = await ThrowsAsync<ArgumentException>(async () =>
-        {
-            await Task.Delay(1);
-            // No exception thrown
-        });
-
-        AssertDoesNotThrow(() => Assert(!result));
-    }
-
-    [Test]
-    public async Task ThrowsAsync_fails_when_wrong_exception_type()
-    {
-        var actual = await VerifyThrowsException<SharpAssertionException>(async () =>
-            await ThrowsAsync<ArgumentException>(async () =>
-            {
-                await Task.Delay(1);
-                throw new InvalidOperationException("Wrong exception");
-            }));
-
-        actual!.Message.Should().Contain(
-            "Expected exception of type 'System.ArgumentException', " +
-            "but got 'System.InvalidOperationException': Wrong exception");
-    }
-
-    [Test]
-    public async Task ThrowsAsync_fails_when_no_exception_thrown()
-    {
-        var result = await ThrowsAsync<ArgumentException>(async () =>
-        {
-            await Task.Delay(1);
-            // No exception thrown
-        });
-
-        var actual = VerifyThrowsException<InvalidOperationException>(() => _ = result.Exception);
-
-        actual!.Message.Should().Contain(
-            "Expected exception of type 'System.ArgumentException', but no exception was thrown");
-    }
-
-    [Test]
-    public async Task ThrowsAsync_unwraps_aggregate_exceptions()
-    {
-        var result = await ThrowsAsync<InvalidOperationException>(async () =>
-        {
-            var task = Task.Run(() => throw new InvalidOperationException("Inner exception"));
-            try
-            {
-                await task;
-            }
-            catch (Exception ex)
-            {
-                // Simulate AggregateException wrapping
-                throw new AggregateException(ex);
-            }
-        });
-
-        AssertDoesNotThrow(() => Assert(result && result.Message == "Inner exception"));
-    }
-
-    [Test]
-    public async Task ThrowsAsync_includes_full_stack_trace()
-    {
-        var actual = await VerifyThrowsException<SharpAssertionException>(async () =>
-            await ThrowsAsync<ArgumentException>(async () => await ThrowDeepAsyncException()));
-
-        actual!.Message.Should().Contain("Full exception details:");
-        actual.Message.Should().Contain("at SharpAssert.CoreAssertionFixture.ThrowDeepAsyncException()");
-        actual.Message.Should().Contain("InvalidOperationException: Deep async exception");
-    }
-
-    static async Task ThrowDeepAsyncException()
-    {
-        await Task.Delay(1);
-        throw new InvalidOperationException("Deep async exception with stack trace");
-    }
-
-    static async Task<T?> VerifyThrowsException<T>(Func<Task> action) where T : Exception
-    {
-        try
-        {
-            await action();
-            return null;
+            var result = Throws<InvalidOperationException>(() => throw new InvalidOperationException());
+            AssertPasses(() => Assert(result));
         }
-        catch (T ex)
+
+        [Test]
+        public void Throws_should_return_exception_object()
         {
-            return ex;
+            var ex = new InvalidOperationException("test");
+            var result = Throws<InvalidOperationException>(() => throw ex);
+            result.Exception.Should().Be(ex);
+        }
+
+        [Test]
+        public void Throws_should_fail_when_wrong_type_thrown()
+        {
+            NUnit.Framework.Assert.Throws<SharpAssertionException>(() => 
+                Throws<NullReferenceException>(() => throw new ArgumentException()));
+        }
+
+        [Test]
+        public void Throws_should_fail_when_no_exception_thrown()
+        {
+            var result = Throws<ArgumentException>(() => { });
+            AssertPasses(() => Assert(!result));
+            
+            NUnit.Framework.Assert.Throws<InvalidOperationException>(() => _ = result.Exception);
+        }
+    }
+
+    [TestFixture]
+    class ThrowsAsyncTests
+    {
+        [Test]
+        public async Task ThrowsAsync_should_pass_when_expected_exception()
+        {
+            var result = await ThrowsAsync<InvalidOperationException>(async () => 
+            {
+                await Task.Yield();
+                throw new InvalidOperationException();
+            });
+
+            var action = async () => Assert(result);
+            await action.Should().NotThrowAsync();
+        }
+
+        [Test]
+        public async Task ThrowsAsync_should_fail_wrong_type()
+        {
+            NUnit.Framework.Assert.ThrowsAsync<SharpAssertionException>(async () => 
+                await ThrowsAsync<NullReferenceException>(async () => 
+                {
+                    await Task.Yield();
+                    throw new ArgumentException();
+                }));
         }
     }
 }

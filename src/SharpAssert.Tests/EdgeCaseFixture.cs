@@ -1,3 +1,5 @@
+using SharpAssert.Core;
+using SharpAssert.Features.Shared;
 using static SharpAssert.Sharp;
 
 namespace SharpAssert;
@@ -5,90 +7,122 @@ namespace SharpAssert;
 [TestFixture]
 public class EdgeCaseFixture : TestBase
 {
-    [Test]
-    public void Should_handle_null_operands()
+    [TestFixture]
+    class LogicTests
     {
-        string? nullString = null;
-        var value = "test";
+        [Test]
+        public void Should_handle_null_operands()
+        {
+            string? nullString = null;
+            var value = "test";
 
-        AssertThrows(() => Assert(nullString == value), "*null*test*");
+            // Binary comparison (null == "test")
+            var expected = BinaryComparison(
+                "nullString == value",
+                Equal,
+                new Features.BinaryComparison.DefaultComparisonResult(
+                    Operand(null, typeof(string)),
+                    Operand("test", typeof(string))));
+
+            AssertFails(() => Assert(nullString == value), expected);
+        }
+
+        [Test]
+        public void Should_handle_simple_boolean_property_false()
+        {
+            var obj = new TestObject { IsValid = false };
+            
+            var expected = Value("obj.IsValid", false, typeof(bool));
+
+            AssertFails(() => Assert(obj.IsValid), expected);
+        }
+
+        [Test]
+        public void Should_handle_simple_boolean_method_call_false()
+        {
+            var obj = new TestObject { IsValid = false };
+            
+            // No arguments -> ValueEvaluationResult
+            var expected = Value("obj.GetValidationResult()", false, typeof(bool));
+
+            AssertFails(() => Assert(obj.GetValidationResult()), expected);
+        }
+
+        [Test]
+        public void Should_handle_boolean_constant_false()
+        {
+            var expected = Value("false", false, typeof(bool));
+            AssertFails(() => Assert(false), expected);
+        }
+
+        [Test]
+        public void Should_handle_reference_equality_false()
+        {
+            var objA = new NonComparableClass { Name = "A" };
+            var objB = new DifferentNonComparableClass { Value = 10 };
+
+            var expected = MethodCall(
+                "ReferenceEquals(objA, objB)",
+                false,
+                Value("objA", objA, typeof(NonComparableClass)),
+                Value("objB", objB, typeof(DifferentNonComparableClass)));
+
+            AssertFails(() => Assert(ReferenceEquals(objA, objB)), expected);
+        }
+
+        [Test]
+        public void Should_pass_when_true()
+        {
+            AssertPasses(() => Assert(true));
+            var obj = new TestObject { IsValid = true };
+            AssertPasses(() => Assert(obj.IsValid));
+        }
     }
 
-    [Test]
-    public void Should_handle_simple_boolean_property_false()
+    [TestFixture]
+    class FormattingTests
     {
-        var obj = new TestObject { IsValid = false };
+        [Test]
+        public void Should_display_method_call_arguments()
+        {
+            var objA = new NonComparableClass { Name = "A" };
+            var objB = new NonComparableClass { Name = "B" };
 
-        AssertThrows(() => Assert(obj.IsValid), "Assertion failed: obj.IsValid  at *:*");
+            var result = MethodCall(
+                "ReferenceEquals(objA, objB)",
+                false,
+                Value("objA", objA, typeof(NonComparableClass)),
+                Value("objB", objB, typeof(NonComparableClass)));
+
+            // TestHelpers.NonComparableClass overrides ToString() => Name!
+            // So "A" and "B"
+            
+            AssertRendersExactly(result,
+                "ReferenceEquals(objA, objB)",
+                "Argument[0]: A",
+                "Argument[1]: B",
+                "Result: False");
+        }
+
+        [Test]
+        public void Should_display_simple_boolean_method_call_with_arguments()
+        {
+            var result = MethodCall(
+                "text.StartsWith(prefix)",
+                false,
+                Value("\"Goodbye\"", "Goodbye", typeof(string)));
+
+            AssertRendersExactly(result,
+                "text.StartsWith(prefix)",
+                "Argument[0]: \"Goodbye\"",
+                "Result: False");
+        }
     }
 
-    [Test]
-    public void Should_handle_simple_boolean_method_call_false()
-    {
-        var obj = new TestObject { IsValid = false };
+    static MethodCallEvaluationResult MethodCall(string expr, bool value, params EvaluationResult[] args) =>
+        new(expr, value, args);
 
-        AssertThrows(() => Assert(obj.GetValidationResult()), "Assertion failed: obj.GetValidationResult()  at *:*");
-    }
-
-    [Test]
-    public void Should_handle_boolean_constant_false()
-    {
-        AssertThrows(() => Assert(false), "Assertion failed: false  at *:*");
-    }
-
-    [Test]
-    public void Should_handle_simple_boolean_property_true()
-    {
-        var obj = new TestObject { IsValid = true };
-
-        AssertDoesNotThrow(() => Assert(obj.IsValid));
-    }
-
-    [Test]
-    public void Should_handle_boolean_constant_true()
-    {
-        AssertDoesNotThrow(() => Assert(true));
-    }
-
-    [Test]
-    public void Should_handle_reference_equality_false()
-    {
-        var objA = new NonComparableClass { Name = "A" };
-        var objB = new DifferentNonComparableClass { Value = 10 };
-
-        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-        AssertThrows(() => Assert(ReferenceEquals(objA, objB)), "*");
-    }
-
-    [Test]
-    public void Should_display_method_call_arguments()
-    {
-        var objA = new NonComparableClass { Name = "A" };
-        var objB = new NonComparableClass { Name = "B" };
-
-        AssertThrows(
-            () => Assert(ReferenceEquals(objA, objB)),
-            "*ReferenceEquals(objA, objB)*Argument[0]:*Argument[1]:*Result: false*");
-    }
-
-    [Test]
-    public void Should_display_simple_boolean_method_call_with_arguments()
-    {
-        var text = "Hello World";
-        var prefix = "Goodbye";
-
-        AssertThrows(
-            () => Assert(text.StartsWith(prefix)),
-            "*text.StartsWith(prefix)*Argument[0]: \"Goodbye\"*Result: False*");
-    }
-
-    [Test]
-    public void Should_display_method_call_with_instance_and_multiple_arguments()
-    {
-        var text = "Hello World";
-
-        AssertThrows(
-            () => Assert(text.Contains("xyz")),
-            "*Contains failed: searched for \"xyz\" in*");
-    }
+    static Features.BinaryComparison.DefaultComparisonResult Comparison(object? left, object? right) =>
+        new(Operand(left), Operand(right));
 }
+

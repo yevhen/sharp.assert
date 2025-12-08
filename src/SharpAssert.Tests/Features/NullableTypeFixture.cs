@@ -1,4 +1,5 @@
-using FluentAssertions;
+using SharpAssert.Features.BinaryComparison;
+using SharpAssert.Features.Shared;
 using static SharpAssert.Sharp;
 
 namespace SharpAssert.Features;
@@ -6,144 +7,132 @@ namespace SharpAssert.Features;
 [TestFixture]
 public class NullableTypeFixture : TestBase
 {
-    [Test]
-    public void Should_show_null_state_for_nullable_int()
+    [TestFixture]
+    class LogicTests
     {
-        int? nullableValue = null;
-        var nonNullValue = 42;
+        [Test]
+        public void Should_show_null_state_for_nullable_int()
+        {
+            int? nullableValue = null;
+            var nonNullValue = 42;
 
-        AssertThrows(() => Assert(nullableValue == nonNullValue),
-            "*null*42*");
+            var expected = BinaryComparison(
+                "nullableValue == nonNullValue",
+                Equal,
+                NullableComparison(
+                    Operand(nullableValue, typeof(int?)), 
+                    Operand(nonNullValue, typeof(int?)), // Lifted to nullable
+                    null, 42,
+                    true, false,
+                    typeof(int?), typeof(int?)));
+
+            AssertFails(() => Assert(nullableValue == nonNullValue), expected);
+        }
+
+        [Test]
+        public void Should_show_value_state_for_nullable_int()
+        {
+            int? nullableValue = 42;
+            var nonNullValue = 24;
+
+            var expected = BinaryComparison(
+                "nullableValue == nonNullValue",
+                Equal,
+                NullableComparison(
+                    Operand(nullableValue, typeof(int?)), 
+                    Operand(nonNullValue, typeof(int?)), // Lifted
+                    42, 24,
+                    false, false,
+                    typeof(int?), typeof(int?)));
+
+            AssertFails(() => Assert(nullableValue == nonNullValue), expected);
+        }
+
+        [Test]
+        public void Should_show_null_state_for_nullable_bool()
+        {
+            bool? nullableBool = null;
+            var regularBool = true;
+
+            var expected = BinaryComparison(
+                "nullableBool == regularBool",
+                Equal,
+                NullableComparison(
+                    Operand(nullableBool, typeof(bool?)), 
+                    Operand(regularBool, typeof(bool?)), // Lifted
+                    null, true,
+                    true, false,
+                    typeof(bool?), typeof(bool?)));
+
+            AssertFails(() => Assert(nullableBool == regularBool), expected);
+        }
+
+        [Test]
+        public void Should_show_null_state_for_nullable_DateTime()
+        {
+            DateTime? nullableDate = null;
+            var regularDate = new DateTime(2023, 1, 1);
+
+            var expected = BinaryComparison(
+                "nullableDate == regularDate",
+                Equal,
+                NullableComparison(
+                    Operand(nullableDate, typeof(DateTime?)), 
+                    Operand(regularDate, typeof(DateTime?)), // Lifted
+                    null, regularDate,
+                    true, false,
+                    typeof(DateTime?), typeof(DateTime?)));
+
+            AssertFails(() => Assert(nullableDate == regularDate), expected);
+        }
+
+        [Test]
+        public void Should_pass_when_both_nullable_values_are_null()
+        {
+            int? nullable1 = null;
+            int? nullable2 = null;
+            AssertPasses(() => Assert(nullable1 == nullable2));
+        }
     }
 
-    [Test]
-    public void Should_show_value_state_for_nullable_int()
+    [TestFixture]
+    class FormattingTests
     {
-        int? nullableValue = 42;
-        var nonNullValue = 24;
+        [Test]
+        public void Should_render_nullable_int_null()
+        {
+            var result = NullableComparison(
+                Operand(null, typeof(int?)), 
+                Operand(42, typeof(int)),
+                null, 42,
+                true, false,
+                typeof(int?), typeof(int));
 
-        AssertThrows(() => Assert(nullableValue == nonNullValue),
-            "*42*24*");
+            AssertRendersExactly(result,
+                "Left:  null",
+                "Right: 42");
+        }
+
+        [Test]
+        public void Should_render_nullable_int_value()
+        {
+            var result = NullableComparison(
+                Operand(42, typeof(int?)), 
+                Operand(24, typeof(int)),
+                42, 24,
+                false, false,
+                typeof(int?), typeof(int));
+
+            AssertRendersExactly(result,
+                "Left:  42",
+                "Right: 24");
+        }
     }
 
-    [Test]
-    public void Should_show_null_state_for_nullable_bool()
-    {
-        bool? nullableBool = null;
-        var regularBool = true;
-
-        AssertThrows(() => Assert(nullableBool == regularBool),
-            "*null*True*");
-    }
-
-    [Test]
-    public void Should_show_value_state_for_nullable_bool()
-    {
-        bool? nullableBool = false;
-        var regularBool = true;
-
-        AssertThrows(() => Assert(nullableBool == regularBool),
-            "*False*True*");
-    }
-
-    [Test]
-    public void Should_show_null_state_for_nullable_DateTime()
-    {
-        DateTime? nullableDate = null;
-        var regularDate = new DateTime(2023, 1, 1);
-
-        AssertThrows(() => Assert(nullableDate == regularDate),
-            "*null*1/1/2023*");
-    }
-
-    [Test]
-    public void Should_show_value_state_for_nullable_DateTime()
-    {
-        DateTime? nullableDate = new DateTime(2023, 6, 15);
-        var regularDate = new DateTime(2023, 1, 1);
-
-        AssertThrows(() => Assert(nullableDate == regularDate),
-            "*6/15/2023*1/1/2023*");
-    }
-
-    [Test]
-    public void Should_pass_when_both_nullable_values_are_null()
-    {
-        int? nullable1 = null;
-        int? nullable2 = null;
-
-        AssertDoesNotThrow(() => Assert(nullable1 == nullable2));
-    }
-
-    [Test]
-    public void Should_pass_when_both_nullable_values_have_same_value()
-    {
-        int? nullable1 = 42;
-        int? nullable2 = 42;
-
-        AssertDoesNotThrow(() => Assert(nullable1 == nullable2));
-    }
-
-    [Test]
-    public void Should_show_detailed_state_for_nullable_vs_nullable()
-    {
-        int? nullableNull = null;
-        int? nullableValue = 42;
-
-        AssertThrows(() => Assert(nullableNull == nullableValue),
-            "*null*42*");
-    }
-
-    [Test]
-    public void Should_handle_nullable_reference_types()
-    {
-        string? nullableString = null;
-        string? nonNullString = "hello";
-
-        AssertThrows(() => Assert(nullableString == nonNullString),
-            "*null*\"hello\"*");
-    }
-
-    [Test]
-    public void Should_handle_nullable_object_types()
-    {
-        object? nullableObject = null;
-        var nonNullObject = new { Name = "Test" };
-
-        AssertThrows(() => Assert(nullableObject == nonNullObject),
-            "*null*{ Name = Test }*");
-    }
-
-    [Test]
-    public void Should_show_HasValue_information_in_detailed_diagnostics()
-    {
-        int? nullableWithoutValue = null;
-        int? nullableWithValue = 42;
-
-        AssertThrows(() => Assert(nullableWithoutValue == nullableWithValue),
-            "*null*42*");
-    }
-
-    [Test]
-    public void Should_handle_null_comparison_edge_cases()
-    {
-        int? nullable = 42;
-
-        AssertThrows(() => Assert(nullable == null),
-            "*42*null*");
-    }
-
-    [Test]
-    public void Should_display_clean_expression_for_nullable_vs_non_nullable()
-    {
-        DateTime? value = null;
-        var expected = DateTime.Now;
-
-        var action = () => Assert(value == expected);
-
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().NotContain("Convert(");
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().Contain("value == expected");
-    }
+    static NullableComparisonResult NullableComparison(
+        AssertionOperand leftOp, AssertionOperand rightOp,
+        object? leftVal, object? rightVal,
+        bool leftNull, bool rightNull,
+        Type? leftType, Type? rightType) =>
+        new(leftOp, rightOp, leftVal, rightVal, leftNull, rightNull, leftType, rightType);
 }

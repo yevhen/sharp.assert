@@ -161,6 +161,50 @@ result.Should().BeEquivalentTo(expected);
 **Tests use NUnit 3.14 with FluentAssertions for assertions**. Test structure:
 - Fixtures per feature (e.g., BinaryComparisonFixture.cs, LinqOperationsFixture.cs)
 
+### Testing Infrastructure
+
+We use a decoupled testing strategy that separates logic verification from formatting verification.
+
+**Structure:**
+```csharp
+[TestFixture]
+public class MyFeatureFixture : TestBase
+{
+    [TestFixture]
+    class LogicTests
+    {
+        // Tests that verify the correctness of the EvaluationResult structure
+        [Test]
+        public void Should_detect_failure()
+        {
+            var expected = BinaryComparison(..., Comparison(...));
+            AssertFails(() => Assert(x == y), expected);
+        }
+    }
+
+    [TestFixture]
+    class FormattingTests
+    {
+        // Tests that verify the rendered string output of the result
+        [Test]
+        public void Should_render_failure()
+        {
+            var result = BinaryComparison(...);
+            AssertRendersExactly(result, "Left: 1", "Right: 2");
+        }
+    }
+    
+    // DSL Helpers
+    static ComparisonResult Comparison(...) => ...
+}
+```
+
+**DSL Helpers (TestBase):**
+- `AssertFails(action, expectedResult)`: Verifies structural equality of `EvaluationResult`.
+- `AssertPasses(action)`: Verifies assertion succeeds.
+- `AssertRendersExactly(result, lines...)`: Verifies exact string rendering (Text property).
+- `Value(expr, val)`, `BinaryComparison(...)`, `Operand(...)`: Factories for expected results.
+
 ## Quality Issue Resolution Strategy
 
 - **CRITICAL**: When addressing quality issues:

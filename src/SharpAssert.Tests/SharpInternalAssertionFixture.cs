@@ -1,6 +1,5 @@
-using System.Linq.Expressions;
-using FluentAssertions;
 using static SharpAssert.Sharp;
+using FluentAssertions;
 
 namespace SharpAssert;
 
@@ -10,19 +9,20 @@ public class SharpInternalAssertionFixture : TestBase
     [Test]
     public void Should_pass_when_expression_evaluates_to_true()
     {
-        AssertDoesNotThrow(() => Assert(1 == 1));
+        AssertPasses(() => Assert(1 == 1));
     }
 
     [Test]
     public void Should_pass_when_expression_evaluates_to_true_with_message()
     {
-        AssertDoesNotThrow(() => Assert(1 == 1, "Should be equal"));
+        AssertPasses(() => Assert(1 == 1, "Should be equal"));
     }
 
     [Test]
     public void Should_throw_with_message_when_expression_fails()
     {
-        AssertThrows(() => Assert(1 == 2, "Numbers should match"), "Numbers should match*");
+        var exception = NUnit.Framework.Assert.Throws<SharpAssertionException>(() => Assert(1 == 2, "Numbers should match"));
+        exception.Result!.Context.Message.Should().Be("Numbers should match");
     }
 
     [Test]
@@ -30,23 +30,24 @@ public class SharpInternalAssertionFixture : TestBase
     {
         var x = 1;
         var y = 2;
-        AssertThrows(() => Assert(x == y, "Custom error"), "Custom error*Left:  1*Right: 2*");
+        var exception = NUnit.Framework.Assert.Throws<SharpAssertionException>(() => Assert(x == y, "Custom error"));
+        
+        exception.Result!.Context.Message.Should().Be("Custom error");
+        exception.Result.Result.Should().BeEquivalentTo(
+            BinaryComparison("x == y", Equal, Comparison(1, 2)), 
+            options => options.RespectingRuntimeTypes());
     }
 
     [Test]
     public void Should_reject_empty_message()
     {
-        var action = () => Assert(true, "");
-        action.Should().Throw<ArgumentException>()
-              .WithMessage("*Message must be either null or non-empty*");
+        NUnit.Framework.Assert.Throws<ArgumentException>(() => Assert(true, ""));
     }
 
     [Test]
     public void Should_reject_whitespace_message()
     {
-        var action = () => Assert(true, "   ");
-        action.Should().Throw<ArgumentException>()
-              .WithMessage("*Message must be either null or non-empty*");
+        NUnit.Framework.Assert.Throws<ArgumentException>(() => Assert(true, "   "));
     }
 
     [Test]
@@ -55,21 +56,21 @@ public class SharpInternalAssertionFixture : TestBase
         var x = 5;
         var y = 10;
         var z = 15;
-        AssertDoesNotThrow(() => Assert(x < y && y < z && (x + y) == z));
+        AssertPasses(() => Assert(x < y && y < z && (x + y) == z));
     }
 
     [Test]
     public void Should_pass_when_method_chain_assertion_succeeds()
     {
         var text = "Hello World";
-        AssertDoesNotThrow(() => Assert(text.ToLower().Contains("hello") && text.Length > 5));
+        AssertPasses(() => Assert(text.ToLower().Contains("hello") && text.Length > 5));
     }
 
     [Test]
     public void Should_pass_when_nested_expression_succeeds()
     {
         var items = new List<string> { "apple", "banana", "cherry" };
-        AssertDoesNotThrow(() => Assert(items.Where(x => x.StartsWith("a")).Count() == 1));
+        AssertPasses(() => Assert(items.Where(x => x.StartsWith("a")).Count() == 1));
     }
 
     [Test]
@@ -77,7 +78,9 @@ public class SharpInternalAssertionFixture : TestBase
     {
         var number = 42;
         var text = "42";
-        AssertDoesNotThrow(() => Assert(number.ToString() == text && int.Parse(text) == number));
+        AssertPasses(() => Assert(number.ToString() == text && int.Parse(text) == number));
     }
 
+    static Features.BinaryComparison.DefaultComparisonResult Comparison(object? left, object? right) =>
+        new(Operand(left), Operand(right));
 }

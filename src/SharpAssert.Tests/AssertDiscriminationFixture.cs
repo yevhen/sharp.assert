@@ -1,6 +1,6 @@
 using System.Diagnostics;
-using FluentAssertions;
 using static SharpAssert.Sharp;
+using FluentAssertions;
 
 namespace SharpAssert;
 
@@ -28,13 +28,15 @@ public class AssertDiscriminationFixture : TestBase
     [Test]
     public void Should_handle_special_characters_in_custom_message()
     {
-        AssertThrows(() => Assert(false, "Error: \"quoted\" text"), "*Error: \"quoted\" text*");
+        var exception = NUnit.Framework.Assert.Throws<SharpAssertionException>(() => Assert(false, "Error: \"quoted\" text"));
+        exception.Result!.Context.Message.Should().Be("Error: \"quoted\" text");
     }
 
     [Test]
     public void Should_handle_escaped_characters_in_custom_message()
     {
-        AssertThrows(() => Assert(1 == 2, "Path: C:\\Users\\Test"), "*Path: C:\\Users\\Test*");
+        var exception = NUnit.Framework.Assert.Throws<SharpAssertionException>(() => Assert(1 == 2, "Path: C:\\Users\\Test"));
+        exception.Result!.Context.Message.Should().Be("Path: C:\\Users\\Test");
     }
 
     [Test]
@@ -45,6 +47,6 @@ public class AssertDiscriminationFixture : TestBase
 
         Debug.Assert(obj != null, "This should not be rewritten");
 
-        AssertDoesNotThrow(() => Assert(x == 1));
+        AssertPasses(() => Assert(x == 1));
     }
 }

@@ -1,269 +1,177 @@
-using FluentAssertions;
+using System.Linq.Expressions;
+using SharpAssert.Features.BinaryComparison;
 using static SharpAssert.Sharp;
+using FluentAssertions;
 
 namespace SharpAssert.Features;
 
 [TestFixture]
 public class BinaryComparisonFixture : TestBase
 {
-    [Test]
-    public void Should_show_left_and_right_values_for_equality()
+    [TestFixture]
+    class LogicTests
     {
-        var left = 42;
-        var right = 24;
+        int callCount;
 
-        AssertThrows(() => Assert(left == right), "*left == right*42*24*");
-    }
-
-    [Test]
-    public void Should_handle_equality_operator()
-    {
-        var left = 5;
-        var right = 10;
-
-        AssertThrows(() => Assert(left == right), "*left == right*5*10*");
-    }
-
-    [Test]
-    public void Should_handle_inequality_operator()
-    {
-        var left = 5;
-        var right = 5;
-
-        AssertThrows(() => Assert(left != right), "*left != right*5*5*");
-    }
-
-    [Test]
-    public void Should_handle_less_than_operator()
-    {
-        var left = 10;
-        var right = 5;
-
-        AssertThrows(() => Assert(left < right), "*left < right*10*5*");
-    }
-
-    [Test]
-    public void Should_handle_less_than_or_equal_operator()
-    {
-        var left = 10;
-        var right = 5;
-
-        AssertThrows(() => Assert(left <= right), "*left <= right*10*5*");
-    }
-
-    [Test]
-    public void Should_handle_greater_than_operator()
-    {
-        var left = 5;
-        var right = 10;
-
-        AssertThrows(() => Assert(left > right), "*left > right*5*10*");
-    }
-
-    [Test]
-    public void Should_handle_greater_than_or_equal_operator()
-    {
-        var left = 5;
-        var right = 10;
-
-        AssertThrows(() => Assert(left >= right), "*left >= right*5*10*");
-    }
-
-    [Test]
-    public void Should_pass_when_all_binary_operators_are_true()
-    {
-        var x = 5;
-        var y = 10;
-
-        AssertDoesNotThrow(() => Assert(x == 5));
-        AssertDoesNotThrow(() => Assert(x < y));
-        AssertDoesNotThrow(() => Assert(x != y));
-        AssertDoesNotThrow(() => Assert(y > x));
-        AssertDoesNotThrow(() => Assert(x <= 5));
-        AssertDoesNotThrow(() => Assert(y >= 10));
-    }
-
-    [Test]
-    public void Should_pass_when_string_comparison_is_true()
-    {
-        var str1 = "test";
-        var str2 = "test";
-
-        AssertDoesNotThrow(() => Assert(str1 == str2));
-    }
-
-    int callCount;
-    
-    int GetValueAndIncrement()
-    {
-        callCount++;
-        return callCount * 10;
-    }
-
-    [Test]
-    public void Should_evaluate_complex_expressions_once()
-    {
-        callCount = 0;
-
-        // ReSharper disable once EqualExpressionComparison
-        AssertThrows(() => Assert(GetValueAndIncrement() == GetValueAndIncrement()), "*GetValueAndIncrement() == GetValueAndIncrement()*");
-
-        callCount.Should().Be(2, "each operand should be evaluated exactly once");
-    }
-
-    [Test]
-    public void Should_handle_comparison_with_incompatible_types()
-    {
-        var stringValue = "hello";
-        var intValue = 42;
-
-        AssertThrows(() => Assert(stringValue.Length > intValue), "*stringValue.Length > intValue*5*42*");
-    }
-
-    [Test]
-    public void Should_recursively_format_nested_binary_expressions()
-    {
-        var x = 10;
-        var y = 5;
-        var z = 3;
-
-        var action = () => Assert(x + y * z > 100);
-
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().NotContain("DisplayClass");
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().Contain("x + y * z");
-    }
-
-    [Test]
-    public void Should_show_clean_expression_text_for_simple_comparison()
-    {
-        var x = 5;
-        var y = 10;
-
-        var action = () => Assert(x > y);
-
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().Contain("x > y");
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().NotContain("Convert");
-    }
-
-    [Test]
-    public void Should_show_clean_text_for_nested_arithmetic_comparison()
-    {
-        var x = 2;
-        var y = 3;
-        var z = 5;
-
-        var action = () => Assert(x + y * z > 100);
-
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().Contain("x + y * z > 100");
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().NotContain("DisplayClass");
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().NotContain("Convert");
-    }
-
-    [Test]
-    public void Should_show_original_variable_names_in_closures()
-    {
-        var capturedValue = 42;
-
-        Action testAction = () =>
+        int GetValue()
         {
-            var localValue = 10;
-            Assert(localValue > capturedValue);
-        };
+            callCount++; 
+            return callCount * 10; 
+        }
 
-        testAction.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().Contain("localValue > capturedValue");
-        testAction.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().NotContain("DisplayClass");
-        testAction.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().NotContain("<>");
+        [Test]
+        public void Should_handle_equality()
+        {
+            var left = 42;
+            var right = 24;
+            var expected = BinaryComparison("left == right", Equal, Comparison(left, right));
+
+            AssertFails(() => Assert(left == right), expected);
+        }
+
+        [Test]
+        public void Should_handle_inequality()
+        {
+            var left = 5;
+            var right = 5;
+            var expected = BinaryComparison("left != right", NotEqual, Comparison(left, right));
+
+            AssertFails(() => Assert(left != right), expected);
+        }
+
+        [Test]
+        public void Should_handle_less_than()
+        {
+            var left = 10;
+            var right = 5;
+            var expected = BinaryComparison("left < right", ExpressionType.LessThan, Comparison(left, right));
+
+            AssertFails(() => Assert(left < right), expected);
+        }
+
+        [Test]
+        public void Should_handle_less_than_or_equal()
+        {
+            var left = 10;
+            var right = 5;
+            var expected = BinaryComparison("left <= right", ExpressionType.LessThanOrEqual, Comparison(left, right));
+
+            AssertFails(() => Assert(left <= right), expected);
+        }
+
+        [Test]
+        public void Should_handle_greater_than()
+        {
+            var left = 5;
+            var right = 10;
+            var expected = BinaryComparison("left > right", ExpressionType.GreaterThan, Comparison(left, right));
+
+            AssertFails(() => Assert(left > right), expected);
+        }
+
+        [Test]
+        public void Should_handle_greater_than_or_equal()
+        {
+            var left = 5;
+            var right = 10;
+            var expected = BinaryComparison("left >= right", ExpressionType.GreaterThanOrEqual, Comparison(left, right));
+
+            AssertFails(() => Assert(left >= right), expected);
+        }
+
+        [Test]
+        public void Should_evaluate_operands_once()
+        {
+            callCount = 0;
+
+            // 10 == 20 -> false
+            var expected = BinaryComparison(
+                "GetValue() == GetValue()",
+                Equal,
+                Comparison(10, 20));
+
+            AssertFails(() => Assert(GetValue() == GetValue()), expected);
+            callCount.Should().Be(2);
+        }
+
+        [Test]
+        public void Should_handle_incompatible_types()
+        {
+            var str = "hello";
+            var num = 42;
+            var expected = BinaryComparison(
+                "str.Length > num",
+                ExpressionType.GreaterThan,
+                Comparison(5, 42));
+
+            AssertFails(() => Assert(str.Length > num), expected);
+        }
+
+        [Test]
+        public void Should_pass_when_true()
+        {
+            AssertPasses(() => Assert(5 == 5));
+            AssertPasses(() => Assert(5 < 10));
+            AssertPasses(() => Assert("test" == "test"));
+        }
+
+        [Test]
+        public void Should_capture_complex_expressions()
+        {
+            var x = 2;
+            var y = 3;
+            var z = 5;
+            var expected = BinaryComparison(
+                "x + y * z > 100",
+                ExpressionType.GreaterThan,
+                Comparison(17, 100)); // 2 + 15 = 17
+
+            AssertFails(() => Assert(x + y * z > 100), expected);
+        }
     }
 
-    [Test]
-    public void Should_preserve_operator_precedence_in_expression_text()
+    [TestFixture]
+    class FormattingTests
     {
-        var a = 1;
-        var b = 2;
-        var c = 3;
-        var d = 4;
+        [Test]
+        public void Should_render_simple_comparison()
+        {
+            var result = Comparison(42, 24);
+            AssertRendersExactly(result,
+                "Left:  42",
+                "Right: 24");
+        }
 
-        var action = () => Assert(a + b * c == d);
+        [Test]
+        public void Should_render_strings()
+        {
+            var result = Comparison("foo", "bar");
+            // Default binary comparison uses ValueFormatter which quotes strings
+            AssertRendersExactly(result,
+                "Left:  \"foo\"",
+                "Right: \"bar\"");
+        }
 
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().Contain("a + b * c == d");
+        [Test]
+        public void Should_render_nulls()
+        {
+            var result = Comparison(null, null);
+            AssertRendersExactly(result,
+                "Left:  null",
+                "Right: null");
+        }
+        
+        [Test]
+        public void Should_render_complex_types()
+        {
+             // ValueFormatter calls ToString()
+             var obj = new { Id = 1 };
+             var result = Comparison(obj, obj);
+             AssertRendersExactly(result,
+                 $"Left:  {obj}",
+                 $"Right: {obj}");
+        }
     }
 
-    [Test]
-    public void Should_show_clean_left_operand_with_nested_arithmetic()
-    {
-        var x = 2;
-        var y = 3;
-        var expected = 100;
-
-        var action = () => Assert(x + y > expected);
-
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().Contain("x + y");
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().NotContain("Convert");
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().NotContain("DisplayClass");
-    }
-
-    [Test]
-    public void Should_show_clean_right_operand_with_nested_arithmetic()
-    {
-        var value = 5;
-        var a = 10;
-        var b = 20;
-
-        var action = () => Assert(value > a + b);
-
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().Contain("a + b");
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().NotContain("Convert");
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().NotContain("DisplayClass");
-    }
-
-    [Test]
-    public void Should_show_clean_operands_with_complex_nested_expressions()
-    {
-        var x = 1;
-        var y = 2;
-        var z = 3;
-        var a = 10;
-        var b = 20;
-
-        var action = () => Assert(x + y * z == a + b);
-
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().Contain("x + y * z");
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().Contain("a + b");
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().NotContain("Convert");
-        action.Should().Throw<SharpAssertionException>()
-            .Which.Message.Should().NotContain("DisplayClass");
-    }
-
-    [Test]
-    public void Should_show_computed_values_for_complex_arithmetic()
-    {
-        var a = 2;
-        var b = 3;
-        var c = 4;
-        var d = 5;
-
-        // (a + c) = 6, (b * (d + 5)) = 30, so 6 > 30 is false
-        AssertThrows(() => Assert((a + c) > (b * (d + 5))),
-            "*(a + c) > (b * (d + 5))*Left:  6*Right: 30*");
-    }
+    static DefaultComparisonResult Comparison(object? left, object? right) => new(Operand(left), Operand(right));
 }

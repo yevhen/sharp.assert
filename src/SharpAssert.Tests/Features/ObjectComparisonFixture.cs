@@ -1,3 +1,5 @@
+using SharpAssert.Features.BinaryComparison;
+using SharpAssert.Features.ObjectComparison;
 using static SharpAssert.Sharp;
 
 namespace SharpAssert.Features;
@@ -20,69 +22,121 @@ public class ObjectComparisonFixture : TestBase
         public override int GetHashCode() => Name.GetHashCode();
     }
 
-    [Test]
-    public void Should_pass_when_objects_are_equal()
+    [TestFixture]
+    class LogicTests
     {
-        var obj1 = new Person("Alice", 25);
-        var obj2 = new Person("Alice", 25);
+        [Test]
+        public void Should_show_property_differences()
+        {
+            var obj1 = new Person("Alice", 25);
+            var obj2 = new Person("Bob", 30);
+            
+            var expected = BinaryComparison("obj1 == obj2", Equal, 
+                ObjectComparison(obj1, obj2, 
+                    Diff("Name", "Alice", "Bob"),
+                    Diff("Age", "25", "30")));
+            
+            AssertFails(() => Assert(obj1 == obj2), expected);
+        }
 
-        AssertDoesNotThrow(() => Assert(obj1 == obj2));
+        [Test]
+        public void Should_handle_nested_objects()
+        {
+            var obj1 = new PersonWithAddress("Alice", new Address("123 Main St", "NYC"));
+            var obj2 = new PersonWithAddress("Alice", new Address("123 Main St", "LA"));
+
+            var expected = BinaryComparison("obj1 == obj2", Equal,
+                ObjectComparison(obj1, obj2,
+                    Diff("Address.City", "NYC", "LA")));
+
+            AssertFails(() => Assert(obj1 == obj2), expected);
+        }
+
+        [Test]
+        public void Should_handle_null_objects()
+        {
+            Person? obj1 = null;
+            var obj2 = new Person("Alice", 25);
+
+            // Nulls handled by DefaultComparisonResult
+            var expected = BinaryComparison("obj1 == obj2", Equal,
+                DefaultComparison(obj1, obj2));
+
+            AssertFails(() => Assert(obj1 == obj2), expected);
+        }
+
+        [Test]
+        public void Should_pass_when_objects_are_equal()
+        {
+            var obj1 = new Person("Alice", 25);
+            var obj2 = new Person("Alice", 25);
+            AssertPasses(() => Assert(obj1 == obj2));
+        }
+
+        [Test]
+        public void Should_respect_equality_overrides()
+        {
+            var obj1 = new PersonWithCustomEquals { Name = "Alice", Age = 25 };
+            var obj2 = new PersonWithCustomEquals { Name = "Alice", Age = 30 };
+            AssertPasses(() => Assert(obj1 == obj2));
+        }
+
+        [Test]
+        public void Should_pass_when_nested_objects_are_equal()
+        {
+            var obj1 = new PersonWithAddress("Alice", new Address("123 Main St", "NYC"));
+            var obj2 = new PersonWithAddress("Alice", new Address("123 Main St", "NYC"));
+            AssertPasses(() => Assert(obj1 == obj2));
+        }
+
+        [Test]
+        public void Should_pass_when_both_objects_are_null()
+        {
+            Person? obj1 = null;
+            Person? obj2 = null;
+            AssertPasses(() => Assert(obj1 == obj2));
+        }
     }
 
-    [Test]
-    public void Should_show_property_differences()
+    [TestFixture]
+    class FormattingTests
     {
-        var obj1 = new Person("Alice", 25);
-        var obj2 = new Person("Bob", 30);
+        [Test]
+        public void Should_render_differences()
+        {
+            var result = ObjectComparison(new object(), new object(),
+                Diff("Name", "Alice", "Bob"),
+                Diff("Age", "25", "30"));
 
-        AssertThrows(() => Assert(obj1 == obj2),
-            "*Property differences*Name*Alice*Bob*Age*25*30*");
+            AssertRendersExactly(result,
+                "Property differences:",
+                "Name: expected \"Alice\", got \"Bob\"",
+                "Age: expected \"25\", got \"30\"");
+            // ValueFormatter quotes strings. CompareNetObjects values are strings.
+            // So expected "Alice" -> "\"Alice\""
+        }
+
+        [Test]
+        public void Should_render_truncated_message()
+        {
+            // Simulate truncation
+            var result = new ObjectComparisonResult(
+                Operand(new object()), 
+                Operand(new object()), 
+                [Diff("Prop1", "A", "B")], 
+                TruncatedCount: 5);
+
+            AssertRendersExactly(result,
+                "Property differences:",
+                "Prop1: expected \"A\", got \"B\"",
+                "... (5 more differences)");
+        }
     }
 
-    [Test]
-    public void Should_handle_nested_objects()
-    {
-        var obj1 = new PersonWithAddress("Alice", new Address("123 Main St", "NYC"));
-        var obj2 = new PersonWithAddress("Alice", new Address("123 Main St", "LA"));
+    static ObjectComparisonResult ObjectComparison(object left, object right, params ObjectDifference[] diffs) =>
+        new(Operand(left), Operand(right), diffs, 0);
 
-        AssertThrows(() => Assert(obj1 == obj2),
-            "*Address.City*NYC*LA*");
-    }
+    static DefaultComparisonResult DefaultComparison(object? left, object? right) => new(Operand(left), Operand(right));
 
-    [Test]
-    public void Should_handle_null_objects()
-    {
-        Person? obj1 = null;
-        var obj2 = new Person("Alice", 25);
-
-        AssertThrows(() => Assert(obj1 == obj2),
-            "*Left*null*Right*Person*");
-    }
-
-    [Test]
-    public void Should_respect_equality_overrides()
-    {
-        var obj1 = new PersonWithCustomEquals { Name = "Alice", Age = 25 };
-        var obj2 = new PersonWithCustomEquals { Name = "Alice", Age = 30 };
-
-        AssertDoesNotThrow(() => Assert(obj1 == obj2));
-    }
-
-    [Test]
-    public void Should_pass_when_nested_objects_are_equal()
-    {
-        var obj1 = new PersonWithAddress("Alice", new Address("123 Main St", "NYC"));
-        var obj2 = new PersonWithAddress("Alice", new Address("123 Main St", "NYC"));
-
-        AssertDoesNotThrow(() => Assert(obj1 == obj2));
-    }
-
-    [Test]
-    public void Should_pass_when_both_objects_are_null()
-    {
-        Person? obj1 = null;
-        Person? obj2 = null;
-
-        AssertDoesNotThrow(() => Assert(obj1 == obj2));
-    }
+    static ObjectDifference Diff(string path, string expected, string actual) => new(path, expected, actual);
 }

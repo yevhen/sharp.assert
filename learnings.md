@@ -32,9 +32,9 @@ This document is organized by topic to consolidate key learnings about the proje
 ## Runtime: Diagnostics & Formatting
 
 - **Standard Failure Message:** The exception format is inspired by pytest: `Assertion failed: {expr} at {file}:{line}`.
-- **Binary Comparison Message:** For failed binary comparisons, the message is augmented with the evaluated operands: `
+- **Binary Comparison Message:** For failed binary comparisons, the message is augmented with the evaluated operands:
   Left: {value}
-  Right: {value}`.
+  Right: {value}
 - **Logical Operator Message:** For failed logical operations, the message shows the truthiness of the operands to provide context (e.g., "Left operand was false" for a short-circuited `&&`).
 - **Readability:** Private helper methods are used extensively to keep the formatting logic clean and maintainable.
 
@@ -219,3 +219,12 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Line Directive Format:** Use `SyntaxFactory.PreprocessingMessage($"#line {lineNumber} \"{escapedPath}\"")` for file/line mapping, `PreprocessingMessage("#line default")` to reset
 - **Trivia Ordering:** Leading trivia order: original trivia → line directive → newline; Trailing trivia order: newline → default directive → newline → original trivia
 - **Expression Wrapping:** When wrapping expressions (e.g., adding await), construct inner expression first, then wrap with factory methods, then attach trivia to outer node
+
+## Testing Infrastructure Refactoring
+
+- **Decoupled Testing:** Separated logic verification (`LogicTests`) from formatting verification (`FormattingTests`) to reduce brittleness and improve maintenance.
+- **Structural Verification:** Using `EvaluationResult` record hierarchy to verify assertion logic structurally via `AssertFails(action, expectedResult)` using `BeEquivalentTo` structural equality.
+- **Rendering Verification:** Using `AssertRendersExactly(result, lines...)` to verify string output independent of logic execution.
+- **DSL Helpers:** `TestBase` provides composable helpers like `BinaryComparison`, `Value`, `Operand` to construct expected results concisely.
+- **Nested Fixtures:** Grouping tests by concern (`LogicTests` vs `FormattingTests`) keeps fixture files organized.
+- **Result Records:** Rendering logic pushed down to data records (e.g. `InlineStringDiff.Render()`), making them self-rendering and composable.

@@ -55,7 +55,7 @@ static class DynamicExpressionAnalyzer
         AssertionContext context)
     {
         var value = condition();
-        var result = new MethodCallEvaluationResult(context.Expression, value, []);
+        var result = new ValueEvaluationResult(context.Expression, value, typeof(bool));
         return new AssertionEvaluationResult(context, result);
     }
 }

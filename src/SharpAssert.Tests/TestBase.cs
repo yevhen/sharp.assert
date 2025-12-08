@@ -1,43 +1,78 @@
 using FluentAssertions;
-using static SharpAssert.Sharp;
+using System.Linq.Expressions;
+using SharpAssert.Core;
+using SharpAssert.Features.Shared;
 
 namespace SharpAssert;
 
 public abstract class TestBase
 {
-    /// <summary>
-    /// Tests that Sharp.Assert() throws with expected message pattern.
-    /// Use this for testing via public API (goes through rewriter).
-    /// </summary>
-    protected static void AssertThrows(Action action, string expectedMessagePattern)
+    internal static void AssertFails(Action action, EvaluationResult expected)
     {
-        action.Should().Throw<SharpAssertionException>().WithMessage(expectedMessagePattern);
+        var exception = action.Should().Throw<SharpAssertionException>().Which;
+        exception.Result.Should().NotBeNull();
+        exception.Result!.Result.Should().BeEquivalentTo(expected, options => options.RespectingRuntimeTypes());
     }
 
-    /// <summary>
-    /// Tests that Sharp.Assert() does not throw.
-    /// Use this for testing via public API (goes through rewriter).
-    /// </summary>
-    protected static void AssertDoesNotThrow(Action action)
+    internal static void AssertFails(Action action, AssertionEvaluationResult expected)
+    {
+        var exception = action.Should().Throw<SharpAssertionException>().Which;
+        exception.Result.Should().BeEquivalentTo(expected, options => options.RespectingRuntimeTypes());
+    }
+
+    internal static void AssertPasses(Action action)
     {
         action.Should().NotThrow();
     }
 
-    /// <summary>
-    /// Tests that async Sharp.Assert() throws with expected message pattern.
-    /// Use this for testing async assertions via public API (goes through rewriter).
-    /// </summary>
-    protected static async Task AssertThrowsAsync(Func<Task> action, string expectedMessagePattern)
+    internal static async Task AssertFailsAsync(Func<Task> action, EvaluationResult expected)
     {
-        await action.Should().ThrowAsync<SharpAssertionException>().WithMessage(expectedMessagePattern);
+        var exception = (await action.Should().ThrowAsync<SharpAssertionException>()).Which;
+        exception.Result.Should().NotBeNull();
+        exception.Result!.Result.Should().BeEquivalentTo(expected, options => options.RespectingRuntimeTypes());
     }
 
-    /// <summary>
-    /// Tests that async Sharp.Assert() does not throw.
-    /// Use this for testing async assertions via public API (goes through rewriter).
-    /// </summary>
-    protected static async Task AssertDoesNotThrowAsync(Func<Task> action)
+    internal static async Task AssertFailsAsync(Func<Task> action, AssertionEvaluationResult expected)
     {
-        await action.Should().NotThrowAsync();
+        var exception = (await action.Should().ThrowAsync<SharpAssertionException>()).Which;
+        exception.Result.Should().BeEquivalentTo(expected, options => options.RespectingRuntimeTypes());
     }
+
+    internal static void AssertRendersExactly(IReadOnlyList<RenderedLine> lines, params string[] expected)
+    {
+        var actual = string.Join("\n", lines.Select(l => l.Text));
+        var expectedString = string.Join("\n", expected);
+        actual.Should().Be(expectedString);
+    }
+
+    internal static void AssertRendersExactly<T>(T renderable, params string[] expected) where T : class
+    {
+        var lines = (IReadOnlyList<RenderedLine>)(renderable as dynamic).Render();
+        AssertRendersExactly(lines, expected);
+    }
+
+    internal static string Rendered(IReadOnlyList<RenderedLine> lines) =>
+        string.Join("\n", lines.Select(l => l.Text));
+
+    internal static string Rendered<T>(T renderable) where T : class
+    {
+        var lines = (IReadOnlyList<RenderedLine>)(renderable as dynamic).Render();
+        return Rendered(lines);
+    }
+
+    internal static AssertionOperand Operand(object? value, Type? type = null) =>
+        new(value, type ?? value?.GetType() ?? typeof(object));
+
+    internal static BinaryComparisonEvaluationResult BinaryComparison(
+        string expr,
+        ExpressionType op,
+        ComparisonResult comparison,
+        bool value = false) =>
+        new(expr, op, comparison, value);
+
+    internal static ValueEvaluationResult Value(string expr, object? value, Type? type = null) =>
+        new(expr, value, type ?? value?.GetType() ?? typeof(object));
+
+    protected static readonly ExpressionType Equal = ExpressionType.Equal;
+    protected static readonly ExpressionType NotEqual = ExpressionType.NotEqual;
 }

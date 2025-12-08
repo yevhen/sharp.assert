@@ -45,7 +45,7 @@ class AsyncExpressionAnalyzer
         AssertionContext context)
     {
         var value = await conditionAsync();
-        var result = new MethodCallEvaluationResult(context.Expression, value, []);
+        var result = new ValueEvaluationResult(context.Expression, value, typeof(bool));
         return new AssertionEvaluationResult(context, result);
     }
 }
