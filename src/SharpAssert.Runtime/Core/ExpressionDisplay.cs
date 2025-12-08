@@ -10,6 +10,11 @@ static class ExpressionDisplay
         expr switch
         {
             UnaryExpression { NodeType: ExpressionType.Convert } unary => GetIdentifierOrPath(unary.Operand),
+            BinaryExpression binary => FormatBinary(
+                GetIdentifierOrPath(binary.Left),
+                OperatorSymbol(binary.NodeType),
+                GetIdentifierOrPath(binary.Right),
+                false),
             MemberExpression member => GetMemberPath(member),
             ParameterExpression p => p.Name ?? "param",
             ConstantExpression c => c.Value is null ? "null" : ValueFormatter.Format(c.Value),

@@ -119,4 +119,19 @@ public class BinaryComparisonFixture : TestBase
 
         AssertThrows(() => Assert(stringValue.Length > intValue), "*stringValue.Length > intValue*5*42*");
     }
+
+    [Test]
+    public void Should_recursively_format_nested_binary_expressions()
+    {
+        var x = 10;
+        var y = 5;
+        var z = 3;
+
+        var action = () => Assert(x + y * z > 100);
+
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().NotContain("DisplayClass");
+        action.Should().Throw<SharpAssertionException>()
+            .Which.Message.Should().Contain("x + y * z");
+    }
 }
