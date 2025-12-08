@@ -101,19 +101,20 @@ public class CoreAssertionFixture : TestBase
                 throw new InvalidOperationException();
             });
 
-            var action = async () => Assert(result);
-            await action.Should().NotThrowAsync();
+            Action action = () => Assert(result);
+            action.Should().NotThrow();
         }
 
         [Test]
         public async Task ThrowsAsync_should_fail_wrong_type()
         {
-            NUnit.Framework.Assert.ThrowsAsync<SharpAssertionException>(async () => 
-                await ThrowsAsync<NullReferenceException>(async () => 
-                {
-                    await Task.Yield();
-                    throw new ArgumentException();
-                }));
+            var action = async () => await ThrowsAsync<NullReferenceException>(async () => 
+            {
+                await Task.Yield();
+                throw new ArgumentException();
+            });
+
+            await action.Should().ThrowAsync<SharpAssertionException>();
         }
     }
 }
