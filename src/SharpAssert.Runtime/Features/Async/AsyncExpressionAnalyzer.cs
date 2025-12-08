@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq.Expressions;
 using SharpAssert.Core;
 using SharpAssert.Features.Shared;
 
@@ -65,4 +66,35 @@ class AsyncExpressionAnalyzer
     }
 
     static string FormatAsyncFailure(AssertionContext context) => FormatBaseMessage(context, "  Result: False");
+
+    public static async Task<AssertionEvaluationResult> AnalyzeBinary(
+        Func<Task<object?>> leftAsync,
+        Func<Task<object?>> rightAsync,
+        BinaryOp op,
+        AssertionContext context)
+    {
+        var leftValue = await leftAsync();
+        var rightValue = await rightAsync();
+
+        var comparisonResult = EvaluateBinaryComparison(op, leftValue, rightValue);
+
+        if (comparisonResult)
+            return new AssertionEvaluationResult(context, new ValueEvaluationResult(context.Expression, true, typeof(bool)));
+
+        var leftOperand = new AssertionOperand(leftValue);
+        var rightOperand = new AssertionOperand(rightValue);
+        var comparison = ComparerService.GetComparisonResult(leftOperand, rightOperand);
+
+        var result = new BinaryComparisonEvaluationResult(context.Expression, ExpressionType.Equal, comparison, false);
+        return new AssertionEvaluationResult(context, result);
+    }
+
+    public static async Task<AssertionEvaluationResult> AnalyzeSimple(
+        Func<Task<bool>> conditionAsync,
+        AssertionContext context)
+    {
+        var value = await conditionAsync();
+        var result = new ValueEvaluationResult(context.Expression, value, typeof(bool));
+        return new AssertionEvaluationResult(context, result);
+    }
 }
