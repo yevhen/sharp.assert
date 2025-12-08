@@ -200,3 +200,38 @@ record FormattedEvaluationResult(string ExpressionText, bool Value, IReadOnlyLis
         return lines;
     }
 }
+
+record MethodCallEvaluationResult(
+    string ExpressionText,
+    bool Value,
+    IReadOnlyList<EvaluationResult> Arguments)
+    : EvaluationResult(ExpressionText)
+{
+    public override bool? BooleanValue => Value;
+
+    public override IReadOnlyList<RenderedLine> Render()
+    {
+        var lines = new List<RenderedLine>();
+
+        if (!string.IsNullOrEmpty(ExpressionText))
+            lines.Add(new RenderedLine(0, ExpressionText));
+
+        for (var i = 0; i < Arguments.Count; i++)
+        {
+            var arg = Arguments[i];
+            var argLines = arg.Render();
+            if (argLines.Count == 0) continue;
+
+            lines.Add(new RenderedLine(1, $"Argument[{i}]: {argLines[0].Text}"));
+
+            for (var j = 1; j < argLines.Count; j++)
+                lines.Add(new RenderedLine(1 + argLines[j].IndentLevel, argLines[j].Text));
+        }
+
+        lines.Add(new RenderedLine(0, $"Result: {FormatValue(Value)}"));
+
+        return lines;
+    }
+
+    static string FormatValue(object? value) => ValueFormatter.Format(value);
+}

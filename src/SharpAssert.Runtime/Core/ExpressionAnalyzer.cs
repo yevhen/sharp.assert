@@ -122,6 +122,19 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
             return new BinaryComparisonEvaluationResult(exprText, Equal, comparison, value);
         }
 
+        if (context.ExprNode?.Arguments is { Length: > 0 } argumentNodes)
+        {
+            var arguments = new List<EvaluationResult>();
+            for (var i = 0; i < argumentNodes.Length; i++)
+            {
+                var argNode = argumentNodes[i];
+                var argExpr = methodCall.Arguments[i];
+                var argValue = GetValue(argExpr, cache);
+                arguments.Add(new ValueEvaluationResult(argNode.Text, argValue, argExpr.Type));
+            }
+            return new MethodCallEvaluationResult(exprText, value, arguments);
+        }
+
         return new ValueEvaluationResult(exprText, value, methodCall.Type);
     }
 

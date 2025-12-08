@@ -59,4 +59,36 @@ public class EdgeCaseFixture : TestBase
         // ReSharper disable once ConditionIsAlwaysTrueOrFalse
         AssertThrows(() => Assert(ReferenceEquals(objA, objB)), "*");
     }
+
+    [Test]
+    public void Should_display_method_call_arguments()
+    {
+        var objA = new NonComparableClass { Name = "A" };
+        var objB = new NonComparableClass { Name = "B" };
+
+        AssertThrows(
+            () => Assert(ReferenceEquals(objA, objB)),
+            "*ReferenceEquals(objA, objB)*Argument[0]:*Argument[1]:*Result: false*");
+    }
+
+    [Test]
+    public void Should_display_simple_boolean_method_call_with_arguments()
+    {
+        var text = "Hello World";
+        var prefix = "Goodbye";
+
+        AssertThrows(
+            () => Assert(text.StartsWith(prefix)),
+            "*text.StartsWith(prefix)*Argument[0]: \"Goodbye\"*Result: False*");
+    }
+
+    [Test]
+    public void Should_display_method_call_with_instance_and_multiple_arguments()
+    {
+        var text = "Hello World";
+
+        AssertThrows(
+            () => Assert(text.Contains("xyz")),
+            "*Contains failed: searched for \"xyz\" in*");
+    }
 }
