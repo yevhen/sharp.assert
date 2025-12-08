@@ -20,8 +20,7 @@ record CollectionComparisonResult(
         };
 
         if (FirstDifference is not null)
-            lines.Add(new RenderedLine(0,
-                $"First difference at index {FirstDifference.Index}: expected {FormatValue(FirstDifference.LeftValue)}, got {FormatValue(FirstDifference.RightValue)}"));
+            lines.AddRange(FirstDifference.Render());
 
         if (LengthDifference is not null)
         {
@@ -45,6 +44,10 @@ record CollectionComparisonResult(
     static string FormatValue(object? value) => ValueFormatter.Format(value);
 }
 
-record CollectionMismatch(int Index, object? LeftValue, object? RightValue);
+record CollectionMismatch(int Index, object? LeftValue, object? RightValue)
+{
+    public IReadOnlyList<RenderedLine> Render() =>
+        [new(0, $"First difference at index {Index}: expected {ValueFormatter.Format(LeftValue)}, got {ValueFormatter.Format(RightValue)}")];
+}
 
 record CollectionLengthDelta(IReadOnlyList<object?>? Missing, IReadOnlyList<object?>? Extra);
