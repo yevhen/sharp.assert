@@ -36,7 +36,11 @@ record SequenceEqualComparisonResult(
         if (DiffLines is not null)
         {
             foreach (var diff in DiffLines)
-                lines.Add(new RenderedLine(1, RenderSequenceDiffLine(diff)));
+            {
+                var diffLines = diff.Render();
+                foreach (var line in diffLines)
+                    lines.Add(line with { IndentLevel = 1 });
+            }
         }
 
         if (DiffTruncated)
@@ -54,13 +58,6 @@ record SequenceEqualComparisonResult(
     }
 
     static string FormatValue(object? value) => ValueFormatter.Format(value);
-
-    static string RenderSequenceDiffLine(SequenceDiffLine diff) => diff.Operation switch
-    {
-        SequenceDiffOperation.Added => $"+[{diff.Index}] {FormatValue(diff.Value)}",
-        SequenceDiffOperation.Removed => $"-[{diff.Index}] {FormatValue(diff.Value)}",
-        _ => $" [{diff.Index}] {FormatValue(diff.Value)}"
-    };
 }
 
 record SequenceLengthMismatch(
@@ -89,7 +86,19 @@ record SequenceLengthMismatch(
     }
 }
 
-record SequenceDiffLine(SequenceDiffOperation Operation, int Index, object? Value);
+record SequenceDiffLine(SequenceDiffOperation Operation, int Index, object? Value)
+{
+    public IReadOnlyList<RenderedLine> Render()
+    {
+        var prefix = Operation switch
+        {
+            SequenceDiffOperation.Added => "+ ",
+            SequenceDiffOperation.Removed => "- ",
+            _ => "  "
+        };
+        return [new(0, $"{prefix}[{Index}] = {ValueFormatter.Format(Value)}")];
+    }
+}
 
 enum SequenceDiffOperation
 {
