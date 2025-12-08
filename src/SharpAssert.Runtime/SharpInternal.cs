@@ -22,12 +22,13 @@ public static class SharpInternal
             throw new ArgumentException("Message must be either null or non-empty", nameof(message));
 
         var context = new AssertionContext(exprNode.Text, file, line, message, exprNode);
-        var failureMessage = ExpressionAnalyzer.AnalyzeFailure(condition, context);
+        var analysis = ExpressionAnalyzer.Analyze(condition, context);
 
-        if (string.IsNullOrEmpty(failureMessage))
+        if (analysis.Passed)
             return;
 
-        throw new SharpAssertionException(failureMessage);
+        var failureMessage = analysis.Format();
+        throw new SharpAssertionException(failureMessage, analysis);
     }
 
     public static async Task AssertAsync(
