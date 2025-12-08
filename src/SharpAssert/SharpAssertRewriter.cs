@@ -403,7 +403,7 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
                             SyntaxFactory.OmittedArraySizeExpression())))),
             SyntaxFactory.InitializerExpression(
                 SyntaxKind.ArrayInitializerExpression,
-                SyntaxFactory.SeparatedList<ExpressionSyntax>(nodes)));
+                SyntaxFactory.SeparatedList(nodes)));
 
         return array.WithNewKeyword(
             SyntaxFactory.Token(SyntaxKind.NewKeyword).WithTrailingTrivia(SyntaxFactory.Space));
@@ -434,9 +434,6 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
                 SyntaxFactory.IdentifierName("SharpAssert")),
             SyntaxFactory.IdentifierName("ExprNode"));
 
-    static NullableTypeSyntax CreateNullableExprNodeTypeName() =>
-        SyntaxFactory.NullableType(CreateExprNodeTypeName());
-
     static ArgumentSyntax CreateStringLiteralArgument(string value) =>
         SyntaxFactory.Argument(
             SyntaxFactory.LiteralExpression(
@@ -448,12 +445,6 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
             SyntaxFactory.LiteralExpression(
                 SyntaxKind.NumericLiteralExpression,
                 SyntaxFactory.Literal(value)));
-
-    static ArgumentSyntax CreateBooleanLiteralArgument(bool value) =>
-        SyntaxFactory.Argument(
-            SyntaxFactory.LiteralExpression(
-                value ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression,
-                SyntaxFactory.Token(value ? SyntaxKind.TrueKeyword : SyntaxKind.FalseKeyword)));
 
     static ArgumentSyntax CreateMessageArgument(ExpressionSyntax? messageExpression) =>
         SyntaxFactory.Argument(
