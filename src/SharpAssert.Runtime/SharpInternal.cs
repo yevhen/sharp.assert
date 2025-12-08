@@ -72,10 +72,12 @@ public static class SharpInternal
         int line)
     {
         var context = new AssertionContext(expr, file, line, null, new ExprNode(expr));
-        var failureMessage = DynamicExpressionAnalyzer.AnalyzeDynamicBinaryFailure(left, right, op, context);
+        var analysis = DynamicExpressionAnalyzer.AnalyzeBinary(left, right, op, context);
 
-        if (!string.IsNullOrEmpty(failureMessage))
-            throw new SharpAssertionException(failureMessage);
+        if (analysis.Passed)
+            return;
+
+        throw new SharpAssertionException(analysis.Format(), analysis);
     }
 
     public static void AssertDynamic(
@@ -85,10 +87,12 @@ public static class SharpInternal
         int line)
     {
         var context = new AssertionContext(expr, file, line, null, new ExprNode(expr));
-        var failureMessage = DynamicExpressionAnalyzer.AnalyzeSimpleDynamicFailure(condition, context);
+        var analysis = DynamicExpressionAnalyzer.Analyze(condition, context);
 
-        if (!string.IsNullOrEmpty(failureMessage))
-            throw new SharpAssertionException(failureMessage);
+        if (analysis.Passed)
+            return;
+
+        throw new SharpAssertionException(analysis.Format(), analysis);
     }
 
 }
