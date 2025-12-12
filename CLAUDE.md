@@ -423,3 +423,7 @@ async\method: Suffix with `Async` =\> `GetDataAsync()`
 - Prefer `Compile(preferInterpretation: true)` for expression value extraction to avoid invalid IL, and only drop to null when both interpreted compilation and span normalization fail.
 - If evaluation still fails, return a sentinel (e.g., `EvaluationUnavailable`) and render `<unavailable: reason>` so diagnostics stay honest instead of showing nulls or bogus counts.
 - `NUnit.Assert.ThrowsAsync<T>()` returns the exception instance (not a `Task`), so async tests should await a real async assertion (e.g., `action.Should().ThrowAsync<T>()`) to avoid CS1998 warnings.
+- When normalizing byref-like values, only treat `Span<T>`/`ReadOnlySpan<T>` as span-convertible; other ref structs should yield `EvaluationUnavailable` without attempting conversions.
+- Wrap compiled value evaluators so invocation-time exceptions become `EvaluationUnavailable` instead of breaking failure analysis.
+- Avoid a partial “manual evaluator” interpreter; prefer interpreted expression compilation with a clear `EvaluationUnavailable` fallback for unsupported nodes/runtimes.
+- Reuse one lambda compilation fallback policy (e.g., for LINQ predicate analysis) so formatters don’t each invent their own exception handling.

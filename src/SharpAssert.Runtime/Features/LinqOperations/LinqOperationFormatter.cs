@@ -97,12 +97,15 @@ static class LinqOperationFormatter
         if (collection is not IEnumerable enumerable || predicateExpr == null)
             return [];
 
-        var predicate = TryCompilePredicate(predicateExpr);
+        var predicate = TryCompilePredicate(predicateExpr, out var compilationFailure);
+        if (compilationFailure != null)
+            return new object?[] { compilationFailure };
 
         return predicate == null ? [] : FindNonMatchingItems(enumerable, predicate);
     }
     
-    static Delegate? TryCompilePredicate(Expression predicateExpr) => CompilePredicate(predicateExpr);
+    static Delegate? TryCompilePredicate(Expression predicateExpr, out EvaluationUnavailable? compilationFailure) =>
+        CompilePredicate(predicateExpr, out compilationFailure);
 
     public static object?[] FindNonMatchingItems(IEnumerable enumerable, Delegate predicate) =>
         enumerable.Cast<object?>().Where(item => IsMatching(item, predicate)).ToArray();
@@ -154,20 +157,12 @@ static class LinqOperationFormatter
         methodCall.Arguments.Count > 1 ? 
             ExtractPredicateString(methodCall.Arguments[1]) : "predicate";
     
-    static Delegate CompilePredicate(Expression predicateExpr) =>
-        predicateExpr is LambdaExpression lambda
-            ? CompileWithFallback(lambda)
-            : CompileWithFallback(Expression.Lambda(predicateExpr));
-
-    static Delegate CompileWithFallback(LambdaExpression lambda)
+    static Delegate? CompilePredicate(Expression predicateExpr, out EvaluationUnavailable? compilationFailure)
     {
-        try
-        {
-            return lambda.Compile();
-        }
-        catch (InvalidProgramException)
-        {
-            return lambda.Compile(preferInterpretation: true);
-        }
+        var lambda = predicateExpr as LambdaExpression ?? Expression.Lambda(predicateExpr);
+        if (TryCompileLambda(lambda, out var compiled, out compilationFailure))
+            return compiled;
+
+        return null;
     }
 }
