@@ -1,5 +1,7 @@
 using static SharpAssert.Sharp;
 using FluentAssertions;
+using SharpAssert.Core;
+using SharpAssert.Features.Shared;
 
 namespace SharpAssert;
 
@@ -73,6 +75,71 @@ public class CoreAssertionFixture : TestBase
         }
 
         [Test]
+        public void Negated_Throws_should_include_caught_exception()
+        {
+            var result = Throws<InvalidOperationException>(() => throw new InvalidOperationException("boom"));
+
+            var expected = new UnaryEvaluationResult(
+                "!result",
+                UnaryOperator.Not,
+                ExpectationResults.Boolean(
+                    "result",
+                    true,
+                    $"Caught: {typeof(InvalidOperationException).FullName}: boom"),
+                true,
+                false);
+
+            AssertFails(() => Assert(!result), expected);
+        }
+
+        [Test]
+        public void Throws_OR_should_short_circuit()
+        {
+            var result = Throws<InvalidOperationException>(() => throw new InvalidOperationException("boom"));
+
+            var right = new ThrowingExpectation();
+            AssertPasses(() => Assert(result.Or(right)));
+        }
+
+        [Test]
+        public void Throws_AND_should_short_circuit()
+        {
+            var result = Throws<ArgumentException>(() => { });
+            var right = new ThrowingExpectation();
+
+            var expected = new ComposedExpectationEvaluationResult(
+                "result.And(right)",
+                "AND",
+                ExpectationResults.Fail(
+                    "result",
+                    $"Expected exception of type '{typeof(ArgumentException).FullName}', but no exception was thrown"),
+                null,
+                false,
+                true);
+
+            AssertFails(() => Assert(result.And(right)), expected);
+        }
+
+        [Test]
+        public void Throws_OR_should_render_both_failures()
+        {
+            var result = Throws<ArgumentException>(() => { });
+            var right = new FailingExpectation("Right failed");
+
+            var expected = new ComposedExpectationEvaluationResult(
+                "result.Or(right)",
+                "OR",
+                ExpectationResults.Fail(
+                    "result",
+                    $"Expected exception of type '{typeof(ArgumentException).FullName}', but no exception was thrown"),
+                ExpectationResults.Fail("right", "Right failed"),
+                false,
+                false);
+
+            AssertFails(() => Assert(result.Or(right)), expected);
+        }
+
+        [Test]
         public void Throws_should_fail_when_wrong_type_thrown()
         {
             NUnit.Framework.Assert.Throws<SharpAssertionException>(() => 
@@ -83,6 +150,11 @@ public class CoreAssertionFixture : TestBase
         public void Throws_should_fail_when_no_exception_thrown()
         {
             var result = Throws<ArgumentException>(() => { });
+            var expected = ExpectationResults.Fail(
+                "result",
+                $"Expected exception of type '{typeof(ArgumentException).FullName}', but no exception was thrown");
+
+            AssertFails(() => Assert(result), expected);
             AssertPasses(() => Assert(!result));
             
             NUnit.Framework.Assert.Throws<InvalidOperationException>(() => _ = result.Exception);
@@ -92,6 +164,28 @@ public class CoreAssertionFixture : TestBase
     [TestFixture]
     class ThrowsAsyncTests
     {
+        [Test]
+        public async Task Assert_should_support_awaited_ThrowsAsync_expectation()
+        {
+            Func<Task> action = async () =>
+                Assert(await ThrowsAsync<InvalidOperationException>(() =>
+                    Task.FromException(new InvalidOperationException("boom"))));
+
+            await action.Should().NotThrowAsync();
+        }
+
+        [Test]
+        public async Task Assert_should_fail_for_awaited_ThrowsAsync_expectation_when_no_exception()
+        {
+            var expected = ExpectationResults.Fail(
+                "await ThrowsAsync<ArgumentException>(() => Task.CompletedTask)",
+                $"Expected exception of type '{typeof(ArgumentException).FullName}', but no exception was thrown");
+
+            await AssertFailsAsync(
+                async () => Assert(await ThrowsAsync<ArgumentException>(() => Task.CompletedTask)),
+                expected);
+        }
+
         [Test]
         public async Task ThrowsAsync_should_pass_when_expected_exception()
         {
@@ -116,5 +210,17 @@ public class CoreAssertionFixture : TestBase
 
             await action.Should().ThrowAsync<SharpAssertionException>();
         }
+    }
+
+    sealed class ThrowingExpectation : Expectation
+    {
+        public override EvaluationResult Evaluate(ExpectationContext context) =>
+            throw new InvalidOperationException("Should not be evaluated");
+    }
+
+    sealed class FailingExpectation(string message) : Expectation
+    {
+        public override EvaluationResult Evaluate(ExpectationContext context) =>
+            ExpectationResults.Fail(context.Expression, message);
     }
 }

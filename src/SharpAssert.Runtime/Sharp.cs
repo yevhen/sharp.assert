@@ -2,6 +2,7 @@ using System.Collections;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using SharpAssert.Core;
+using SharpAssert.Features.Shared;
 
 namespace SharpAssert;
 
@@ -38,15 +39,17 @@ namespace SharpAssert;
 public static class Sharp
 {
     /// <summary>
-    /// Validates that a condition is true, throwing a detailed exception if the assertion fails.
+    /// Validates an assertion value, throwing a detailed exception if the assertion fails.
     /// </summary>
-    /// <param name="condition">The boolean condition to validate. Must be true for the assertion to pass.</param>
+    /// <param name="value">
+    /// A value that can be asserted. This can be a boolean condition or an <see cref="IExpectation"/>.
+    /// </param>
     /// <param name="message">
     /// Optional custom error message to include when the assertion fails. 
     /// Must be null or non-empty - empty strings and whitespace-only strings are rejected.
     /// </param>
     /// <param name="expr">
-    /// The string representation of the condition expression. 
+    /// The string representation of the assertion expression.
     /// Automatically populated by the compiler via <see cref="CallerArgumentExpressionAttribute"/>.
     /// </param>
     /// <param name="file">
@@ -61,14 +64,13 @@ public static class Sharp
     /// Thrown when <paramref name="message"/> is an empty string or contains only whitespace.
     /// </exception>
     /// <exception cref="SharpAssertionException">
-    /// Thrown when <paramref name="condition"/> is false, containing detailed diagnostic information
+    /// Thrown when the assertion fails, containing detailed diagnostic information
     /// about the failed assertion including expression text, variable values, and source location.
     /// </exception>
     /// <remarks>
     /// <para>
-    /// This method is enhanced by MSBuild source rewriting to provide rich diagnostic information.
-    /// The rewriter transforms simple Assert calls into detailed analysis that shows variable values
-    /// and expression evaluation steps when assertions fail.
+    /// This method is enhanced by MSBuild source rewriting to provide rich diagnostic information for boolean assertions.
+    /// For <see cref="IExpectation"/> assertions, rich diagnostics are produced without rewriting.
     /// </para>
     /// <para>
     /// The method validates the message parameter to prevent accidental empty messages that provide
@@ -91,20 +93,28 @@ public static class Sharp
     /// </code>
     /// </example>
     public static void Assert(
-        bool condition,
+        AssertValue value,
         string? message = null,
-        [CallerArgumentExpression("condition")] string? expr = null,
+        [CallerArgumentExpression("value")] string? expr = null,
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
+        var exprText = expr ?? "value";
+        var filePath = file ?? "unknown";
+
+        if (value.IsExpectation)
+        {
+            SharpInternal.Assert(value.Expectation, exprText, filePath, line, message);
+            return;
+        }
+
         if (message is not null && string.IsNullOrWhiteSpace(message))
             throw new ArgumentException("Message must be either null or non-empty", nameof(message));
 
-        if (condition)
+        if (value.Condition)
             return;
 
-        var exprText = expr ?? "condition";
-        var context = new AssertionContext(exprText, file ?? "unknown", line, message, new ExprNode(exprText));
+        var context = new AssertionContext(exprText, filePath, line, message, new ExprNode(exprText));
         var formattedMessage = context.FormatMessage();
 
         throw new SharpAssertionException(formattedMessage);
@@ -272,21 +282,24 @@ public static class Sharp
     /// <typeparam name="T">The type of exception that was expected to be thrown.</typeparam>
     /// <remarks>
     /// <para>
-    /// This record provides implicit conversions to <see cref="bool"/> (indicating success/failure)
-    /// and to the exception type <typeparamref name="T"/>, making it convenient to use in assertions
-    /// and conditional logic.
+    /// This result is an <see cref="Expectation"/> intended to be used inside <see cref="Assert(AssertValue,string?,string?,string?,int)"/>.
+    /// It provides implicit conversions to the exception type <typeparamref name="T"/> and to <see cref="Exception"/> for convenient access
+    /// to exception details after a successful assertion.
     /// </para>
     /// <para>
-    /// Use the boolean conversion to check if the expected exception was thrown, and use the exception
-    /// conversion or <see cref="Exception"/> property to access the actual exception instance and its details.
+    /// Use <see cref="Throws{T}(Action)"/> to capture the result, then assert on it directly:
+    /// <c>Assert(Throws&lt;T&gt;(...))</c> or <c>Assert(!Throws&lt;T&gt;(...))</c>.
     /// </para>
     /// </remarks>
     /// <example>
     /// <code>
     /// var result = Throws&lt;ArgumentException&gt;(() => throw new ArgumentException("test"));
     /// 
-    /// // Use as boolean - true if expected exception was thrown
-    /// if (result) { /* exception was thrown as expected */ }
+    /// // Assert that the exception was thrown
+    /// Assert(result);
+    /// 
+    /// // Assert that no exception was thrown
+    /// Assert(!result);
     /// 
     /// // Access exception directly via implicit conversion
     /// ArgumentException ex = result;
@@ -296,7 +309,7 @@ public static class Sharp
     /// Assert(result.Exception.GetType() == typeof(ArgumentException));
     /// </code>
     /// </example>
-    public record ExceptionResult<T> where T: Exception
+    public sealed class ExceptionResult<T> : Expectation where T: Exception
     {
         readonly T? exception;
         readonly bool success;
@@ -307,20 +320,6 @@ public static class Sharp
             this.success = success;
         }
 
-        /// <summary>
-        /// Implicitly converts an <see cref="ExceptionResult{T}"/> to a boolean indicating whether
-        /// the expected exception was successfully caught.
-        /// </summary>
-        /// <param name="result">The exception result to convert.</param>
-        /// <returns><c>true</c> if the expected exception was thrown; <c>false</c> if no exception was thrown.</returns>
-        /// <example>
-        /// <code>
-        /// var result = Throws&lt;ArgumentException&gt;(() => ValidMethod());
-        /// Assert(!result); // Passes if ValidMethod() doesn't throw ArgumentException
-        /// </code>
-        /// </example>
-        public static implicit operator bool (ExceptionResult<T> result) => result.success;
-        
         /// <summary>
         /// Implicitly converts an <see cref="ExceptionResult{T}"/> to the specific exception type.
         /// </summary>
@@ -369,6 +368,23 @@ public static class Sharp
         /// </example>
         public T Exception => exception ?? throw new InvalidOperationException(
             $"Expected exception of type '{typeof(T).FullName}', but no exception was thrown");
+
+        /// <inheritdoc />
+        public override EvaluationResult Evaluate(ExpectationContext context)
+        {
+            if (success)
+            {
+                var ex = Exception;
+                return ExpectationResults.Boolean(
+                    context.Expression,
+                    true,
+                    $"Caught: {ex.GetType().FullName}: {ex.Message}");
+            }
+
+            return ExpectationResults.Fail(
+                context.Expression,
+                $"Expected exception of type '{typeof(T).FullName}', but no exception was thrown");
+        }
 
         /// <summary>
         /// Gets the message from the caught exception.

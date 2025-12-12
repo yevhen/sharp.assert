@@ -48,6 +48,14 @@ This document is organized by topic to consolidate key learnings about the proje
     - The rewrite task is injected `BeforeTargets="CoreCompile"` to ensure it runs before the compiler.
     - The output is written to a standard pattern: `$(IntermediateOutputPath)SharpRewritten\**\*.sharp.g.cs`.
 - **Graceful Fallback:** This is a critical principle. The MSBuild task is designed to fail gracefully. If the rewriter encounters an error, it copies the original source file, ensuring that a rewriter bug **does not break the user's build**.
+- **Overload Gotcha:** Because the rewriter builds a semantic model per-file (single syntax tree), adding overloads to `Sharp.Assert(...)` can make binding ambiguous for expressions that reference symbols from other files and cause those calls to stop rewriting; prefer a distinct entry point name (e.g., `AssertThat`) for non-bool asserts.
+- **Single Assert Alternative:** A single `Assert(AssertValue ...)` entry point avoids overload ambiguity; the rewriter can always rewrite to `SharpInternal.AssertValue(Expression<Func<AssertValue>> ...)` and route at runtime based on which `op_Implicit` conversion the expression tree uses.
+- **Conversion Gotchas:** C# forbids user-defined conversions to/from interfaces (so `AssertValue` cannot convert from `IExpectation`), and only allows one user-defined conversion in a chain (so types with `implicit operator bool` may need a direct conversion to `AssertValue` unless they inherit `Expectation`).
+- **Avoid bool Conversions on Expectations:** Keeping `Throws<T>` results purely as `Expectation` (no `implicit operator bool`) keeps `!Throws(...)` and composition (`.Not()/.And()/.Or()`) on the expectation path without ExpressionAnalyzer special casing.
+- **ExprNode for Method Calls:** For invocation expressions, capturing the receiver (e.g., as `ExprNode.Left`) in addition to arguments enables expectation composition to label operands (receiver vs argument) accurately.
+- **Expectation Operators:** Supporting `&`/`|` for `Expectation` composition requires ExprNode generation for `&`/`|` and composition evaluators that understand `ExprNode.Left`/`Right`.
+- **Async Rewrite Discrimination:** `Assert(await ...)` must still rewrite to `SharpInternal.AssertAsync` for awaited booleans, but `Assert(await ThrowsAsync(...))` must NOT be rewritten (expression trees can't contain await and `AssertAsync` expects `Task<bool>`); discriminating by awaiting `Task<bool>`/`ValueTask<bool>` keeps both working.
+- **Record Inheritance Gotcha:** `record` types can only inherit from `object` or another `record`, so `ExceptionResult<T>` cannot be a record if it must inherit the `Expectation` base class.
 - **Line Directive Implementation:** 
     - Use `SyntaxFactory.PreprocessingMessage()` instead of `SyntaxFactory.LineDirectiveTrivia()` for proper formatting of #line directives
     - Only add #line directives when actual rewrites occur to preserve unchanged files

@@ -69,39 +69,47 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
 
     static EvaluationResult AnalyzeLogicalBinary(BinaryExpression binaryExpr, Dictionary<Expression, object?> cache, AssertionContext context)
     {
-        var leftValue = GetValue(binaryExpr.Left, cache);
-        var leftBool = (bool)leftValue!;
+        var (leftBool, leftResult) = AnalyzeLogicalOperand(binaryExpr.Left, cache, context, context.ExprNode.Left!);
 
         if (binaryExpr.NodeType == OrElse)
         {
-            var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache, context with { ExprNode = context.ExprNode.Left! });
-            var rightAnalysis = AnalyzeExpression(binaryExpr.Right, cache, context with { ExprNode = context.ExprNode.Right! });
-            var orValue = leftBool || (bool)GetValue(binaryExpr.Right, cache)!;
+            if (leftBool)
+                return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.OrElse, leftResult, null, true, true, binaryExpr.NodeType);
 
-            return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.OrElse, leftAnalysis, rightAnalysis, orValue, false, binaryExpr.NodeType);
+            var (orRightBool, orRightResult) = AnalyzeLogicalOperand(binaryExpr.Right, cache, context, context.ExprNode.Right!);
+            var orValue = leftBool || orRightBool;
+
+            return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.OrElse, leftResult, orRightResult, orValue, false, binaryExpr.NodeType);
         }
 
         // AND
         if (!leftBool)
         {
-            var leftAnalysis = AnalyzeExpression(binaryExpr.Left, cache, context with { ExprNode = context.ExprNode.Left! });
-            return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.AndAlso, leftAnalysis, null, false, true, binaryExpr.NodeType);
+            return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.AndAlso, leftResult, null, false, true, binaryExpr.NodeType);
         }
 
-        var leftResult = AnalyzeExpression(binaryExpr.Left, cache, context with { ExprNode = context.ExprNode.Left! });
-        var rightResult = AnalyzeExpression(binaryExpr.Right, cache, context with { ExprNode = context.ExprNode.Right! });
-        var rightBool = (bool)GetValue(binaryExpr.Right, cache)!;
-        var andValue = leftBool && rightBool;
+        var (andRightBool, andRightResult) = AnalyzeLogicalOperand(binaryExpr.Right, cache, context, context.ExprNode.Right!);
+        var andValue = leftBool && andRightBool;
 
-        return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.AndAlso, leftResult, rightResult, andValue, false, binaryExpr.NodeType);
+        return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.AndAlso, leftResult, andRightResult, andValue, false, binaryExpr.NodeType);
+    }
+
+    static (bool BoolValue, EvaluationResult Result) AnalyzeLogicalOperand(
+        Expression expression,
+        Dictionary<Expression, object?> cache,
+        AssertionContext context,
+        ExprNode exprNode)
+    {
+        var result = AnalyzeExpression(expression, cache, context with { ExprNode = exprNode });
+        return (result.BooleanValue == true, result);
     }
 
     static EvaluationResult AnalyzeNot(UnaryExpression unaryExpr, Dictionary<Expression, object?> cache, AssertionContext context)
     {
-        var operand = AnalyzeExpression(unaryExpr.Operand, cache, context with { ExprNode = context.ExprNode.Operand! });
+        var operandResult = AnalyzeExpression(unaryExpr.Operand, cache, context with { ExprNode = context.ExprNode.Operand! });
         var operandValue = GetValue(unaryExpr.Operand, cache);
 
-        return new UnaryEvaluationResult(context.ExprNode.Text, UnaryOperator.Not, operand, operandValue, !(bool)operandValue!);
+        return new UnaryEvaluationResult(context.ExprNode.Text, UnaryOperator.Not, operandResult, operandValue, !(bool)operandValue!);
     }
 
     static EvaluationResult AnalyzeMethodCall(MethodCallExpression methodCall, Dictionary<Expression, object?> cache, AssertionContext context)

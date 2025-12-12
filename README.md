@@ -181,6 +181,27 @@ Assert(await ThrowsAsync<InvalidOperationException>(() =>
     Task.Run(() => throw new InvalidOperationException())));
 ```
 
+### Custom Expectations
+
+Create reusable expectations by inheriting from `Expectation` and returning an `EvaluationResult`:
+
+```csharp
+sealed class IsEven(int value) : Expectation
+{
+    public override EvaluationResult Evaluate(ExpectationContext context) =>
+        value % 2 == 0
+            ? ExpectationResults.Pass(context.Expression)
+            : ExpectationResults.Fail(context.Expression, $"Expected even, got {value}");
+}
+
+Assert(new IsEven(4));
+Assert(!new IsEven(3));
+
+// Composition
+Assert(new IsEven(4) & new IsEven(6));
+Assert(new IsEven(3) | new IsEven(4));
+```
+
 ### Custom Error Messages
 
 ```csharp

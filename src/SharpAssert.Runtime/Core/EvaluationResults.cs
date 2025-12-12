@@ -94,8 +94,11 @@ record LogicalEvaluationResult(
 
     string GetLogicalExplanation() => Operator switch
     {
+        LogicalOperator.AndAlso when Value => "&&: Both operands were true",
         LogicalOperator.AndAlso when ShortCircuited => "&&: Left operand was false",
         LogicalOperator.AndAlso => "&&: Right operand was false",
+        LogicalOperator.OrElse when Value && ShortCircuited => "||: Left operand was true",
+        LogicalOperator.OrElse when Value => "||: Right operand was true",
         _ => "||: Both operands were false"
     };
 }

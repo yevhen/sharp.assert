@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -72,6 +73,7 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
 {
     const string SharpInternalNamespace = "global::SharpAssert.SharpInternal";
     const string AssertMethodName = "Assert";
+    const string AssertInternalMethodName = "AssertValue";
     const string NewLine = "\n";
     const int LineNumberOffset = 1;
 
@@ -86,15 +88,25 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         var hasDynamic = ContainsDynamic(node);
         var isBinary = IsBinaryOperation(node);
 
-        HasRewrites = true;
-
         // Priority: await > dynamic (per PRD section 4.2)
         if (hasAwait)
-            return isBinary ? RewriteToAsyncBinary(node) : RewriteToAsync(node);
+        {
+            if (IsBooleanAssertion(node.ArgumentList.Arguments[0].Expression))
+            {
+                HasRewrites = true;
+                return isBinary ? RewriteToAsyncBinary(node) : RewriteToAsync(node);
+            }
+
+            return base.VisitInvocationExpression(node);
+        }
 
         if (hasDynamic)
+        {
+            HasRewrites = true;
             return isBinary ? RewriteToDynamicBinary(node) : RewriteToDynamic(node);
+        }
 
+        HasRewrites = true;
         return RewriteToLambda(node);
     }
 
@@ -106,6 +118,13 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
 
         var methodSymbol = GetMethodSymbol(node);
         if (methodSymbol == null)
+            return false;
+
+        if (methodSymbol.Parameters is not [{ Type: var firstParameterType }, ..])
+            return false;
+
+        if (firstParameterType.Name != "AssertValue" ||
+            firstParameterType.ContainingNamespace.ToDisplayString() != "SharpAssert")
             return false;
 
         var containingType = methodSymbol.ContainingType;
@@ -128,6 +147,27 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         node.DescendantNodes()
             .OfType<AwaitExpressionSyntax>()
             .Any();
+
+    bool IsBooleanAssertion(ExpressionSyntax expression)
+    {
+        if (expression is AwaitExpressionSyntax awaitExpression)
+            return IsAwaitingBoolean(awaitExpression);
+
+        var typeInfo = semanticModel.GetTypeInfo(expression);
+        return typeInfo.Type?.SpecialType == SpecialType.System_Boolean;
+    }
+
+    bool IsAwaitingBoolean(AwaitExpressionSyntax awaitExpression)
+    {
+        var awaitedType = semanticModel.GetTypeInfo(awaitExpression.Expression).Type;
+        if (awaitedType is not INamedTypeSymbol { IsGenericType: true, TypeArguments: [var resultType] } namedType)
+            return false;
+
+        if (namedType.Name is not ("Task" or "ValueTask"))
+            return false;
+
+        return resultType.SpecialType == SpecialType.System_Boolean;
+    }
 
     bool ContainsDynamic(InvocationExpressionSyntax node)
     {
@@ -243,7 +283,7 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         SyntaxFactory.MemberAccessExpression(
             SyntaxKind.SimpleMemberAccessExpression,
             SyntaxFactory.IdentifierName(SharpInternalNamespace),
-            SyntaxFactory.IdentifierName(AssertMethodName));
+            SyntaxFactory.IdentifierName(AssertInternalMethodName));
 
     SeparatedSyntaxList<ArgumentSyntax> CreateInvocationArguments(ParenthesizedLambdaExpressionSyntax lambdaExpression, RewriteData data)
     {
@@ -286,7 +326,9 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         binaryExpr.OperatorToken.IsKind(SyntaxKind.GreaterThanToken) ||
         binaryExpr.OperatorToken.IsKind(SyntaxKind.GreaterThanEqualsToken) ||
         binaryExpr.OperatorToken.IsKind(SyntaxKind.AmpersandAmpersandToken) ||
-        binaryExpr.OperatorToken.IsKind(SyntaxKind.BarBarToken);
+        binaryExpr.OperatorToken.IsKind(SyntaxKind.BarBarToken) ||
+        binaryExpr.OperatorToken.IsKind(SyntaxKind.AmpersandToken) ||
+        binaryExpr.OperatorToken.IsKind(SyntaxKind.BarToken);
 
     static ObjectCreationExpressionSyntax CreateExprNodeObjectCreation(BinaryExpressionSyntax binaryExpr, ExpressionSyntax originalExpression)
     {
@@ -349,25 +391,44 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
     static ObjectCreationExpressionSyntax CreateMethodCallExprNodeObjectCreation(InvocationExpressionSyntax invocationExpr, ExpressionSyntax originalExpression)
     {
         var text = originalExpression.ToString();
+        var receiverNode = invocationExpr.Expression is MemberAccessExpressionSyntax memberAccess
+            ? GenerateExprNodeSyntax(memberAccess.Expression)
+            : null;
+
         var argumentNodes = invocationExpr.ArgumentList.Arguments
             .Select(arg => GenerateExprNodeSyntax(arg.Expression))
             .ToArray();
 
         var argumentsArray = CreateExprNodeArray(argumentNodes);
 
+        var receiverNameColon = SyntaxFactory.NameColon(
+            SyntaxFactory.IdentifierName("Left"),
+            SyntaxFactory.Token(SyntaxKind.ColonToken).WithTrailingTrivia(SyntaxFactory.Space));
+
         var nameColon = SyntaxFactory.NameColon(
             SyntaxFactory.IdentifierName("Arguments"),
             SyntaxFactory.Token(SyntaxKind.ColonToken).WithTrailingTrivia(SyntaxFactory.Space));
 
-        var arguments = SyntaxFactory.ArgumentList(
-            SyntaxFactory.SeparatedList([
-                SyntaxFactory.Argument(
-                    SyntaxFactory.LiteralExpression(
-                        SyntaxKind.StringLiteralExpression,
-                        SyntaxFactory.Literal(text))),
-                SyntaxFactory.Argument(argumentsArray)
-                    .WithNameColon(nameColon)
-            ]));
+        var list = new List<ArgumentSyntax>
+        {
+            SyntaxFactory.Argument(
+                SyntaxFactory.LiteralExpression(
+                    SyntaxKind.StringLiteralExpression,
+                    SyntaxFactory.Literal(text)))
+        };
+
+        if (receiverNode is not null)
+        {
+            list.Add(
+                SyntaxFactory.Argument(receiverNode)
+                    .WithNameColon(receiverNameColon));
+        }
+
+        list.Add(
+            SyntaxFactory.Argument(argumentsArray)
+                .WithNameColon(nameColon));
+
+        var arguments = SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList(list));
 
         return SyntaxFactory.ObjectCreationExpression(
                 SyntaxFactory.Token(SyntaxKind.NewKeyword).WithTrailingTrivia(SyntaxFactory.Space),
