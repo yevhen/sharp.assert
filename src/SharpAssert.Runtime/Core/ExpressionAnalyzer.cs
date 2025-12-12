@@ -152,11 +152,11 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
     {
         if (!CompiledCache.TryGetValue(expression, out var compiled))
         {
-            compiled = Expression.Lambda(expression).Compile();
+            compiled = ExpressionValueEvaluator.Compile(expression);
             CompiledCache[expression] = compiled;
         }
 
-        return compiled.DynamicInvoke();
+        return ((Func<object>)compiled)();
     }
     
     static bool EvaluateBinaryExpression(ExpressionType nodeType, object? leftValue, object? rightValue) => nodeType switch

@@ -2,6 +2,8 @@ using System.Collections;
 using System.Linq.Expressions;
 using SharpAssert.Core;
 using SharpAssert.Features.Shared;
+using static SharpAssert.Features.Shared.ExpressionValueEvaluator;
+using static SharpAssert.Features.Shared.EvaluationUnavailableHelpers;
 
 namespace SharpAssert.Features.LinqOperations;
 
@@ -13,6 +15,9 @@ static class LinqOperationFormatter
     {
         var methodName = methodCall.Method.Name;
         var collection = GetValue(methodCall.Object ?? methodCall.Arguments[0]);
+
+        if (IsUnavailable(collection))
+            return new FormattedEvaluationResult(expressionText, value, new[] { DescribeUnavailable(collection) });
         
         var lines = methodName switch
         {
@@ -28,6 +33,9 @@ static class LinqOperationFormatter
     static IReadOnlyList<string> FormatContainsFailure(MethodCallExpression methodCall, object? collection)
     {
         var item = GetValue(methodCall.Arguments.Last()); // Contains item
+        if (IsUnavailable(item))
+            return new[] { DescribeUnavailable(item) };
+
         var collectionStr = FormatCollection(collection);
         var count = GetCount(collection);
         
@@ -40,6 +48,9 @@ static class LinqOperationFormatter
     
     static IReadOnlyList<string> FormatAnyFailure(MethodCallExpression methodCall, object? collection)
     {
+        if (IsUnavailable(collection))
+            return new[] { DescribeUnavailable(collection) };
+
         var count = GetCount(collection);
         
         if (count == 0)
@@ -56,6 +67,9 @@ static class LinqOperationFormatter
     
     static IReadOnlyList<string> FormatAllFailure(MethodCallExpression methodCall, object? collection)
     {
+        if (IsUnavailable(collection))
+            return new[] { DescribeUnavailable(collection) };
+
         var predicateStr = GetPredicateString(methodCall);
         var predicateArg = GetPredicateArgument(methodCall);
 
@@ -88,10 +102,7 @@ static class LinqOperationFormatter
         return predicate == null ? [] : FindNonMatchingItems(enumerable, predicate);
     }
     
-    static Delegate? TryCompilePredicate(Expression predicateExpr)
-    {
-        return CompilePredicate(predicateExpr);
-    }
+    static Delegate? TryCompilePredicate(Expression predicateExpr) => CompilePredicate(predicateExpr);
 
     public static object?[] FindNonMatchingItems(IEnumerable enumerable, Delegate predicate) =>
         enumerable.Cast<object?>().Where(item => IsMatching(item, predicate)).ToArray();
@@ -104,6 +115,9 @@ static class LinqOperationFormatter
     
     static string FormatCollection(object? collection)
     {
+        if (IsUnavailable(collection))
+            return DescribeUnavailable(collection);
+
         if (collection is not IEnumerable enumerable) 
             return FormatValue(collection);
             
@@ -134,18 +148,26 @@ static class LinqOperationFormatter
     
     static string FormatValue(object? value) => ValueFormatter.Format(value);
     
-    static object? GetValue(Expression expression)
-    {
-        var compiled = Expression.Lambda(expression).Compile();
-        return compiled.DynamicInvoke();
-    }
+    static object? GetValue(Expression expression) => Evaluate(expression);
     
     static string GetPredicateString(MethodCallExpression methodCall) => 
         methodCall.Arguments.Count > 1 ? 
             ExtractPredicateString(methodCall.Arguments[1]) : "predicate";
     
-    static Delegate CompilePredicate(Expression predicateExpr) => 
-        predicateExpr is LambdaExpression lambda ? 
-            lambda.Compile() : 
-            Expression.Lambda(predicateExpr).Compile();
+    static Delegate CompilePredicate(Expression predicateExpr) =>
+        predicateExpr is LambdaExpression lambda
+            ? CompileWithFallback(lambda)
+            : CompileWithFallback(Expression.Lambda(predicateExpr));
+
+    static Delegate CompileWithFallback(LambdaExpression lambda)
+    {
+        try
+        {
+            return lambda.Compile();
+        }
+        catch (InvalidProgramException)
+        {
+            return lambda.Compile(preferInterpretation: true);
+        }
+    }
 }

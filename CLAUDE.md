@@ -415,3 +415,11 @@ async\method: Suffix with `Async` =\> `GetDataAsync()`
 - **CRITICAL**: Explain the "why" not just the "what"
 - **CRITICAL**: Always write XML doc comments from the user's perspective, not implementation details
 - Cover common pitfalls and best practices
+
+- Expression compilation can emit invalid IL on some runtimes; fall back to `Compile(preferInterpretation: true)` when evaluating expressions to avoid CI-only `InvalidProgramException`.
+- Byref-like expression trees (e.g., `Span<T>`, `ReadOnlySpan<T>`) cannot be boxed; convert them to arrays before evaluation to avoid interpreter type load errors.
+- Reflection helpers should tolerate missing overloads (e.g., `MemoryExtensions.ToArray`) to prevent type initializer failures on runtimes where a method shape differs.
+- Compilation can fail with `TypeLoadException`/`ArgumentException` in addition to `InvalidProgramException`; catch broadly and fall back to interpreted compilation or a safe null-returning delegate.
+- Prefer `Compile(preferInterpretation: true)` for expression value extraction to avoid invalid IL, and only drop to null when both interpreted compilation and span normalization fail.
+- If evaluation still fails, return a sentinel (e.g., `EvaluationUnavailable`) and render `<unavailable: reason>` so diagnostics stay honest instead of showing nulls or bogus counts.
+- `NUnit.Assert.ThrowsAsync<T>()` returns the exception instance (not a `Task`), so async tests should await a real async assertion (e.g., `action.Should().ThrowAsync<T>()`) to avoid CS1998 warnings.

@@ -3,6 +3,8 @@ using System.Linq.Expressions;
 using DiffPlex;
 using DiffPlex.Model;
 using SharpAssert.Features.Shared;
+using static SharpAssert.Features.Shared.ExpressionValueEvaluator;
+using static SharpAssert.Features.Shared.EvaluationUnavailableHelpers;
 
 namespace SharpAssert.Features.SequenceEqual;
 
@@ -16,6 +18,19 @@ static class SequenceEqualComparer
     {
         var firstSequence = GetValue(methodCall.Object ?? methodCall.Arguments[0]);
         var secondSequence = GetValue(methodCall.Arguments.Count > 1 ? methodCall.Arguments[1] : methodCall.Arguments[0]);
+
+        if (IsUnavailable(firstSequence) || IsUnavailable(secondSequence))
+        {
+            var error = $"{DescribeUnavailable(firstSequence)}/{DescribeUnavailable(secondSequence)}";
+            return new SequenceEqualComparisonResult(
+                new AssertionOperand(firstSequence, typeof(object)),
+                new AssertionOperand(secondSequence, typeof(object)),
+                methodCall.Arguments.Count > 2,
+                null,
+                null,
+                false,
+                $"SequenceEqual failed: value unavailable ({error})");
+        }
         
         var hasComparer = methodCall.Arguments.Count > 2 ||
                          (methodCall.Object == null && methodCall.Arguments.Count > 2);
@@ -169,9 +184,5 @@ static class SequenceEqualComparer
         return new SequenceDiffLine(SequenceDiffOperation.Context, idx, val);
     }
 
-    static object? GetValue(Expression expression)
-    {
-        var compiled = Expression.Lambda(expression).Compile();
-        return compiled.DynamicInvoke();
-    }
+    static object? GetValue(Expression expression) => Evaluate(expression);
 }

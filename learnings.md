@@ -126,6 +126,14 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Cross-Platform Path Handling:** MSBuild path handling differences between Windows/Unix require careful attention to separators and absolute vs relative paths
 - **Package Source Discovery:** NuGet source discovery during package testing can fail silently if local feed structure is incorrect - verify with `--verbosity detailed`
 - **DateTime Culture-Dependent Formatting:** DateTime.ToString() produces different output across platforms (macOS: "1/1/2023", Linux: "01/01/2023 00:00:00") - use `dt.ToString("M/d/yyyy", CultureInfo.InvariantCulture)` for consistent cross-platform formatting in error messages
+- **DynamicInvoke Cross-Platform Issues:** Using `Expression.Lambda(expression).Compile().DynamicInvoke()` can fail on CI/certain runtimes with `NotSupportedException: Specified method is not supported` - use strongly-typed `Expression.Lambda<Func<object>>(Expression.Convert(expression, typeof(object))).Compile()()` for direct invocation without reflection
+- **Expression.Compile InvalidProgramException:** Expression compilation can emit invalid IL on some runtimes; prefer `Compile(preferInterpretation: true)` or catch `InvalidProgramException` and recompile in interpreted mode to ensure value extraction works on CI
+- **ByRef-like expression evaluation:** Ref structs (e.g., `Span<T>`, `ReadOnlySpan<T>`) cannot be boxed to `object`; convert them to arrays (e.g., `MemoryExtensions.ToArray`) before value extraction to avoid interpreter `TypeLoadException`/`ArgumentException`.
+- **Reflection resilience:** Do not assume specific overloads exist across runtimes; when reflecting for helpers like `MemoryExtensions.ToArray`, select via tolerant predicate and allow null fallback to avoid type initializer failures.
+- **Compilation fallback breadth:** Expression compilation can also fail with `TypeLoadException`/`ArgumentException` on byref-like conversions; wrap compilation and fall back to interpreted mode or a null-returning delegate when both paths fail.
+- **Interpretation-first evaluation:** Prefer `Lambda.Compile(preferInterpretation: true)` for expression value extraction to avoid invalid IL generation issues; only return null when both interpreted compilation and span-to-array normalization fail.
+- **Evaluation sentinels:** When evaluation fails, return a recognizable sentinel (e.g., `EvaluationUnavailable`) and have formatters render `<unavailable: reason>` instead of null/incorrect data to keep diagnostics honest.
+- **NUnit Assert.ThrowsAsync return type:** `Assert.ThrowsAsync<T>()` returns the exception instance, not a `Task`, so async test methods need an explicit awaitable (e.g., `action.Should().ThrowAsync<T>()`) to avoid CS1998 warnings.
 
 ## String Diffing Implementation (Increment 5)
 
