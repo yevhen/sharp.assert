@@ -187,7 +187,8 @@ Create reusable expectations by inheriting from `Expectation` and returning an `
 
 Recommended convention for external/custom expectations:
 - Suffix the type with `Expectation` (e.g., `IsEvenExpectation`)
-- Provide ergonomic construction via extension methods (e.g., `4.IsEven()`)
+- For unary expectations, prefer a static factory method so call sites can use `using static` (e.g., `Assert(IsEven(4))`)
+- For expectations that take a primary value and additional parameters, prefer extension methods for fluent call sites (e.g., `Assert(actual.IsEquivalentTo(expected))`)
 
 ```csharp
 sealed class IsEvenExpectation(int value) : Expectation
@@ -198,15 +199,21 @@ sealed class IsEvenExpectation(int value) : Expectation
             : ExpectationResults.Fail(context.Expression, $"Expected even, got {value}");
 }
 
+static class Expectations
+{
+    public static IsEvenExpectation IsEven(int value) => new(value);
+}
+
+using static Expectations;
+
+Assert(IsEven(4));
+Assert(!IsEven(5));
+
 static class ExpectationExtensions
 {
     public static IsEvenExpectation IsEven(this int value) => new(value);
 }
 
-Assert(4.IsEven());
-Assert(!5.IsEven());
-Assert(4.IsEven() & 6.IsEven());
-Assert(3.IsEven() | 4.IsEven());
 Assert(4.IsEven() & !5.IsEven());
 ```
 

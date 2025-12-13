@@ -56,6 +56,7 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Expectation Operators:** Supporting `&`/`|` for `Expectation` composition requires ExprNode generation for `&`/`|` and composition evaluators that understand `ExprNode.Left`/`Right`.
 - **Async Rewrite Discrimination:** `Assert(await ...)` must still rewrite to `SharpInternal.AssertAsync` for awaited booleans, but `Assert(await ThrowsAsync(...))` must NOT be rewritten (expression trees can't contain await and `AssertAsync` expects `Task<bool>`); discriminating by awaiting `Task<bool>`/`ValueTask<bool>` keeps both working.
 - **Expectation Ergonomics:** Prefer extension methods that construct expectations (e.g., `4.IsEven()`) and suffix expectation types with `Expectation` for clean call sites.
+- **Two Construction Styles:** Provide both `using static` factories (great for unary: `Assert(IsEven(4))`) and extension methods (great for binary/parameterized: `Assert(actual.IsEquivalentTo(expected))`).
 - **Record Inheritance Gotcha:** `record` types can only inherit from `object` or another `record`, so `ExceptionResult<T>` cannot be a record if it must inherit the `Expectation` base class.
 - **Line Directive Implementation:** 
     - Use `SyntaxFactory.PreprocessingMessage()` instead of `SyntaxFactory.LineDirectiveTrivia()` for proper formatting of #line directives
