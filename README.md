@@ -183,10 +183,14 @@ Assert(await ThrowsAsync<InvalidOperationException>(() =>
 
 ### Custom Expectations
 
-Create reusable expectations by inheriting from `Expectation` and returning an `EvaluationResult`:
+Create reusable expectations by inheriting from `Expectation` and returning an `EvaluationResult`.
+
+Recommended convention for external/custom expectations:
+- Suffix the type with `Expectation` (e.g., `IsEvenExpectation`)
+- Provide ergonomic construction via extension methods (e.g., `4.IsEven()`)
 
 ```csharp
-sealed class IsEven(int value) : Expectation
+sealed class IsEvenExpectation(int value) : Expectation
 {
     public override EvaluationResult Evaluate(ExpectationContext context) =>
         value % 2 == 0
@@ -194,12 +198,16 @@ sealed class IsEven(int value) : Expectation
             : ExpectationResults.Fail(context.Expression, $"Expected even, got {value}");
 }
 
-Assert(new IsEven(4));
-Assert(!new IsEven(3));
+static class ExpectationExtensions
+{
+    public static IsEvenExpectation IsEven(this int value) => new(value);
+}
 
-// Composition
-Assert(new IsEven(4) & new IsEven(6));
-Assert(new IsEven(3) | new IsEven(4));
+Assert(4.IsEven());
+Assert(!5.IsEven());
+Assert(4.IsEven() & 6.IsEven());
+Assert(3.IsEven() | 4.IsEven());
+Assert(4.IsEven() & !5.IsEven());
 ```
 
 ### Custom Error Messages

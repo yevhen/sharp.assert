@@ -434,4 +434,5 @@ async\method: Suffix with `Async` =\> `GetDataAsync()`
 - Supporting `Expectation` composition via operators (`&`/`|`) requires generating `ExprNode.Left`/`Right` for `&`/`|` expressions so operand contexts render as `left` and `right` (not the whole expression).
 - For async asserts, `await` inside `Assert(...)` is supported for awaited booleans and awaited expectations, but it is not rewritten into an expression tree; keep examples single-line if you need stable `CallerArgumentExpression` text in tests.
 - `Assert(await someBoolTask)` must still be rewritten to `SharpInternal.AssertAsync`, but `Assert(await ThrowsAsync<T>(...))` should be left unrewritten; discriminating by `Task<bool>`/`ValueTask<bool>` avoids mis-rewriting awaited expectations into `Task<bool>`.
+- For expectation ergonomics, prefer extension-method constructors (`4.IsEven()`) and suffix custom types with `Expectation` to keep call sites readable.
 - Records cannot inherit from non-record base classes, so expectation-like result types that must inherit `Expectation` need to be `class` types (or you must make `Expectation` a record and convert all derived types to records).
