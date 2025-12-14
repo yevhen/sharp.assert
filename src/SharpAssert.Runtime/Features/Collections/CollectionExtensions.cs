@@ -1,12 +1,12 @@
-// ABOUTME: Extension methods for collection ordering assertions
-// ABOUTME: Provides IsInAscendingOrder/IsInDescendingOrder APIs for FluentAssertions migration
+// ABOUTME: Extension methods for collection validation expectations (ordering and uniqueness).
+// ABOUTME: Provides IsInAscendingOrder/IsInDescendingOrder and AllUnique APIs for FluentAssertions migration.
 
 using System;
 using System.Collections.Generic;
 
 namespace SharpAssert.Features.Collections;
 
-/// <summary>Provides ordering validation extensions for collections.</summary>
+/// <summary>Provides validation extensions for collections including ordering and uniqueness checks.</summary>
 public static class CollectionExtensions
 {
     /// <summary>Validates that a collection is in ascending order using the default comparer.</summary>
@@ -81,5 +81,38 @@ public static class CollectionExtensions
             throw new ArgumentNullException(nameof(comparer));
 
         return new CollectionOrderingExpectation<T>(collection, OrderDirection.Descending, comparer);
+    }
+
+    /// <summary>Validates that a collection contains only unique items.</summary>
+    /// <typeparam name="T">The type of elements in the collection.</typeparam>
+    /// <param name="collection">The collection to validate.</param>
+    /// <returns>An expectation that validates uniqueness.</returns>
+    public static CollectionUniquenessExpectation<T> AllUnique<T>(this IEnumerable<T> collection)
+    {
+        return new CollectionUniquenessExpectation<T>(collection, null, null);
+    }
+
+    /// <summary>Validates that a collection contains only unique items by a projected key.</summary>
+    /// <typeparam name="T">The type of elements in the collection.</typeparam>
+    /// <param name="collection">The collection to validate.</param>
+    /// <param name="keySelector">Key selector for uniqueness comparison.</param>
+    /// <returns>An expectation that validates uniqueness.</returns>
+    public static CollectionUniquenessExpectation<T> AllUnique<T>(
+        this IEnumerable<T> collection,
+        Func<T, object?> keySelector)
+    {
+        return new CollectionUniquenessExpectation<T>(collection, keySelector, null);
+    }
+
+    /// <summary>Validates that a collection contains only unique items using a custom comparer.</summary>
+    /// <typeparam name="T">The type of elements in the collection.</typeparam>
+    /// <param name="collection">The collection to validate.</param>
+    /// <param name="comparer">Equality comparer.</param>
+    /// <returns>An expectation that validates uniqueness.</returns>
+    public static CollectionUniquenessExpectation<T> AllUnique<T>(
+        this IEnumerable<T> collection,
+        IEqualityComparer<object> comparer)
+    {
+        return new CollectionUniquenessExpectation<T>(collection, null, comparer);
     }
 }
