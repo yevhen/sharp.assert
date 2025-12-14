@@ -37,8 +37,12 @@ SharpAssert uses **MSBuild source rewriting** to automatically transform your as
 - **🔍 [Detailed Expression Analysis](#complex-expression-analysis)** - See exactly why your assertions failed
 - **🎯 [Exception Testing](#exception-testing)** - `Throws<T>` and `ThrowsAsync<T>` with detailed exception diagnostics
 - **🔤 [String Diffs](#string-comparisons)** - Character-level inline diffs for strings (powered by DiffPlex)
+- **🔠 [String Pattern Matching](#string-pattern-matching)** - Wildcard patterns and occurrence counting
 - **📊 [Collection Comparison](#collection-comparisons)** - First mismatch, missing/extra elements detection
+- **📋 [Collection Ordering](#collection-ordering)** - Ascending/descending order validation
+- **🔢 [Collection Uniqueness](#collection-uniqueness)** - Duplicate detection with key selectors
 - **🔎 [Object Deep Diff](#object-deep-comparison)** - Property-level differences for objects/records (powered by Compare-Net-Objects)
+- **🔄 [Object Equivalency](#object-equivalency)** - Structural comparison with property exclusion/inclusion
 - **🔗 [LINQ Operations](#linq-operations)** - Enhanced diagnostics for Contains/Any/All operations
 - **⚡ [Async/Await Support](#asyncawait-support)** - Full support for async assertions with value diagnostics
 - **💫 Dynamic Types** - Dynamic objects support (Expando)
@@ -120,6 +124,68 @@ Assert(actual.SequenceEqual(expected));
 //   Actual:   3
 ```
 
+### String Pattern Matching
+
+Wildcard patterns with `*` (any sequence) and `?` (single character):
+
+```csharp
+using SharpAssert.Features.Strings;
+
+Assert("hello world".Matches("hello *"));      // * matches any sequence
+Assert("test.txt".Matches("*.txt"));           // File extension matching
+Assert("test".Matches("t?st"));                // ? matches single character
+Assert("HELLO".MatchesIgnoringCase("hello"));  // Case-insensitive
+```
+
+Count substring occurrences:
+
+```csharp
+Assert("error at line 5, error at line 10".Contains("error", Occur.Exactly(2)));
+Assert("warn, warn, warn".Contains("warn", Occur.AtLeast(2)));
+Assert("info".Contains("info", Occur.AtMost(1)));
+```
+
+Regex pattern occurrence counting:
+
+```csharp
+Assert("test123 and test456".MatchesRegex(@"test\d+", Occur.Exactly(2)));
+```
+
+### Collection Ordering
+
+Validate collections are sorted:
+
+```csharp
+using SharpAssert.Features.Collections;
+
+var ascending = new[] { 1, 2, 3, 4 };
+Assert(ascending.IsInAscendingOrder());
+
+var descending = new[] { 4, 3, 2, 1 };
+Assert(descending.IsInDescendingOrder());
+
+// With custom comparer
+Assert(names.IsInAscendingOrder(StringComparer.OrdinalIgnoreCase));
+```
+
+### Collection Uniqueness
+
+Validate collections contain no duplicates:
+
+```csharp
+using SharpAssert.Features.Collections;
+
+var unique = new[] { 1, 2, 3, 4 };
+Assert(unique.AllUnique());
+
+// Uniqueness by property
+var users = new[] { user1, user2, user3 };
+Assert(users.AllUnique(u => u.Email));
+
+// Custom equality comparer
+Assert(items.AllUnique(StringComparer.OrdinalIgnoreCase));
+```
+
 ### Object Deep Comparison
 
 Property-level diffs powered by Compare-Net-Objects:
@@ -133,6 +199,29 @@ Assert(actual == expected);
 // Object differences:
 //   Age: 30 → 25
 //   City: "NYC" → "LA"
+```
+
+### Object Equivalency
+
+Structural comparison with fluent configuration:
+
+```csharp
+var actual = new Person { Name = "John", Age = 30, Id = 1 };
+var expected = new Person { Name = "John", Age = 30, Id = 2 };
+
+// Basic equivalency check
+Assert(actual.IsEquivalentTo(expected));
+
+// Exclude specific properties
+Assert(actual.IsEquivalentTo(expected, config => config.Excluding(p => p.Id)));
+
+// Include only specific properties
+Assert(actual.IsEquivalentTo(expected, config => config.Including(p => p.Name)));
+
+// Ignore collection ordering
+var team1 = new Team { Members = new[] { "Alice", "Bob" } };
+var team2 = new Team { Members = new[] { "Bob", "Alice" } };
+Assert(team1.IsEquivalentTo(team2, config => config.WithoutStrictOrdering()));
 ```
 
 ### LINQ Operations
