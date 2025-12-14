@@ -12,3 +12,4 @@ local-feed
 .claude/settings.local.json
 prompt.md
 .private-journal/
+code-review-issues.md
