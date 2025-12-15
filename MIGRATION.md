@@ -24,16 +24,6 @@ using static SharpAssert.Sharp;
 Assert(bool condition [, string message])
 TException Throws<TException>(Action action [, string message])
 Task<TException> ThrowsAsync<TException>(Func<Task> action [, string message])
-
-// Custom Expectations
-collection.IsInAscendingOrder([IComparer<T>])
-collection.IsInDescendingOrder([IComparer<T>])
-collection.AllUnique([Func<T, object> keySelector | IEqualityComparer<object>])
-string.Matches(pattern)
-string.MatchesIgnoringCase(pattern)
-string.Contains(substring, Occur.Exactly|AtLeast|AtMost(count))
-string.MatchesRegex(pattern, Occur.Exactly|AtLeast|AtMost(count))
-T.IsEquivalentTo(expected [, config => config.Excluding|Including|WithoutStrictOrdering()])
 ```
 
 ## Native C# Support
