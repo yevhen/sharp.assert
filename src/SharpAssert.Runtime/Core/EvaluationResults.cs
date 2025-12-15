@@ -15,13 +15,86 @@ enum UnaryOperator
     Not
 }
 
+/// <summary>
+/// Combines an assertion context with its evaluation result for complete failure reporting.
+/// </summary>
+/// <param name="Context">The assertion context containing source location and expression text.</param>
+/// <param name="Result">The evaluation result containing diagnostic information.</param>
+/// <remarks>
+/// <para>
+/// This type ties together the "where" (from <see cref="AssertionContext"/>) and the "why"
+/// (from <see cref="EvaluationResult"/>) of an assertion failure. It's the top-level result
+/// type that gets stored in <see cref="SharpAssertionException"/> and used to generate the
+/// complete failure message.
+/// </para>
+/// <para>
+/// Thread Safety: This type is immutable and thread-safe.
+/// </para>
+/// </remarks>
+/// <example>
+/// <code>
+/// // When Assert(x > 10) fails at line 42:
+/// var result = new AssertionEvaluationResult(
+///     new AssertionContext("x > 10", "Test.cs", 42, null, exprNode),
+///     new BinaryComparisonEvaluationResult(...)
+/// );
+///
+/// // Format() produces:
+/// // Assertion failed: x > 10  at Test.cs:42
+/// //   x > 10
+/// //     Left: 5
+/// //     Right: 10
+/// </code>
+/// </example>
 public record AssertionEvaluationResult(AssertionContext Context, EvaluationResult Result)
     : EvaluationResult(Context.Expression)
 {
+    /// <summary>
+    /// Gets whether the assertion passed (result was true).
+    /// </summary>
     public bool Passed => Result.BooleanValue == true;
+
+    /// <summary>
+    /// Gets the boolean result of the assertion.
+    /// </summary>
     public override bool? BooleanValue => Result.BooleanValue;
+
+    /// <summary>
+    /// Renders the diagnostic lines from the underlying evaluation result.
+    /// </summary>
+    /// <returns>Rendered diagnostic lines showing why the assertion failed.</returns>
     public override IReadOnlyList<RenderedLine> Render() => Result.Render();
 
+    /// <summary>
+    /// Formats the complete assertion failure message including context and diagnostics.
+    /// </summary>
+    /// <param name="indent">The string to use for each indentation level (default is two spaces).</param>
+    /// <returns>
+    /// An empty string if the assertion passed; otherwise, a formatted multi-line message
+    /// showing the assertion location, expression, and detailed diagnostic information.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// This method produces the final human-readable output shown in test failures.
+    /// It combines the assertion header (from <see cref="AssertionContext.FormatMessage"/>)
+    /// with the diagnostic details (from <see cref="EvaluationResult.Render"/>).
+    /// </para>
+    /// <para>
+    /// Performance: String concatenation is optimized using <see cref="StringBuilder"/>.
+    /// Typical formatting takes less than 1ms for moderately complex assertions.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// var result = assertionEvaluationResult;
+    /// var message = result.Format();
+    /// // Output:
+    /// // Assertion failed: x > 10  at Test.cs:42
+    /// //   x > 10
+    /// //     Left: 5
+    /// //     Right: 10
+    /// </code>
+    /// </example>
     public string Format(string indent = "  ")
     {
         if (Passed)

@@ -25,6 +25,18 @@ public sealed class StringOccurrenceExpectation(
     int? atLeast,
     int? atMost) : Expectation
 {
+    /// <summary>
+    /// Evaluates whether the substring occurrence count satisfies the constraints.
+    /// </summary>
+    /// <param name="context">Call-site context for diagnostics.</param>
+    /// <returns>
+    /// A pass result if all constraints are satisfied; otherwise, a fail result
+    /// showing which constraint was violated and the actual occurrence count.
+    /// </returns>
+    /// <remarks>
+    /// Performance: Uses ordinal string comparison for efficiency. For case-insensitive
+    /// or culture-aware matching, convert both strings to the same case before creating the expectation.
+    /// </remarks>
     public override EvaluationResult Evaluate(ExpectationContext context)
     {
         var count = CountOccurrences(text, substring);

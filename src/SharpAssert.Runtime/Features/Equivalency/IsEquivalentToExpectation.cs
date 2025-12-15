@@ -6,6 +6,27 @@ using SharpAssert.Features.Shared;
 
 namespace SharpAssert;
 
+/// <summary>
+/// Validates that two objects are equivalent through deep structural comparison.
+/// </summary>
+/// <typeparam name="T">The type of objects being compared.</typeparam>
+/// <remarks>
+/// <para>
+/// This expectation performs a deep comparison of object graphs, comparing all
+/// properties and fields recursively. Unlike reference equality (==) or value equality
+/// (Equals), this checks that objects have the same structure and values throughout
+/// their entire object graph.
+/// </para>
+/// <para>
+/// Comparison can be customized via <see cref="EquivalencyConfig{T}"/> to exclude
+/// specific members, include only certain members, or ignore collection ordering.
+/// </para>
+/// <para>
+/// Thread Safety: This type is thread-safe if the compared objects are immutable
+/// or not modified during comparison. The comparison process itself is not thread-safe
+/// if objects are mutated concurrently.
+/// </para>
+/// </remarks>
 public sealed class IsEquivalentToExpectation<T> : Expectation
 {
     readonly T actual;
@@ -19,6 +40,26 @@ public sealed class IsEquivalentToExpectation<T> : Expectation
         this.config = config;
     }
 
+    /// <summary>
+    /// Evaluates whether the actual and expected objects are equivalent.
+    /// </summary>
+    /// <param name="context">Call-site context for diagnostics.</param>
+    /// <returns>
+    /// A pass result if objects are equivalent; otherwise, a fail result listing
+    /// up to 20 differences between the objects.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// Performance: Deep comparison can be expensive for large object graphs.
+    /// Consider the cost when comparing objects with many nested properties or
+    /// large collections.
+    /// </para>
+    /// <para>
+    /// When comparison fails, the first 20 property differences are shown with
+    /// property paths, expected values, and actual values. Additional differences
+    /// are counted but not displayed to keep output readable.
+    /// </para>
+    /// </remarks>
     public override EvaluationResult Evaluate(ExpectationContext context)
     {
         var compareLogic = new CompareLogic(config.ComparisonConfig);

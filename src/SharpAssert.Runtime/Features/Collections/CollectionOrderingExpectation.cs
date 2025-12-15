@@ -32,6 +32,18 @@ public sealed class CollectionOrderingExpectation<T> : Expectation
         this.comparer = comparer ?? Comparer<T>.Default;
     }
 
+    /// <summary>
+    /// Evaluates whether the collection is in the expected order.
+    /// </summary>
+    /// <param name="context">Call-site context for diagnostics.</param>
+    /// <returns>
+    /// A pass result if the collection is correctly ordered; otherwise, a fail result
+    /// with diagnostic information showing where the ordering violation occurred.
+    /// </returns>
+    /// <remarks>
+    /// Performance: This method materializes the collection into a list if not already materialized.
+    /// For large collections, consider the O(n) space overhead.
+    /// </remarks>
     public override EvaluationResult Evaluate(ExpectationContext context)
     {
         var items = collection.ToList();

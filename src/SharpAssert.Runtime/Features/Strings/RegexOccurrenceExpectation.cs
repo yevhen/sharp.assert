@@ -26,6 +26,19 @@ public sealed class RegexOccurrenceExpectation(
     int? atLeast,
     int? atMost) : Expectation
 {
+    /// <summary>
+    /// Evaluates whether the regex match count satisfies the constraints.
+    /// </summary>
+    /// <param name="context">Call-site context for diagnostics.</param>
+    /// <returns>
+    /// A pass result if all constraints are satisfied; otherwise, a fail result
+    /// showing which constraint was violated and the actual match count.
+    /// </returns>
+    /// <remarks>
+    /// Performance: Creates a new <see cref="Regex"/> instance on each evaluation.
+    /// For repeated checks with the same pattern, consider caching a compiled regex
+    /// or using <see cref="RegexOptions.Compiled"/>.
+    /// </remarks>
     public override EvaluationResult Evaluate(ExpectationContext context)
     {
         var count = CountMatches(text, pattern);

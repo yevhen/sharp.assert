@@ -21,6 +21,18 @@ namespace SharpAssert.Features.Strings;
 /// </example>
 public sealed class StringWildcardExpectation(string text, string pattern, bool ignoreCase) : Expectation
 {
+    /// <summary>
+    /// Evaluates whether the text matches the wildcard pattern.
+    /// </summary>
+    /// <param name="context">Call-site context for diagnostics.</param>
+    /// <returns>
+    /// A pass result if the text matches the pattern; otherwise, a fail result
+    /// showing the expected pattern and actual text.
+    /// </returns>
+    /// <remarks>
+    /// Performance: Converts the wildcard pattern to a regex on each evaluation.
+    /// For repeated checks with the same pattern, consider caching the compiled regex.
+    /// </remarks>
     public override EvaluationResult Evaluate(ExpectationContext context)
     {
         var options = ignoreCase
