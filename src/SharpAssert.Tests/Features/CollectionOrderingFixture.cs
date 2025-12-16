@@ -96,7 +96,7 @@ public class CollectionOrderingFixture : TestBase
         {
             var collection = new[] { 1, 2, 5, 3 };
             var expectation = collection.IsInAscendingOrder();
-            var context = new ExpectationContext("collection.IsInAscendingOrder()", "test.cs", 1, null, default);
+            var context = TestContext("collection.IsInAscendingOrder()");
 
             var result = expectation.Evaluate(context);
 
@@ -110,7 +110,7 @@ public class CollectionOrderingFixture : TestBase
         {
             var collection = new[] { 5, 3, 4, 1 };
             var expectation = collection.IsInDescendingOrder();
-            var context = new ExpectationContext("collection.IsInDescendingOrder()", "test.cs", 1, null, default);
+            var context = TestContext("collection.IsInDescendingOrder()");
 
             var result = expectation.Evaluate(context);
 
@@ -124,7 +124,7 @@ public class CollectionOrderingFixture : TestBase
         {
             var collection = new[] { 1, 2, 3, 4 };
             var expectation = collection.IsInAscendingOrder();
-            var context = new ExpectationContext("collection.IsInAscendingOrder()", "test.cs", 1, null, default);
+            var context = TestContext("collection.IsInAscendingOrder()");
 
             var result = expectation.Evaluate(context);
 

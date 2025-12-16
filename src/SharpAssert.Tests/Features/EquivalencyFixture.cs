@@ -386,7 +386,7 @@ public class EquivalencyFixture : TestBase
             var expected = new Person { Id = 1, Name = "Jane", Age = 25 };
 
             var expectation = actual.IsEquivalentTo(expected);
-            var result = expectation.Evaluate(new ExpectationContext("test", "", 0, null, default));
+            var result = expectation.Evaluate(TestContext("test"));
 
             var rendered = Rendered(result);
             rendered.Should().Contain("Object differences:");
@@ -434,7 +434,7 @@ public class EquivalencyFixture : TestBase
             var expected = new DateContainer { Date = new DateTime(2025, 12, 15) };
 
             var expectation = actual.IsEquivalentTo(expected);
-            var result = expectation.Evaluate(new ExpectationContext("test", "", 0, null, default));
+            var result = expectation.Evaluate(TestContext("test"));
 
             var rendered = Rendered(result);
             rendered.Should().Contain("12/14/2025");

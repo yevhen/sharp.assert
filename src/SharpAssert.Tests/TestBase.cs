@@ -75,4 +75,7 @@ public abstract class TestBase
 
     protected static readonly ExpressionType Equal = ExpressionType.Equal;
     protected static readonly ExpressionType NotEqual = ExpressionType.NotEqual;
+
+    internal static ExpectationContext TestContext(string expression) =>
+        new(expression, "test.cs", 1, null, new ExprNode(expression));
 }
