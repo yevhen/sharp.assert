@@ -127,6 +127,7 @@ using static SharpAssert.Sharp;          // For Assert(), Throws<T>()
 using SharpAssert;                        // For custom expectations (IsEquivalentTo, etc.)
 using SharpAssert.Features.Collections;  // For IsInAscendingOrder(), AllUnique()
 using SharpAssert.Features.Strings;      // For Matches(), occurrence counting
+using SharpAssert.Features.Proximity;    // For BeCloseTo(), BeApproximately()
 ```
 
 Migration:
@@ -220,12 +221,15 @@ act.Should().Throw<T>().WithMessage(msg)  → var ex = Throws<T>(act);
 val.Should().BePositive()                 → Assert(val > 0)
 val.Should().BeNegative()                 → Assert(val < 0)
 val.Should().BeInRange(min, max)          → Assert(val >= min && val <= max)
-val.Should().BeCloseTo(target, precision) → Assert(Math.Abs(val - target) <= precision)
-val.Should().BeApproximately(pi, 0.01)    → Assert(Math.Abs(val - pi) <= 0.01)
+val.Should().BeCloseTo(target, precision) → Assert(val.BeCloseTo(target, precision))
+                                          // Or native: Assert(Math.Abs(val - target) <= precision)
+val.Should().BeApproximately(pi, 0.01)    → Assert(val.BeApproximately(pi, 0.01))
+                                          // Or native: Assert(Math.Abs(val - pi) <= 0.01)
 
 // DateTime Proximity
 dt.Should().BeCloseTo(expected, 100.Milliseconds())
-                                          → Assert(Math.Abs((dt - expected).TotalMilliseconds) <= 100)
+                                          → Assert(dt.BeCloseTo(expected, TimeSpan.FromMilliseconds(100)))
+                                          // Or native: Assert(Math.Abs((dt - expected).TotalMilliseconds) <= 100)
 dt.Should().BeAfter(baseDate).Within(5.Minutes())
                                           → Assert(dt >= baseDate && dt <= baseDate.AddMinutes(5))
 dt.Should().BeBefore(deadline).Within(1.Hours())
