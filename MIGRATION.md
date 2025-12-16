@@ -121,8 +121,10 @@ Assert.ThrowsAsync<T>(() => asyncCode)    → Assert(await ThrowsAsync<T>(() => 
 
 ## FluentAssertions
 
-Additional imports:
+Required imports:
 ```csharp
+using static SharpAssert.Sharp;          // For Assert(), Throws<T>()
+using SharpAssert;                        // For custom expectations (IsEquivalentTo, etc.)
 using SharpAssert.Features.Collections;  // For IsInAscendingOrder(), AllUnique()
 using SharpAssert.Features.Strings;      // For Matches(), occurrence counting
 ```
@@ -163,14 +165,44 @@ coll.Should().OnlyHaveUniqueItems(x=>x.K) → Assert(coll.AllUnique(x => x.K))
 coll.Should().ContainSingle()             → Assert(coll.Count() == 1)
 coll.Should().AllSatisfy(pred)            → Assert(coll.All(pred))
 
-// Objects
+// Objects - Basic
 obj.Should().BeEquivalentTo(exp)          → Assert(obj.IsEquivalentTo(exp))
 obj.Should().BeEquivalentTo(exp, o=>o.Excluding(x=>x.Id))
                                           → Assert(obj.IsEquivalentTo(exp, c=>c.Excluding(x=>x.Id)))
 obj.Should().BeEquivalentTo(exp, o=>o.Including(x=>x.Name))
                                           → Assert(obj.IsEquivalentTo(exp, c=>c.Including(x=>x.Name)))
+
+// Objects - Collection Ordering
 obj.Should().BeEquivalentTo(exp, o=>o.WithoutStrictOrdering())
                                           → Assert(obj.IsEquivalentTo(exp, c=>c.WithoutStrictOrdering()))
+obj.Should().BeEquivalentTo(exp, o=>o.WithStrictOrdering())
+                                          → Assert(obj.IsEquivalentTo(exp, c=>c.WithStrictOrdering()))
+
+// Objects - Field Comparison
+obj.Should().BeEquivalentTo(exp, o=>o.ExcludingFields())
+                                          → Assert(obj.IsEquivalentTo(exp, c=>c.ExcludingFields()))
+obj.Should().BeEquivalentTo(exp, o=>o.IncludingFields())
+                                          → Assert(obj.IsEquivalentTo(exp, c=>c.IncludingFields()))
+
+// Objects - Recursion Control
+obj.Should().BeEquivalentTo(exp, o=>o.ExcludingNestedObjects())
+                                          → Assert(obj.IsEquivalentTo(exp, c=>c.WithoutRecursing()))
+
+// Objects - Custom Comparers
+obj.Should().BeEquivalentTo(exp, o=>o.Using<T>((a,b) => a.Id == b.Id))
+                                          → Assert(obj.IsEquivalentTo(exp, c=>c.Using<T>((a,b) => a.Id == b.Id)))
+obj.Should().BeEquivalentTo(exp, o=>o.Using<string>(StringComparer.OrdinalIgnoreCase))
+                                          → Assert(obj.IsEquivalentTo(exp, c=>c.Using(StringComparer.OrdinalIgnoreCase)))
+
+// Objects - Value Semantics
+obj.Should().BeEquivalentTo(exp, o=>o.ComparingByValue<Money>())
+                                          → Assert(obj.IsEquivalentTo(exp, c=>c.ComparingByValue<Money>()))
+obj.Should().BeEquivalentTo(exp, o=>o.ComparingEnumsByName())
+                                          → Assert(obj.IsEquivalentTo(exp, c=>c.ComparingEnumsByName()))
+obj.Should().BeEquivalentTo(exp, o=>o.ComparingRecordsByValue())
+                                          → Assert(obj.IsEquivalentTo(exp, c=>c.ComparingRecordsByValue()))
+
+// Note: ExcludingMissingMembers() is default behavior in SharpAssert
 
 // Exceptions
 act.Should().Throw<T>()                   → Assert(Throws<T>(act))
