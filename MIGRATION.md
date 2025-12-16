@@ -164,6 +164,11 @@ coll.Should().OnlyHaveUniqueItems()       → Assert(coll.AllUnique())
 coll.Should().OnlyHaveUniqueItems(x=>x.K) → Assert(coll.AllUnique(x => x.K))
 coll.Should().ContainSingle()             → Assert(coll.Count() == 1)
 coll.Should().AllSatisfy(pred)            → Assert(coll.All(pred))
+coll.Should().ContainInOrder(seq)         → Assert(coll.ContainsInOrder(seq))
+coll.Should().ContainInConsecutiveOrder(s)→ Assert(coll.ContainsInConsecutiveOrder(s))
+coll.Should().BeSubsetOf(superset)        → Assert(coll.IsSubsetOf(superset))
+coll.Should().IntersectWith(other)        → Assert(coll.Intersects(other))
+coll.Should().Satisfy(p1, p2, p3)         → Assert(coll.Satisfies(p1, p2, p3))
 
 // Objects - Basic
 obj.Should().BeEquivalentTo(exp)          → Assert(obj.IsEquivalentTo(exp))
@@ -216,4 +221,13 @@ val.Should().BePositive()                 → Assert(val > 0)
 val.Should().BeNegative()                 → Assert(val < 0)
 val.Should().BeInRange(min, max)          → Assert(val >= min && val <= max)
 val.Should().BeCloseTo(target, precision) → Assert(Math.Abs(val - target) <= precision)
+val.Should().BeApproximately(pi, 0.01)    → Assert(Math.Abs(val - pi) <= 0.01)
+
+// DateTime Proximity
+dt.Should().BeCloseTo(expected, 100.Milliseconds())
+                                          → Assert(Math.Abs((dt - expected).TotalMilliseconds) <= 100)
+dt.Should().BeAfter(baseDate).Within(5.Minutes())
+                                          → Assert(dt >= baseDate && dt <= baseDate.AddMinutes(5))
+dt.Should().BeBefore(deadline).Within(1.Hours())
+                                          → Assert(dt <= deadline && dt >= deadline.AddHours(-1))
 ```
