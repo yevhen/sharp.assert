@@ -35,4 +35,30 @@ public abstract class Expectation : IExpectation
     /// <param name="operand">The operand to negate.</param>
     /// <returns>A negated expectation.</returns>
     public static Expectation operator !(Expectation operand) => new NotExpectation(operand);
+
+    /// <summary>Creates an expectation from a predicate and failure message factory.</summary>
+    /// <param name="predicate">Returns true if the expectation passes.</param>
+    /// <param name="onFail">Factory for diagnostic lines (only called on failure).</param>
+    /// <returns>An expectation that evaluates the predicate.</returns>
+    /// <example>
+    /// <code>
+    /// public static Expectation IsEven(this int value) =>
+    ///     Expectation.From(
+    ///         () => value % 2 == 0,
+    ///         () => [$"Expected even number, got {value}"]
+    ///     );
+    /// </code>
+    /// </example>
+    public static Expectation From(Func<bool> predicate, Func<string[]> onFail)
+        => new LambdaExpectation(predicate, onFail);
+
+    sealed class LambdaExpectation(Func<bool> predicate, Func<string[]> onFail) : Expectation
+    {
+        public override EvaluationResult Evaluate(ExpectationContext context)
+        {
+            return predicate()
+                ? ExpectationResults.Pass(context.Expression)
+                : ExpectationResults.Fail(context.Expression, onFail());
+        }
+    }
 }
