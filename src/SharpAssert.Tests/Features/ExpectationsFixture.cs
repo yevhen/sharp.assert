@@ -1,5 +1,6 @@
 using SharpAssert.Core;
 using SharpAssert.Features.Shared;
+using SharpAssert.Features.Strings;
 using static SharpAssert.Sharp;
 
 namespace SharpAssert.Features;
@@ -97,19 +98,19 @@ public class ExpectationsFixture : TestBase
         }
 
         [Test]
-        public void Should_short_circuit_AND()
+        public void Should_evaluate_both_operands_AND_when_left_fails()
         {
             var left = new FixedExpectation(ExpectationResults.Fail("left", "Left failed"));
-            var right = new ThrowingExpectation();
+            var right = new FixedExpectation(ExpectationResults.Fail("right", "Right failed"));
             var expectation = left.And(right);
 
             var expected = new ComposedExpectationEvaluationResult(
                 "expectation",
                 "AND",
                 ExpectationResults.Fail("left", "Left failed"),
-                null,
+                ExpectationResults.Fail("right", "Right failed"),
                 false,
-                true);
+                false);
 
             AssertFails(() => Assert(expectation), expected);
         }
@@ -118,25 +119,25 @@ public class ExpectationsFixture : TestBase
         public void Should_capture_expression_text_for_inline_AND()
         {
             var left = new FixedExpectation(ExpectationResults.Fail("left", "Left failed"));
-            var right = new ThrowingExpectation();
+            var right = new FixedExpectation(ExpectationResults.Fail("right", "Right failed"));
 
             var expected = new ComposedExpectationEvaluationResult(
                 "left.And(right)",
                 "AND",
                 ExpectationResults.Fail("left", "Left failed"),
-                null,
+                ExpectationResults.Fail("right", "Right failed"),
                 false,
-                true);
+                false);
 
             AssertFails(() => Assert(left.And(right)), expected);
         }
 
         [Test]
-        public void Should_short_circuit_chained_AND()
+        public void Should_evaluate_all_operands_in_chained_AND()
         {
             var left = new FixedExpectation(ExpectationResults.Pass("left"));
             var middle = new FixedExpectation(ExpectationResults.Fail("middle", "Middle failed"));
-            var right = new ThrowingExpectation();
+            var right = new FixedExpectation(ExpectationResults.Fail("right", "Right failed"));
 
             var expectation = left.And(middle).And(right);
 
@@ -150,9 +151,9 @@ public class ExpectationsFixture : TestBase
                     ExpectationResults.Fail("middle", "Middle failed"),
                     false,
                     false),
-                null,
+                ExpectationResults.Fail("right", "Right failed"),
                 false,
-                true);
+                false);
 
             AssertFails(() => Assert(expectation), expected);
         }
@@ -238,21 +239,23 @@ public class ExpectationsFixture : TestBase
         }
 
         [Test]
-        public void Should_render_short_circuited_AND()
+        public void Should_render_AND_both_failed()
         {
             var result = new ComposedExpectationEvaluationResult(
                 "a.And(b)",
                 "AND",
                 ExpectationResults.Fail("a", "A failed"),
-                null,
+                ExpectationResults.Fail("b", "B failed"),
                 false,
-                true);
+                false);
 
             AssertRendersExactly(result,
                 "a.And(b)",
                 "Left: False",
                 "A failed",
-                "AND: Left operand was false");
+                "Right: False",
+                "B failed",
+                "AND: Both operands were false");
         }
 
         [Test]
@@ -289,6 +292,23 @@ public class ExpectationsFixture : TestBase
                 "a.Not()",
                 "Operand: True",
                 "!: Operand was True");
+        }
+
+        [Test]
+        public void Should_render_composed_expectation_with_both_failing()
+        {
+            var left = "foo".Matches("oof");
+            var right = "bar".Matches("rab");
+
+            AssertRendersMessageContains(() => Assert(left & right),
+                "  left & right",
+                "  Left: False",
+                "    Expected text to match pattern \"oof\" but it did not.",
+                "    Actual: \"foo\"",
+                "  Right: False",
+                "    Expected text to match pattern \"rab\" but it did not.",
+                "    Actual: \"bar\"",
+                "  AND: Both operands were false");
         }
     }
 

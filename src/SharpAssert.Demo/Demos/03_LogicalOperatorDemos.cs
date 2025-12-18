@@ -15,17 +15,14 @@ public static class LogicalOperatorDemos
     }
 
     /// <summary>
-    /// Demonstrates short-circuit AND evaluation (right side not evaluated when left is false).
+    /// Demonstrates AND showing ALL failures when both operands fail (no short-circuit).
+    /// Similar to NUnit Assert.Multiple or FluentAssertions AssertionScope but with native syntax.
     /// </summary>
-    public static void ShortCircuitAnd()
+    public static void AndBothFailed()
     {
-        var condition = false;
-        Assert(condition && ThrowsException());
-    }
-
-    static bool ThrowsException()
-    {
-        throw new InvalidOperationException("This should not be called due to short-circuit");
+        var x = 3;
+        var y = 7;
+        Assert(x == 5 && y == 10);
     }
 
     /// <summary>

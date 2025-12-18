@@ -35,6 +35,7 @@ SharpAssert uses **MSBuild source rewriting** to automatically transform your as
 ## Features
 
 - **🔍 [Detailed Expression Analysis](#complex-expression-analysis)** - See exactly why your assertions failed
+- **✅ [Multiple Assertions](#multiple-assertions)** - `&&` shows ALL failures, not just the first one
 - **🎯 [Exception Testing](#exception-testing)** - `Throws<T>` and `ThrowsAsync<T>` with detailed exception diagnostics
 - **🔤 [String Diffs](#string-comparisons)** - Character-level inline diffs for strings (powered by DiffPlex)
 - **🔠 [String Pattern Matching](#string-pattern-matching)** - Wildcard patterns and occurrence counting
@@ -79,6 +80,55 @@ public void Should_be_equal()
 ```
 
 ## Features in Detail
+
+### Multiple Assertions
+
+When multiple conditions fail, SharpAssert shows ALL failures at once - no short-circuit evaluation:
+
+```csharp
+var x = 3;
+var y = 7;
+
+Assert(x == 5 && y == 10);
+// Assertion failed: x == 5 && y == 10
+// Left: x == 5
+//   Left:  3
+//   Right: 5
+// Right: y == 10
+//   Left:  7
+//   Right: 10
+// &&: Both operands were false
+```
+
+This replaces verbose patterns from other frameworks with native C# syntax:
+
+```csharp
+// NUnit
+Assert.Multiple(() =>
+{
+    Assert.That(x, Is.EqualTo(5));
+    Assert.That(y, Is.EqualTo(10));
+});
+
+// FluentAssertions
+using (new AssertionScope())
+{
+    x.Should().Be(5);
+    y.Should().Be(10);
+}
+
+// SharpAssert - just use &&
+Assert(x == 5 && y == 10);
+```
+
+Works with custom expectations too:
+
+```csharp
+using SharpAssert.Features.Strings;
+
+Assert("foo".Matches("oof") & "bar".Matches("rab"));
+// Shows both pattern match failures with full diagnostics
+```
 
 ### String Comparisons
 

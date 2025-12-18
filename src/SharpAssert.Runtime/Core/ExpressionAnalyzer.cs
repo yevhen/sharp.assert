@@ -82,12 +82,7 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
             return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.OrElse, leftResult, orRightResult, orValue, false, binaryExpr.NodeType);
         }
 
-        // AND
-        if (!leftBool)
-        {
-            return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.AndAlso, leftResult, null, false, true, binaryExpr.NodeType);
-        }
-
+        // AND - always evaluate both operands
         var (andRightBool, andRightResult) = AnalyzeLogicalOperand(binaryExpr.Right, cache, context, context.ExprNode.Right!);
         var andValue = leftBool && andRightBool;
 

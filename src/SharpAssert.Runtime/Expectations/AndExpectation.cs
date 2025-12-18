@@ -13,15 +13,17 @@ sealed class AndExpectation(Expectation left, Expectation right) : Expectation
             : context;
 
         var leftResult = left.Evaluate(leftContext);
-        if (leftResult.BooleanValue != true)
-            return new ComposedExpectationEvaluationResult(context.Expression, "AND", leftResult, null, false, true);
 
         var rightContext = rightNode is not null
             ? context with { Expression = rightNode.Text, ExprNode = rightNode }
             : context;
 
         var rightResult = right.Evaluate(rightContext);
-        if (rightResult.BooleanValue == true)
+
+        var leftPassed = leftResult.BooleanValue == true;
+        var rightPassed = rightResult.BooleanValue == true;
+
+        if (leftPassed && rightPassed)
             return ExpectationResults.Pass(context.Expression);
 
         return new ComposedExpectationEvaluationResult(context.Expression, "AND", leftResult, rightResult, false, false);

@@ -165,15 +165,22 @@ record LogicalEvaluationResult(
         return lines;
     }
 
-    string GetLogicalExplanation() => Operator switch
+    string GetLogicalExplanation()
     {
-        LogicalOperator.AndAlso when Value => "&&: Both operands were true",
-        LogicalOperator.AndAlso when ShortCircuited => "&&: Left operand was false",
-        LogicalOperator.AndAlso => "&&: Right operand was false",
-        LogicalOperator.OrElse when Value && ShortCircuited => "||: Left operand was true",
-        LogicalOperator.OrElse when Value => "||: Right operand was true",
-        _ => "||: Both operands were false"
-    };
+        var leftFailed = Left.BooleanValue != true;
+        var rightFailed = Right?.BooleanValue != true;
+
+        return Operator switch
+        {
+            LogicalOperator.AndAlso when !leftFailed && !rightFailed => "&&: Both operands were true",
+            LogicalOperator.AndAlso when leftFailed && rightFailed => "&&: Both operands were false",
+            LogicalOperator.AndAlso when leftFailed => "&&: Left operand was false",
+            LogicalOperator.AndAlso => "&&: Right operand was false",
+            LogicalOperator.OrElse when Value && ShortCircuited => "||: Left operand was true",
+            LogicalOperator.OrElse when Value => "||: Right operand was true",
+            _ => "||: Both operands were false"
+        };
+    }
 }
 
 record UnaryEvaluationResult(

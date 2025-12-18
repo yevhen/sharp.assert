@@ -59,10 +59,17 @@ record ComposedExpectationEvaluationResult(
         return lines;
     }
 
-    string GetLogicalExplanation() => Operator switch
+    string GetLogicalExplanation()
     {
-        "AND" when ShortCircuited => "AND: Left operand was false",
-        "AND" => "AND: Right operand was false",
-        _ => "OR: Both operands were false"
-    };
+        var leftFailed = Left.BooleanValue != true;
+        var rightFailed = Right?.BooleanValue != true;
+
+        return Operator switch
+        {
+            "AND" when leftFailed && rightFailed => "AND: Both operands were false",
+            "AND" when leftFailed => "AND: Left operand was false",
+            "AND" => "AND: Right operand was false",
+            _ => "OR: Both operands were false"
+        };
+    }
 }

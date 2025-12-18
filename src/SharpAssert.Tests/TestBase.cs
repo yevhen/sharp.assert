@@ -51,6 +51,20 @@ public abstract class TestBase
         AssertRendersExactly(lines, expected);
     }
 
+    internal static void AssertRendersMessage(Action action, params string[] expected)
+    {
+        var exception = action.Should().Throw<SharpAssertionException>().Which;
+        var lines = exception.Result!.Format().Split('\n');
+        lines.Should().BeEquivalentTo(expected, options => options.WithStrictOrdering());
+    }
+
+    internal static void AssertRendersMessageContains(Action action, params string[] expected)
+    {
+        var exception = action.Should().Throw<SharpAssertionException>().Which;
+        var lines = exception.Result!.Format().Split('\n');
+        lines.Should().ContainInConsecutiveOrder(expected);
+    }
+
     internal static string Rendered(IReadOnlyList<RenderedLine> lines) =>
         string.Join("\n", lines.Select(l => l.Text));
 

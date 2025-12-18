@@ -102,7 +102,7 @@ static class Program
             new DemoCategory(
                 "03",
                 "LOGICAL OPERATORS",
-                "AND, OR, NOT operators with short-circuit evaluation",
+                "AND, OR, NOT operators - shows all failures (no short-circuit)",
                 new[]
                 {
                     new DemoDefinition(
@@ -111,10 +111,10 @@ static class Program
                         "LOGICAL OPERATORS",
                         LogicalOperatorDemos.AndOperatorFailure),
                     new DemoDefinition(
-                        "Short-Circuit AND",
-                        "Right side not evaluated when left is false",
+                        "AND Both Failed",
+                        "Shows ALL failures when both operands fail",
                         "LOGICAL OPERATORS",
-                        LogicalOperatorDemos.ShortCircuitAnd),
+                        LogicalOperatorDemos.AndBothFailed),
                     new DemoDefinition(
                         "OR Failure",
                         "Both operands evaluated and shown",

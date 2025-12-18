@@ -102,10 +102,10 @@ public class CoreAssertionFixture : TestBase
         }
 
         [Test]
-        public void Throws_AND_should_short_circuit()
+        public void Throws_AND_should_render_both_failures()
         {
             var result = Throws<ArgumentException>(() => { });
-            var right = new ThrowingExpectation();
+            var right = new FailingExpectation("Right failed");
 
             var expected = new ComposedExpectationEvaluationResult(
                 "result.And(right)",
@@ -113,9 +113,9 @@ public class CoreAssertionFixture : TestBase
                 ExpectationResults.Fail(
                     "result",
                     $"Expected exception of type '{typeof(ArgumentException).FullName}', but no exception was thrown"),
-                null,
+                ExpectationResults.Fail("right", "Right failed"),
                 false,
-                true);
+                false);
 
             AssertFails(() => Assert(result.And(right)), expected);
         }

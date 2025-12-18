@@ -34,7 +34,7 @@ SharpAssert works with standard C# - no special syntax required:
 // Comparisons
 Assert(actual == expected);  // ==, !=, <, >, <=, >=
 
-// Logical
+// Logical - evaluates ALL operands, shows all failures
 Assert(x > 0 && y < 100);   // &&, ||, !
 
 // LINQ
@@ -117,6 +117,12 @@ Assert.That(coll, Has.Count.EqualTo(n))   → Assert(coll.Count() == n)
 // Exceptions
 Assert.Throws<T>(() => code)              → Assert(Throws<T>(() => code))
 Assert.ThrowsAsync<T>(() => asyncCode)    → Assert(await ThrowsAsync<T>(() => asyncCode))
+
+// Multiple assertions (all failures shown)
+Assert.Multiple(() => {                   → Assert(x == 5 && y == 10)
+    Assert.That(x, Is.EqualTo(5));          // Native && shows all failures
+    Assert.That(y, Is.EqualTo(10));
+});
 ```
 
 ## FluentAssertions
@@ -216,6 +222,13 @@ act.Should().NotThrow()                   → Assert(!Throws<Exception>(act))
 act.Should().ThrowAsync<T>()              → Assert(await ThrowsAsync<T>(act))
 act.Should().Throw<T>().WithMessage(msg)  → var ex = Throws<T>(act);
                                             Assert(ex.Message.Contains(msg))
+
+// Multiple assertions (all failures shown)
+using (new AssertionScope())              → Assert(x == 5 && y == 10)
+{                                           // Native && shows all failures
+    x.Should().Be(5);
+    y.Should().Be(10);
+}
 
 // Numerics
 val.Should().BePositive()                 → Assert(val > 0)
