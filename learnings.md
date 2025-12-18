@@ -247,12 +247,16 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Nested Fixtures:** Grouping tests by concern (`LogicTests` vs `FormattingTests`) keeps fixture files organized.
 - **Result Records:** Rendering logic pushed down to data records (e.g. `InlineStringDiff.Render()`), making them self-rendering and composable.
 
-## Collection Quantifier Expectations (Each)
+## Collection Quantifier Expectations
 
 - **Context Propagation:** Child context gets `[index]` appended to expression (e.g., `numbers.Each(...)[1]`) for precise failure location.
 - **No Short-Circuit:** Evaluate ALL items to report ALL failures - complete diagnostics more useful than early exit.
-- **Vacuous Truth:** Empty collections pass (no items means no failures possible).
+- **Vacuous Truth:** Empty collections pass for Each/None (no items can fail/violate), but fail for Some/One (no items can satisfy).
 - **Two Overloads Pattern:** `Func<T, Expectation>` for composed expectations, `Expression<Func<T, bool>>` for simple predicates.
 - **PredicateExpectation Wrapper:** Internal class converts bool predicates to Expectation via `Expression.Body.ToString()` for diagnostic text.
 - **Rendering Pattern:** `CollectionQuantifierResult` shows summary ("3 of 5 failed") then iterates failures with `[index]: BooleanValue` format.
 - **AssertRendersExactly Gotcha:** Test helper ignores `IndentLevel` and just joins `Text` - test expectations shouldn't include leading spaces.
+- **CollectionQuantifierResult Passed Parameter:** Each quantifier computes its own pass/fail logic (e.g., `passCount > 0` for Some, `passCount == expectedCount` for Exactly) and passes it to the result constructor; `BooleanValue` derives from `Passed` rather than hardcoded logic.
+- **Inverted Semantics (None):** For None quantifier, items that PASS the inner expectation are VIOLATIONS - collect "violations" (passes) not "failures".
+- **Context-Dependent Failure (One/Exactly):** Show failures when too few match, show extra passes when too many match - what's "relevant" depends on which direction we're off by.
+- **Quantifier Equivalences:** `AtLeast(0)` always passes, `AtLeast(1)` ≈ `Some`, `AtMost(0)` ≈ `None`, `Exactly(0)` ≈ `None`, `Exactly(1)` ≈ `One`.
