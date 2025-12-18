@@ -81,9 +81,9 @@ jobs:
           --source https://api.nuget.org/v3/index.json \
           --skip-duplicate
  
-        # Publish main package git (depends on Runtime)
+        # Publish main package (depends on Runtime)
         echo "Publishing SharpAssert (main package)..."
-        dotnet nuget push ./packages/SharpAssert.*.nupkg \
+        dotnet nuget push ./packages/SharpAssert.[0-9]*.nupkg \
           --api-key ${{ secrets.NUGET_API_KEY }} \
           --source https://api.nuget.org/v3/index.json \
           --skip-duplicate
