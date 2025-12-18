@@ -43,6 +43,7 @@ public sealed class EachExpectation<T> : Expectation
             items.Count,
             items.Count - failures.Count,
             failures.Count,
+            Passed: false,
             failures);
     }
 }

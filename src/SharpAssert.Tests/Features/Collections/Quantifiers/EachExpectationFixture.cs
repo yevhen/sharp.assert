@@ -33,6 +33,7 @@ public class EachExpectationFixture : TestBase
                 3,
                 2,
                 1,
+                Passed: false,
                 [(1, ExpectationResults.Fail("numbers.Each(x => x.IsEven())[1]", $"Expected even number, got 3"))]);
 
             AssertFails(() => Assert(numbers.Each(x => x.IsEven())), expected);
@@ -57,6 +58,7 @@ public class EachExpectationFixture : TestBase
                 5,
                 2,
                 3,
+                Passed: false,
                 [
                     (0, ExpectationResults.Fail("numbers.Each(x => x.IsEven())[0]", "Expected even number, got 1")),
                     (2, ExpectationResults.Fail("numbers.Each(x => x.IsEven())[2]", "Expected even number, got 3")),
@@ -155,6 +157,7 @@ public class EachExpectationFixture : TestBase
                 5,
                 2,
                 3,
+                Passed: false,
                 [
                     (0, ExpectationResults.Fail("x.IsEven()", "Expected even number, got 1")),
                     (2, ExpectationResults.Fail("x.IsEven()", "Expected even number, got 3")),
@@ -181,6 +184,7 @@ public class EachExpectationFixture : TestBase
                 3,
                 2,
                 1,
+                Passed: false,
                 [(1, ExpectationResults.Fail("x.IsEven()", "Expected even number, got 3"))]);
 
             AssertRendersExactly(result,
@@ -199,6 +203,7 @@ public class EachExpectationFixture : TestBase
                 10,
                 7,
                 3,
+                Passed: false,
                 [
                     (1, ExpectationResults.Fail("x", "fail 1")),
                     (4, ExpectationResults.Fail("x", "fail 4")),

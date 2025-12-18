@@ -11,10 +11,11 @@ public sealed record CollectionQuantifierResult(
     int TotalCount,
     int PassCount,
     int FailCount,
+    bool Passed,
     IReadOnlyList<(int Index, EvaluationResult Result)> Failures)
     : EvaluationResult(ExpressionText)
 {
-    public override bool? BooleanValue => FailCount == 0;
+    public override bool? BooleanValue => Passed;
 
     public override IReadOnlyList<RenderedLine> Render()
     {
