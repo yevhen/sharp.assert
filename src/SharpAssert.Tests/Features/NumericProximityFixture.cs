@@ -128,8 +128,7 @@ public class NumericProximityFixture : TestBase
         public void Should_show_actual_expected_and_tolerance_on_failure()
         {
             var context = new ExpectationContext("test", "", 0, null, new ExprNode("test"));
-            var result = new NumericProximityExpectation<double>(15.0, 10.0, 2.0)
-                .Evaluate(context);
+            var result = 15.0.BeCloseTo(10.0, 2.0).Evaluate(context);
 
             var rendered = result.Render();
             rendered.Should().Contain(line => line.Text.Contains("Actual"));

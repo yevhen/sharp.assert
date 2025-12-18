@@ -132,8 +132,7 @@ public class DateTimeProximityFixture : TestBase
             var tolerance = TimeSpan.FromMinutes(1);
 
             var context = new ExpectationContext("test", "", 0, null, new ExprNode("test"));
-            var result = new DateTimeProximityExpectation(actual, expected, tolerance)
-                .Evaluate(context);
+            var result = actual.BeCloseTo(expected, tolerance).Evaluate(context);
 
             var rendered = result.Render();
             rendered.Should().Contain(line => line.Text.Contains("Actual"));
