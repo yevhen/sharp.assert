@@ -13,9 +13,17 @@ public static class DateTimeProximityExtensions
     /// <param name="expected">The expected target value.</param>
     /// <param name="tolerance">The maximum allowed time difference.</param>
     /// <returns>An expectation that validates proximity.</returns>
-    public static DateTimeProximityExpectation BeCloseTo(this DateTime actual, DateTime expected, TimeSpan tolerance)
+    public static Expectation BeCloseTo(this DateTime actual, DateTime expected, TimeSpan tolerance)
     {
-        return new DateTimeProximityExpectation(actual, expected, tolerance);
+        return Expectation.From(
+            () => (actual - expected).Duration() <= tolerance,
+            () => [
+                $"Actual: {actual:O}",
+                $"Expected: {expected:O}",
+                $"Tolerance: {tolerance}",
+                $"Difference: {(actual - expected).Duration()}"
+            ]
+        );
     }
 
     /// <summary>Validates that a DateTimeOffset is within the specified tolerance of an expected value.</summary>
@@ -23,8 +31,16 @@ public static class DateTimeProximityExtensions
     /// <param name="expected">The expected target value.</param>
     /// <param name="tolerance">The maximum allowed time difference.</param>
     /// <returns>An expectation that validates proximity.</returns>
-    public static DateTimeOffsetProximityExpectation BeCloseTo(this DateTimeOffset actual, DateTimeOffset expected, TimeSpan tolerance)
+    public static Expectation BeCloseTo(this DateTimeOffset actual, DateTimeOffset expected, TimeSpan tolerance)
     {
-        return new DateTimeOffsetProximityExpectation(actual, expected, tolerance);
+        return Expectation.From(
+            () => (actual - expected).Duration() <= tolerance,
+            () => [
+                $"Actual: {actual:O}",
+                $"Expected: {expected:O}",
+                $"Tolerance: {tolerance}",
+                $"Difference: {(actual - expected).Duration()}"
+            ]
+        );
     }
 }

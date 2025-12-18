@@ -14,10 +14,18 @@ public static class NumericProximityExtensions
     /// <param name="expected">The expected target value.</param>
     /// <param name="tolerance">The maximum allowed difference.</param>
     /// <returns>An expectation that validates proximity.</returns>
-    public static NumericProximityExpectation<T> BeCloseTo<T>(this T actual, T expected, T tolerance)
+    public static Expectation BeCloseTo<T>(this T actual, T expected, T tolerance)
         where T : struct, INumber<T>
     {
-        return new NumericProximityExpectation<T>(actual, expected, tolerance);
+        return Expectation.From(
+            () => T.Abs(actual - expected) <= tolerance,
+            () => [
+                $"Actual: {actual}",
+                $"Expected: {expected}",
+                $"Tolerance: {tolerance}",
+                $"Difference: {T.Abs(actual - expected)}"
+            ]
+        );
     }
 
     /// <summary>Validates that a value is approximately equal to a target value.</summary>
@@ -27,9 +35,9 @@ public static class NumericProximityExtensions
     /// <param name="tolerance">The maximum allowed difference.</param>
     /// <returns>An expectation that validates proximity.</returns>
     /// <remarks>This is an alias for <see cref="BeCloseTo{T}"/> for API compatibility.</remarks>
-    public static NumericProximityExpectation<T> BeApproximately<T>(this T actual, T expected, T tolerance)
+    public static Expectation BeApproximately<T>(this T actual, T expected, T tolerance)
         where T : struct, INumber<T>
     {
-        return new NumericProximityExpectation<T>(actual, expected, tolerance);
+        return BeCloseTo(actual, expected, tolerance);
     }
 }
