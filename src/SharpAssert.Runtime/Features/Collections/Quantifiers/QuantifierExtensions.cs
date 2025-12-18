@@ -133,4 +133,26 @@ public static class QuantifierExtensions
             count,
             item => new Features.Collections.Quantifiers.PredicateExpectation<T>(item, compiled, predicateText));
     }
+
+    public static Features.Collections.Quantifiers.AtLeastExpectation<T> AtLeast<T>(
+        this IEnumerable<T> items,
+        int count,
+        Func<T, Expectation> expectation)
+    {
+        return new Features.Collections.Quantifiers.AtLeastExpectation<T>(items.ToList(), count, expectation);
+    }
+
+    public static Features.Collections.Quantifiers.AtLeastExpectation<T> AtLeast<T>(
+        this IEnumerable<T> items,
+        int count,
+        Expression<Func<T, bool>> predicate)
+    {
+        var compiled = predicate.Compile();
+        var predicateText = predicate.Body.ToString();
+
+        return new Features.Collections.Quantifiers.AtLeastExpectation<T>(
+            items.ToList(),
+            count,
+            item => new Features.Collections.Quantifiers.PredicateExpectation<T>(item, compiled, predicateText));
+    }
 }
