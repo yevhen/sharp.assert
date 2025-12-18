@@ -1,5 +1,7 @@
 // ABOUTME: Extension methods for string expectations (wildcard patterns, occurrences).
 // ABOUTME: Provides FluentAssertions-compatible API for SharpAssert.
+using System.Text.RegularExpressions;
+
 namespace SharpAssert.Features.Strings;
 
 /// <summary>Extension methods for string validation.</summary>
@@ -15,10 +17,8 @@ public static class StringExtensions
     /// Assert("test.txt".Matches("*.txt"));
     /// </code>
     /// </example>
-    public static StringWildcardExpectation Matches(this string text, string pattern)
-    {
-        return new StringWildcardExpectation(text, pattern, ignoreCase: false);
-    }
+    public static Expectation Matches(this string text, string pattern) =>
+        MatchesWildcard(text, pattern, ignoreCase: false);
 
     /// <summary>Creates an expectation that the string matches a wildcard pattern (case-insensitive).</summary>
     /// <param name="text">The string to validate.</param>
@@ -30,10 +30,8 @@ public static class StringExtensions
     /// Assert("Test.TXT".MatchesIgnoringCase("*.txt"));
     /// </code>
     /// </example>
-    public static StringWildcardExpectation MatchesIgnoringCase(this string text, string pattern)
-    {
-        return new StringWildcardExpectation(text, pattern, ignoreCase: true);
-    }
+    public static Expectation MatchesIgnoringCase(this string text, string pattern) =>
+        MatchesWildcard(text, pattern, ignoreCase: true);
 
     /// <summary>Creates an expectation that a substring appears exactly the specified number of times.</summary>
     /// <param name="text">The string to search in.</param>
@@ -47,10 +45,11 @@ public static class StringExtensions
     /// Assert("info".Contains("info", Occur.AtMost(1)));
     /// </code>
     /// </example>
-    public static StringOccurrenceExpectation Contains(this string text, string substring, OccurrenceConstraint count)
-    {
-        return new StringOccurrenceExpectation(text, substring, count.Times, count.AtLeast, count.AtMost);
-    }
+    public static Expectation Contains(this string text, string substring, OccurrenceConstraint count) =>
+        Expectation.From(
+            () => CheckOccurrence(CountSubstring(text, substring), count),
+            () => FormatSubstringFailure(substring, text, CountSubstring(text, substring), count)
+        );
 
     /// <summary>Creates an expectation that a regex pattern matches a specific number of times.</summary>
     /// <param name="text">The string to search in.</param>
@@ -64,9 +63,89 @@ public static class StringExtensions
     /// Assert("warn: foo".MatchesRegex(@"warn:\s+\w+", Occur.AtMost(1)));
     /// </code>
     /// </example>
-    public static RegexOccurrenceExpectation MatchesRegex(this string text, string pattern, OccurrenceConstraint count)
+    public static Expectation MatchesRegex(this string text, string pattern, OccurrenceConstraint count) =>
+        Expectation.From(
+            () => CheckOccurrence(CountRegexMatches(text, pattern), count),
+            () => FormatRegexFailure(pattern, text, CountRegexMatches(text, pattern), count)
+        );
+
+    static Expectation MatchesWildcard(string text, string pattern, bool ignoreCase)
     {
-        return new RegexOccurrenceExpectation(text, pattern, count.Times, count.AtLeast, count.AtMost);
+        var options = ignoreCase
+            ? RegexOptions.IgnoreCase | RegexOptions.CultureInvariant
+            : RegexOptions.None;
+        var regexPattern = ConvertWildcardToRegex(pattern);
+
+        return Expectation.From(
+            () => Regex.IsMatch(text, regexPattern, options | RegexOptions.Singleline),
+            () => [$"Expected text to match pattern \"{pattern}\" but it did not.", $"Actual: \"{text}\""]
+        );
+    }
+
+    static string ConvertWildcardToRegex(string wildcardPattern) =>
+        "^" + Regex.Escape(wildcardPattern)
+            .Replace("\\*", ".*", System.StringComparison.Ordinal)
+            .Replace("\\?", ".", System.StringComparison.Ordinal) + "$";
+
+    static int CountSubstring(string text, string substring)
+    {
+        if (string.IsNullOrEmpty(substring))
+            return 0;
+
+        var count = 0;
+        var index = 0;
+        while ((index = text.IndexOf(substring, index, System.StringComparison.Ordinal)) != -1)
+        {
+            count++;
+            index += substring.Length;
+        }
+        return count;
+    }
+
+    static int CountRegexMatches(string text, string pattern) =>
+        new Regex(pattern, RegexOptions.None).Matches(text).Count;
+
+    static bool CheckOccurrence(int actualCount, OccurrenceConstraint constraint)
+    {
+        if (constraint.Times.HasValue && actualCount != constraint.Times.Value)
+            return false;
+        if (constraint.AtLeast.HasValue && actualCount < constraint.AtLeast.Value)
+            return false;
+        if (constraint.AtMost.HasValue && actualCount > constraint.AtMost.Value)
+            return false;
+        return true;
+    }
+
+    static string[] FormatSubstringFailure(string substring, string text, int actualCount, OccurrenceConstraint constraint)
+    {
+        var expectation = constraint switch
+        {
+            _ when constraint.Times.HasValue => $"exactly {constraint.Times.Value}",
+            _ when constraint.AtLeast.HasValue => $"at least {constraint.AtLeast.Value}",
+            _ when constraint.AtMost.HasValue => $"at most {constraint.AtMost.Value}",
+            _ => "unknown"
+        };
+
+        return [
+            $"Expected substring \"{substring}\" to appear {expectation} time(s), but found {actualCount}.",
+            $"Actual: \"{text}\""
+        ];
+    }
+
+    static string[] FormatRegexFailure(string pattern, string text, int actualCount, OccurrenceConstraint constraint)
+    {
+        var expectation = constraint switch
+        {
+            _ when constraint.Times.HasValue => $"exactly {constraint.Times.Value}",
+            _ when constraint.AtLeast.HasValue => $"at least {constraint.AtLeast.Value}",
+            _ when constraint.AtMost.HasValue => $"at most {constraint.AtMost.Value}",
+            _ => "unknown"
+        };
+
+        return [
+            $"Expected regex pattern \"{pattern}\" to match {expectation} time(s), but found {actualCount} match(es).",
+            $"Actual: \"{text}\""
+        ];
     }
 }
 
