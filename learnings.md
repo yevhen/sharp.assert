@@ -246,3 +246,13 @@ This document is organized by topic to consolidate key learnings about the proje
 - **DSL Helpers:** `TestBase` provides composable helpers like `BinaryComparison`, `Value`, `Operand` to construct expected results concisely.
 - **Nested Fixtures:** Grouping tests by concern (`LogicTests` vs `FormattingTests`) keeps fixture files organized.
 - **Result Records:** Rendering logic pushed down to data records (e.g. `InlineStringDiff.Render()`), making them self-rendering and composable.
+
+## Collection Quantifier Expectations (Each)
+
+- **Context Propagation:** Child context gets `[index]` appended to expression (e.g., `numbers.Each(...)[1]`) for precise failure location.
+- **No Short-Circuit:** Evaluate ALL items to report ALL failures - complete diagnostics more useful than early exit.
+- **Vacuous Truth:** Empty collections pass (no items means no failures possible).
+- **Two Overloads Pattern:** `Func<T, Expectation>` for composed expectations, `Expression<Func<T, bool>>` for simple predicates.
+- **PredicateExpectation Wrapper:** Internal class converts bool predicates to Expectation via `Expression.Body.ToString()` for diagnostic text.
+- **Rendering Pattern:** `CollectionQuantifierResult` shows summary ("3 of 5 failed") then iterates failures with `[index]: BooleanValue` format.
+- **AssertRendersExactly Gotcha:** Test helper ignores `IndentLevel` and just joins `Text` - test expectations shouldn't include leading spaces.
