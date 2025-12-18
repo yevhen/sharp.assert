@@ -272,38 +272,47 @@ Assert(await ThrowsAsync<InvalidOperationException>(() =>
 
 ### Custom Expectations
 
-Create reusable expectations by inheriting from `Expectation` and returning an `EvaluationResult`.
-
-Recommended convention for external/custom expectations:
-- Suffix the type with `Expectation` (e.g., `IsEvenExpectation`)
-- For unary expectations, prefer a static factory method so call sites can use `using static` (e.g., `Assert(IsEven(4))`)
-- For expectations that take a primary value and additional parameters, prefer extension methods for fluent call sites (e.g., `Assert(actual.IsEquivalentTo(expected))`)
+Create reusable expectations using `Expectation.From()` - a lambda-based factory that eliminates boilerplate:
 
 ```csharp
-sealed class IsEvenExpectation(int value) : Expectation
+public static class NumberExtensions
 {
-    public override EvaluationResult Evaluate(ExpectationContext context) =>
-        value % 2 == 0
+    public static Expectation IsEven(this int value) =>
+        Expectation.From(
+            () => value % 2 == 0,
+            () => [$"Expected even number, got {value}"]
+        );
+
+    public static Expectation IsBetween(this int value, int min, int max) =>
+        Expectation.From(
+            () => value >= min && value <= max,
+            () => [$"Expected {value} to be between {min} and {max}"]
+        );
+}
+
+Assert(4.IsEven());
+Assert(!5.IsEven());
+Assert(5.IsBetween(1, 10));
+```
+
+**How it works:**
+- First lambda: predicate that returns `true` if expectation passes
+- Second lambda: failure message factory (only called on failure, returns `string[]` for multiple diagnostic lines)
+- Expression text is injected automatically by the framework
+
+For **complex expectations** with substantial internal logic (algorithms, external library integration), you can still inherit from `Expectation`:
+
+```csharp
+sealed class IsEquivalentToExpectation<T>(T actual, T expected) : Expectation
+{
+    public override EvaluationResult Evaluate(ExpectationContext context)
+    {
+        // Complex comparison logic using Compare-Net-Objects...
+        return isEqual
             ? ExpectationResults.Pass(context.Expression)
-            : ExpectationResults.Fail(context.Expression, $"Expected even, got {value}");
+            : ExpectationResults.Fail(context.Expression, differences);
+    }
 }
-
-static class Expectations
-{
-    public static IsEvenExpectation IsEven(int value) => new(value);
-}
-
-using static Expectations;
-
-Assert(IsEven(4));
-Assert(!IsEven(5));
-
-static class ExpectationExtensions
-{
-    public static IsEvenExpectation IsEven(this int value) => new(value);
-}
-
-Assert(4.IsEven() & !5.IsEven());
 ```
 
 ### Custom Error Messages
