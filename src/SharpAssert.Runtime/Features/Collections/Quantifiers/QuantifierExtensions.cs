@@ -73,4 +73,23 @@ public static class QuantifierExtensions
             items.ToList(),
             item => new Features.Collections.Quantifiers.PredicateExpectation<T>(item, compiled, predicateText));
     }
+
+    public static Features.Collections.Quantifiers.NoneExpectation<T> None<T>(
+        this IEnumerable<T> items,
+        Func<T, Expectation> expectation)
+    {
+        return new Features.Collections.Quantifiers.NoneExpectation<T>(items.ToList(), expectation);
+    }
+
+    public static Features.Collections.Quantifiers.NoneExpectation<T> None<T>(
+        this IEnumerable<T> items,
+        Expression<Func<T, bool>> predicate)
+    {
+        var compiled = predicate.Compile();
+        var predicateText = predicate.Body.ToString();
+
+        return new Features.Collections.Quantifiers.NoneExpectation<T>(
+            items.ToList(),
+            item => new Features.Collections.Quantifiers.PredicateExpectation<T>(item, compiled, predicateText));
+    }
 }
