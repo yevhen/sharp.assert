@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/yevhen/sharp.assert/refs/heads/main/logo.png" alt="SharpAssert logo"/>
-</p>
-
 # SharpAssert
 
 A pytest inspired assertion library for .NET with no special syntax.
@@ -34,19 +30,18 @@ SharpAssert uses **MSBuild source rewriting** to automatically transform your as
 
 ## Features
 
-- **🔍 [Detailed Expression Analysis](#complex-expression-analysis)** - See exactly why your assertions failed
-- **✅ [Multiple Assertions](#multiple-assertions)** - `&&` shows ALL failures, not just the first one
-- **🎯 [Exception Testing](#exception-testing)** - `Throws<T>` and `ThrowsAsync<T>` with detailed exception diagnostics
-- **🔤 [String Diffs](#string-comparisons)** - Character-level inline diffs for strings (powered by DiffPlex)
-- **🔠 [String Pattern Matching](#string-pattern-matching)** - Wildcard patterns and occurrence counting
-- **📊 [Collection Comparison](#collection-comparisons)** - First mismatch, missing/extra elements detection
-- **📋 [Collection Ordering](#collection-ordering)** - Ascending/descending order validation
-- **🔢 [Collection Uniqueness](#collection-uniqueness)** - Duplicate detection with key selectors
-- **🔎 [Object Deep Diff](#object-deep-comparison)** - Property-level differences for objects/records (powered by Compare-Net-Objects)
-- **🔄 [Object Equivalency](#object-equivalency)** - Structural comparison with property exclusion/inclusion
-- **🔗 [LINQ Operations](#linq-operations)** - Enhanced diagnostics for Contains/Any/All operations
-- **⚡ [Async/Await Support](#asyncawait-support)** - Full support for async assertions with value diagnostics
-- **💫 Dynamic Types** - Dynamic objects support (Expando)
+- **[Detailed Expression Analysis](#complex-expression-analysis)** - See exactly why your assertions failed
+- **[Multiple Assertions](#multiple-assertions)** - `&&` shows ALL failures, not just the first one
+- **[Exception Testing](#exception-testing)** - `Throws<T>` and `ThrowsAsync<T>` with detailed exception diagnostics
+- **[String Diffs](#string-comparisons)** - Character-level inline diffs for strings (powered by DiffPlex)
+- **[String Pattern Matching](#string-pattern-matching)** - Wildcard patterns and occurrence counting
+- **[Collection Comparison](#collection-comparisons)** - First mismatch, missing/extra elements detection
+- **[Collection Ordering](#collection-ordering)** - Ascending/descending order validation
+- **[Collection Uniqueness](#collection-uniqueness)** - Duplicate detection with key selectors
+- **[Object Deep Diff](#object-deep-comparison)** - Property-level differences for objects/records (powered by Compare-Net-Objects)
+- **[Object Equivalency](#object-equivalency)** - Structural comparison with property exclusion/inclusion
+- **[LINQ Operations](#linq-operations)** - Enhanced diagnostics for Contains/Any/All operations
+- **[Async/Await Support](#asyncawait-support)** - Full support for async assertions with value diagnostics
 
 ## Live Examples
 
@@ -464,11 +459,11 @@ Then rebuild with verbose output: `dotnet build -v detailed`
 ## Contributing
 
 We welcome contributions! Please see our comprehensive [Contributing Guide](CONTRIBUTING.md) for:
-- 🚀 Quick start guide for developers
-- 🧪 Testing strategy and workflow
-- 📦 Package versioning best practices  
-- 🔧 Development tips and debugging help
-- 📝 Commit guidelines and release process
+- Quick start guide for developers
+- Testing strategy and workflow
+- Package versioning best practices  
+- Development tips and debugging help
+- Commit guidelines and release process
 
 ## License
 
