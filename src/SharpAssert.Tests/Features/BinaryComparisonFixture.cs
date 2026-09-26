@@ -95,6 +95,29 @@ public class BinaryComparisonFixture : TestBase
         }
 
         [Test]
+        public void Should_evaluate_each_operand_once_on_success()
+        {
+            var calls = 0;
+            var expected = 1;
+
+            Assert(++calls == expected);
+
+            calls.Should().Be(1);
+        }
+
+        [Test]
+        public void Should_preserve_source_order_on_failure()
+        {
+            var calls = new List<int>();
+            Func<int> left = () => { calls.Add(1); return 2; };
+            Func<int> right = () => { calls.Add(2); return 3; };
+
+            AssertFails(() => Assert(left() == right()),
+                BinaryComparison("left() == right()", Equal, Comparison(2, 3)));
+            calls.Should().Equal(1, 2);
+        }
+
+        [Test]
         public void Should_handle_incompatible_types()
         {
             var str = "hello";

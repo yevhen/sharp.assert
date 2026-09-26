@@ -107,6 +107,11 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         }
 
         HasRewrites = true;
+        if (node.ArgumentList.Arguments.Count == 1 &&
+            node.ArgumentList.Arguments[0].Expression is BinaryExpressionSyntax comparison &&
+            IsBinaryOperation(node) && CanUseFastComparison(comparison))
+            return RewriteToComparison(node, comparison);
+
         return RewriteToLambda(node);
     }
 
@@ -195,6 +200,62 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
          binaryExpr.OperatorToken.IsKind(SyntaxKind.LessThanEqualsToken) ||
          binaryExpr.OperatorToken.IsKind(SyntaxKind.GreaterThanToken) ||
          binaryExpr.OperatorToken.IsKind(SyntaxKind.GreaterThanEqualsToken));
+
+    bool CanUseFastComparison(BinaryExpressionSyntax comparison)
+    {
+        if (semanticModel.GetConstantValue(comparison).HasValue)
+            return false;
+
+        var leftType = semanticModel.GetTypeInfo(comparison.Left).Type;
+        var rightType = semanticModel.GetTypeInfo(comparison.Right).Type;
+        if (leftType is null || rightType is null)
+            return false;
+
+        if (comparison.OperatorToken.IsKind(SyntaxKind.LessThanToken) ||
+            comparison.OperatorToken.IsKind(SyntaxKind.LessThanEqualsToken) ||
+            comparison.OperatorToken.IsKind(SyntaxKind.GreaterThanToken) ||
+            comparison.OperatorToken.IsKind(SyntaxKind.GreaterThanEqualsToken))
+            return IsNumeric(leftType) && IsNumeric(rightType);
+
+        return IsSimpleComparable(leftType) && IsSimpleComparable(rightType);
+    }
+
+    static bool IsNumeric(ITypeSymbol type) => type.SpecialType is
+        SpecialType.System_Byte or SpecialType.System_SByte or
+        SpecialType.System_Int16 or SpecialType.System_UInt16 or
+        SpecialType.System_Int32 or SpecialType.System_UInt32 or
+        SpecialType.System_Int64 or SpecialType.System_UInt64 or
+        SpecialType.System_Single or SpecialType.System_Double or
+        SpecialType.System_Decimal or SpecialType.System_Char;
+
+    static bool IsSimpleComparable(ITypeSymbol type) => IsNumeric(type) || type.SpecialType is
+        SpecialType.System_String or SpecialType.System_Boolean;
+
+    InvocationExpressionSyntax RewriteToComparison(InvocationExpressionSyntax node, BinaryExpressionSyntax comparison)
+    {
+        var data = ExtractRewriteData(node);
+        var left = SyntaxFactory.IdentifierName("left");
+        var right = SyntaxFactory.IdentifierName("right");
+        var predicate = SyntaxFactory.ParenthesizedLambdaExpression(
+            SyntaxFactory.ParameterList(SyntaxFactory.SeparatedList([
+                SyntaxFactory.Parameter(SyntaxFactory.Identifier("left")),
+                SyntaxFactory.Parameter(SyntaxFactory.Identifier("right"))
+            ])),
+            SyntaxFactory.BinaryExpression(comparison.Kind(), left, right));
+
+        var arguments = SyntaxFactory.SeparatedList([
+            SyntaxFactory.Argument(comparison.Left),
+            SyntaxFactory.Argument(comparison.Right),
+            SyntaxFactory.Argument(predicate),
+            SyntaxFactory.Argument(CreateBinaryOpAccess(GetBinaryOpFromToken(comparison.OperatorToken))),
+            SyntaxFactory.Argument(CreateLambdaExpression(GenerateExprNodeSyntax(data.Expression))),
+            CreateStringLiteralArgument(fileName),
+            CreateNumericLiteralArgument(data.LineNumber)
+        ]);
+        var invocation = SyntaxFactory.InvocationExpression(CreateSharpInternalMethodAccess("AssertComparison"))
+            .WithArgumentList(SyntaxFactory.ArgumentList(arguments));
+        return AddLineDirectives(invocation, node, data.LineNumber);
+    }
 
     InvocationExpressionSyntax RewriteToLambda(InvocationExpressionSyntax node)
     {
@@ -606,7 +667,7 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
     static MemberAccessExpressionSyntax CreateBinaryOpAccess(string binaryOp) =>
         SyntaxFactory.MemberAccessExpression(
             SyntaxKind.SimpleMemberAccessExpression,
-            SyntaxFactory.IdentifierName("BinaryOp"),
+            SyntaxFactory.IdentifierName("global::SharpAssert.BinaryOp"),
             SyntaxFactory.IdentifierName(binaryOp));
 
     static NullableTypeSyntax CreateNullableObjectType() =>

@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using SharpAssert.Core;
 using SharpAssert.Features.Async;
 using SharpAssert.Features.Dynamic;
+using SharpAssert.Features.Shared;
 
 namespace SharpAssert;
 
@@ -50,6 +51,28 @@ public static class SharpInternal
             return;
 
         var analysis = new AssertionEvaluationResult(assertionContext, new ValueEvaluationResult(exprNode.Text, value.Condition, typeof(bool)));
+        throw new SharpAssertionException(analysis.Format(), analysis);
+    }
+
+    public static void AssertComparison<TLeft, TRight>(
+        TLeft left,
+        TRight right,
+        Func<TLeft, TRight, bool> comparison,
+        BinaryOp op,
+        Func<ExprNode> describe,
+        string file,
+        int line)
+    {
+        if (comparison(left, right))
+            return;
+
+        var exprNode = describe();
+        var context = new AssertionContext(exprNode.Text, file, line, null, exprNode);
+        var result = ComparerService.GetComparisonResult(
+            new AssertionOperand(left, typeof(TLeft)),
+            new AssertionOperand(right, typeof(TRight)));
+        var analysis = new AssertionEvaluationResult(context,
+            new BinaryComparisonEvaluationResult(exprNode.Text, ToExpressionType(op), result, false));
         throw new SharpAssertionException(analysis.Format(), analysis);
     }
 
@@ -138,6 +161,17 @@ public static class SharpInternal
 
         throw new SharpAssertionException(analysis.Format(), analysis);
     }
+
+    static ExpressionType ToExpressionType(BinaryOp op) => op switch
+    {
+        BinaryOp.Eq => ExpressionType.Equal,
+        BinaryOp.Ne => ExpressionType.NotEqual,
+        BinaryOp.Lt => ExpressionType.LessThan,
+        BinaryOp.Le => ExpressionType.LessThanOrEqual,
+        BinaryOp.Gt => ExpressionType.GreaterThan,
+        BinaryOp.Ge => ExpressionType.GreaterThanOrEqual,
+        _ => throw new ArgumentOutOfRangeException(nameof(op))
+    };
 
     static void AssertExpectation(IExpectation expectation, ExpectationContext context)
     {
