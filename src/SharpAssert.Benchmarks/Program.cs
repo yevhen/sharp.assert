@@ -12,10 +12,12 @@ Console.WriteLine("Scenario,Iterations,ns/op,B/op");
 var scenarios = new (string Name, int Iterations, Action<int> Run)[]
 {
     ("Sharp rewritten pass", 20000, index => SharpPass(index, index)),
+    ("Sharp boolean pass", 20000, index => SharpBooleanPass(index >= 0)),
     ("Sharp direct pass (basic diagnostics)", 20000, index => SharpDirectPass(index, index)),
     ("NUnit constraint pass", 20000, index => NUnitConstraintPass(index, index)),
     ("NUnit boolean pass", 20000, index => NUnitBooleanPass(index, index)),
     ("Sharp rewritten fail", 1000, index => SharpFail(index, index + 1)),
+    ("Sharp boolean fail", 1000, index => SharpBooleanFail(index < 0)),
     ("Sharp direct fail (basic diagnostics)", 1000, index => SharpDirectFail(index, index + 1)),
     ("NUnit constraint fail", 1000, index => NUnitConstraintFail(index, index + 1)),
     ("NUnit boolean fail", 1000, index => NUnitBooleanFail(index, index + 1))
@@ -47,7 +49,7 @@ foreach (var (name, iterations, run) in scenarios)
 }
 
 Console.WriteLine("Parallel pass (up to 4 workers),Operations,ops/s");
-foreach (var (name, _, run) in scenarios.Take(3))
+foreach (var (name, _, run) in scenarios.Take(4))
 {
     var throughputs = new double[7];
     for (var sample = 0; sample < throughputs.Length; sample++)
@@ -70,6 +72,12 @@ static void SharpPass(int actual, int expected)
 static void SharpDirectPass(int actual, int expected) => SharpAssert.Sharp.Assert(actual == expected);
 
 [MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpBooleanPass(bool actual)
+{
+    Assert(actual);
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
 static void NUnitConstraintPass(int actual, int expected) => NUnitAssert.That(actual, NUnit.Framework.Is.EqualTo(expected));
 
 [MethodImpl(MethodImplOptions.NoInlining)]
@@ -81,6 +89,20 @@ static void SharpFail(int actual, int expected)
     try
     {
         Assert(actual == expected);
+        throw new InvalidOperationException("Expected SharpAssert failure");
+    }
+    catch (SharpAssert.SharpAssertionException error)
+    {
+        Volatile.Write(ref ResultSink.Last, error);
+    }
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpBooleanFail(bool actual)
+{
+    try
+    {
+        Assert(actual);
         throw new InvalidOperationException("Expected SharpAssert failure");
     }
     catch (SharpAssert.SharpAssertionException error)

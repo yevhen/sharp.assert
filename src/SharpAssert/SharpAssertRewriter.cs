@@ -108,6 +108,11 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
 
         HasRewrites = true;
         if (node.ArgumentList.Arguments.Count == 1 &&
+            node.ArgumentList.Arguments[0].Expression is IdentifierNameSyntax identifier &&
+            IsBooleanAssertion(identifier))
+            return RewriteToBoolean(node, identifier);
+
+        if (node.ArgumentList.Arguments.Count == 1 &&
             node.ArgumentList.Arguments[0].Expression is BinaryExpressionSyntax comparison &&
             IsBinaryOperation(node) && CanUseFastComparison(comparison))
             return RewriteToComparison(node, comparison);
@@ -200,6 +205,20 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
          binaryExpr.OperatorToken.IsKind(SyntaxKind.LessThanEqualsToken) ||
          binaryExpr.OperatorToken.IsKind(SyntaxKind.GreaterThanToken) ||
          binaryExpr.OperatorToken.IsKind(SyntaxKind.GreaterThanEqualsToken));
+
+    InvocationExpressionSyntax RewriteToBoolean(InvocationExpressionSyntax node, IdentifierNameSyntax identifier)
+    {
+        var data = ExtractRewriteData(node);
+        var arguments = SyntaxFactory.SeparatedList([
+            SyntaxFactory.Argument(identifier),
+            CreateStringLiteralArgument(data.ExpressionText),
+            CreateStringLiteralArgument(fileName),
+            CreateNumericLiteralArgument(data.LineNumber)
+        ]);
+        var invocation = SyntaxFactory.InvocationExpression(CreateSharpInternalMethodAccess("AssertBoolean"))
+            .WithArgumentList(SyntaxFactory.ArgumentList(arguments));
+        return AddLineDirectives(invocation, node, data.LineNumber);
+    }
 
     bool CanUseFastComparison(BinaryExpressionSyntax comparison)
     {

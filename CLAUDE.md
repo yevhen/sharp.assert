@@ -378,7 +378,7 @@ async\method: Suffix with `Async` =\> `GetDataAsync()`
 - NEVER use underscores for private/internal members
 - NEVER create coverage reports on top level. Always specify subfolder under ./TestResults dir
 - `ExpressionAnalyzer` must keep evaluated expression values local to each assertion; a process-wide dictionary races under parallel NUnit fixtures and retains captured values.
-- For a successful rewritten primitive comparison, build no expression tree or `ExprNode`: evaluate each operand once and create failure diagnostics only after the comparison returns false. Keep other expression shapes on the original analysis path.
+- For a successful rewritten primitive comparison or boolean identifier, build no expression tree or `ExprNode`: evaluate each operand once and create failure diagnostics only after the condition returns false. Keep other expression shapes on the original analysis path.
 
 # BUG HUNTING METHODOLOGY
 

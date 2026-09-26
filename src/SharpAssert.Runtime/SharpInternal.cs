@@ -54,6 +54,16 @@ public static class SharpInternal
         throw new SharpAssertionException(analysis.Format(), analysis);
     }
 
+    public static void AssertBoolean(bool condition, string expr, string file, int line)
+    {
+        if (condition)
+            return;
+
+        var context = new AssertionContext(expr, file, line, null, new ExprNode(expr));
+        var analysis = new AssertionEvaluationResult(context, new ValueEvaluationResult(expr, false, typeof(bool)));
+        throw new SharpAssertionException(analysis.Format(), analysis);
+    }
+
     public static void AssertComparison<TLeft, TRight>(
         TLeft left,
         TRight right,

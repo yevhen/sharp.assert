@@ -21,6 +21,7 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Single Evaluation Principle:** `ExpressionAnalyzer` uses a per-assertion dictionary of evaluated expression values; do not share expression caches across assertions because expression trees capture local values and concurrent writes corrupt a normal dictionary.
 - **Parallel Assertion Benchmark:** Release comparison benchmarks under .NET 10 roll-forward show that a rewritten successful numeric comparison dropped from ~5,073 ns and 3,864 B to ~10 ns and 0 B with direct operand evaluation and lazy failure-only expression metadata; repeat on the target .NET 9 runtime.
 - **Fast Comparison Rewriting:** Only rewrite built-in primitive comparisons without a message or constant-folded result; capture each operand once, preserve the real operator, and defer `ExprNode` construction until failure. Keep the expression-tree route for all other cases.
+- **Boolean Identifier Fast Path:** A rewritten `Assert(actual)` where `actual` is a bool variable needs only its value and name, not an expression tree; Release success dropped from ~2,813 ns/2,096 B to ~4 ns/0 B on .NET 10 roll-forward.
 - **Expression Tree Limitations:** Expression trees cannot contain local functions. All logic must be implemented as instance or static methods.
 - **Binary Comparisons (`==`, `!=`, `>`, etc.):**
     - These are analyzed to extract the final values of the left and right operands for inclusion in the failure message.

@@ -25,6 +25,22 @@ public class CoreAssertionFixture : TestBase
         }
 
         [Test]
+        public void Should_preserve_boolean_variable_diagnostics()
+        {
+            var actual = false;
+
+            AssertFails(() => Assert(actual), Value("actual", false, typeof(bool)));
+        }
+
+        [Test]
+        public void Should_pass_boolean_variable()
+        {
+            var actual = true;
+
+            AssertPasses(() => Assert(actual));
+        }
+
+        [Test]
         public void Should_include_expression_text()
         {
             // Compiler optimizes "1 == 2" to constant "False" in expression tree
