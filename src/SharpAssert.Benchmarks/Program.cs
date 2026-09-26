@@ -20,6 +20,7 @@ var scenarios = new (string Name, int Iterations, Action<int> Run)[]
     ("Sharp static two-argument pass", 20000, index => SharpStaticPass(index)),
     ("Sharp array SequenceEqual pass", 20000, index => SharpArraySequencePass(ResultSink.Values)),
     ("Sharp Enumerable.All pass", 20000, index => SharpAllPass(ResultSink.Values)),
+    ("Sharp Enumerable.Any pass", 20000, index => SharpAnyPass(ResultSink.Values)),
     ("Sharp Contains pass", 20000, index => SharpContainsPass(ResultSink.Text)),
     ("Sharp StartsWith pass", 20000, index => SharpStartsWithPass(ResultSink.Text)),
     ("Sharp direct pass (basic diagnostics)", 20000, index => SharpDirectPass(index, index)),
@@ -31,6 +32,7 @@ var scenarios = new (string Name, int Iterations, Action<int> Run)[]
     ("Sharp logical fail", 1000, index => SharpLogicalFail(index)),
     ("Sharp array SequenceEqual fail", 1000, index => SharpArraySequenceFail(ResultSink.Values, ResultSink.OtherValues)),
     ("Sharp Enumerable.All fail", 1000, index => SharpAllFail(ResultSink.FailedValues)),
+    ("Sharp Enumerable.Any fail", 1000, index => SharpAnyFail(ResultSink.FailedValues)),
     ("Sharp direct fail (basic diagnostics)", 1000, index => SharpDirectFail(index, index + 1)),
     ("NUnit constraint fail", 1000, index => NUnitConstraintFail(index, index + 1)),
     ("NUnit boolean fail", 1000, index => NUnitBooleanFail(index, index + 1))
@@ -133,6 +135,12 @@ static void SharpAllPass(int[] values)
 }
 
 [MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpAnyPass(int[] values)
+{
+    Assert(values.Any(item => item > 0));
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
 static void SharpContainsPass(string value)
 {
     var needle = "arp";
@@ -227,6 +235,20 @@ static void SharpAllFail(int[] values)
     try
     {
         Assert(values.All(item => item > 0));
+        throw new InvalidOperationException("Expected SharpAssert failure");
+    }
+    catch (SharpAssert.SharpAssertionException error)
+    {
+        Volatile.Write(ref ResultSink.Last, error);
+    }
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpAnyFail(int[] values)
+{
+    try
+    {
+        Assert(values.Any(item => item > 10));
         throw new InvalidOperationException("Expected SharpAssert failure");
     }
     catch (SharpAssert.SharpAssertionException error)

@@ -166,6 +166,190 @@ public class CapturedAssertionsFixture
     }
 
     [Test]
+    public void Should_rewrite_Enumerable_Any_with_predicate()
+    {
+        var source = "using static SharpAssert.Sharp; class Sample { void Check(int[] items) { Assert(items.Any(item => item > 0)); } }";
+
+        var rewritten = SharpAssertRewriter.Rewrite(source, "Sample.cs", "global using System; global using System.Linq;");
+
+        rewritten.Should().Contain("SharpInternal.AssertAny");
+        rewritten.Should().NotContain("SharpInternal.AssertValue");
+    }
+
+    [Test]
+    public void Should_rewrite_Enumerable_Any_without_predicate()
+    {
+        var source = "using static SharpAssert.Sharp; class Sample { void Check(int[] items) { Assert(items.Any()); } }";
+
+        var rewritten = SharpAssertRewriter.Rewrite(source, "Sample.cs", "global using System; global using System.Linq;");
+
+        rewritten.Should().Contain("SharpInternal.AssertAny");
+        rewritten.Should().NotContain("SharpInternal.AssertValue");
+    }
+
+    [Test]
+    public void Should_not_enumerate_Any_source_again_for_diagnostics()
+    {
+        var yields = 0;
+        IEnumerable<int> Items()
+        {
+            yields++;
+            yield return 1;
+            yields++;
+            yield return 2;
+        }
+        var items = Items();
+
+        SharpAssertionException? exception = null;
+        try
+        {
+            Assert(items.Any(item => item > 10));
+        }
+        catch (SharpAssertionException error)
+        {
+            exception = error;
+        }
+
+        exception.Should().NotBeNull();
+        exception!.Result!.Format().Should().Contain("[1, 2]");
+        yields.Should().Be(2);
+    }
+
+    [Test]
+    public void Should_limit_Any_preview_without_a_second_enumeration()
+    {
+        var yields = 0;
+        IEnumerable<int> Items()
+        {
+            for (var item = 0; item < 12; item++)
+            {
+                yields++;
+                yield return item;
+            }
+        }
+        var items = Items();
+
+        SharpAssertionException? exception = null;
+        try
+        {
+            Assert(items.Any(item => item > 20));
+        }
+        catch (SharpAssertionException error)
+        {
+            exception = error;
+        }
+
+        exception.Should().NotBeNull();
+        exception!.Result!.Format().Should().Contain("[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...]");
+        yields.Should().Be(12);
+    }
+
+    [Test]
+    public void Should_not_enumerate_Contains_source_again()
+    {
+        var yields = 0;
+        IEnumerable<int> Items()
+        {
+            yields++;
+            yield return 1;
+            yields++;
+            yield return 2;
+        }
+        var items = Items();
+
+        SharpAssertionException? exception = null;
+        try
+        {
+            Assert(items.Contains(42));
+        }
+        catch (SharpAssertionException error)
+        {
+            exception = error;
+        }
+
+        exception.Should().NotBeNull();
+        exception!.Result!.Format().Should().Contain("searched for 42");
+        yields.Should().Be(2);
+    }
+
+    [Test]
+    public void Should_not_enumerate_SequenceEqual_source_again()
+    {
+        var yields = 0;
+        IEnumerable<int> Items()
+        {
+            yields++;
+            yield return 1;
+            yields++;
+            yield return 2;
+        }
+        var items = Items();
+        var expected = new[] { 3, 4 };
+
+        SharpAssertionException? exception = null;
+        try
+        {
+            Assert(Enumerable.SequenceEqual(items, expected));
+        }
+        catch (SharpAssertionException error)
+        {
+            exception = error;
+        }
+
+        exception.Should().NotBeNull();
+        exception!.Result!.Format().Should().Contain("SequenceEqual failed");
+        yields.Should().Be(1);
+    }
+
+    [Test]
+    public void Should_not_enumerate_empty_Any_source_again()
+    {
+        var enumerations = 0;
+        IEnumerable<int> Items()
+        {
+            enumerations++;
+            yield break;
+        }
+        var items = Items();
+
+        SharpAssertionException? exception = null;
+        try
+        {
+            Assert(items.Any());
+        }
+        catch (SharpAssertionException error)
+        {
+            exception = error;
+        }
+
+        exception.Should().NotBeNull();
+        exception!.Result!.Format().Should().Contain("collection is empty");
+        enumerations.Should().Be(1);
+    }
+
+    [Test]
+    public void Should_capture_static_Enumerable_Any_failure_once()
+    {
+        var calls = 0;
+        var items = new[] { 1, 2 };
+        Func<int, bool> predicate = item => { calls++; return item > 10; };
+
+        SharpAssertionException? exception = null;
+        try
+        {
+            Assert(Enumerable.Any(items, predicate));
+        }
+        catch (SharpAssertionException error)
+        {
+            exception = error;
+        }
+
+        exception.Should().NotBeNull();
+        exception!.Result!.Format().Should().Contain("[1, 2]");
+        calls.Should().Be(2);
+    }
+
+    [Test]
     public void Should_capture_static_Enumerable_All_failure_once()
     {
         var calls = 0;

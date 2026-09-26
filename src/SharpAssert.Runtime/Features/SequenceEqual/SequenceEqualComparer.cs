@@ -49,8 +49,17 @@ static class SequenceEqualComparer
                 false,
                 "SequenceEqual failed: one or both operands are not sequences");
         }
-        
-        // Materialize sequences to avoid multiple enumeration
+
+        if (!ReplayableCollection.IsKnownReplayable(firstSequence) || !ReplayableCollection.IsKnownReplayable(secondSequence))
+            return new SequenceEqualComparisonResult(
+                new AssertionOperand(firstSequence, firstSequence.GetType()),
+                new AssertionOperand(secondSequence, secondSequence.GetType()),
+                hasComparer,
+                null,
+                null,
+                false,
+                "SequenceEqual failed: sequence contents unavailable without another enumeration");
+
         var firstList = MaterializeSequence(firstEnum);
         var secondList = MaterializeSequence(secondEnum);
 

@@ -27,7 +27,7 @@ public class LinqOperationsFixture : TestBase
             var items = new[] { 1, 2, 3 };
             
             var expected = Formatted("items.Any(x => x > 10)",
-                "Any failed: no items matched x => (x > 10) in [1, 2, 3]");
+                "Any failed: no items matched x => x > 10 in [1, 2, 3]");
 
             AssertFails(() => Assert(items.Any(x => x > 10)), expected);
         }

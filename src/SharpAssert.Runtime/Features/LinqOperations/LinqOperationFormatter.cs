@@ -8,7 +8,7 @@ namespace SharpAssert.Features.LinqOperations;
 
 static class LinqOperationFormatter
 {
-    const int CollectionPreviewLimit = 10;
+    internal const int CollectionPreviewLimit = 10;
     
     public static FormattedEvaluationResult BuildResult(MethodCallExpression methodCall, string expressionText, bool value, Func<Expression, object?> getValue)
     {
@@ -21,7 +21,7 @@ static class LinqOperationFormatter
         var lines = methodName switch
         {
             "Contains" => FormatContainsFailure(methodCall, collection, getValue),
-            "Any" => FormatAnyFailure(methodCall, collection),
+            "Any" => FormatAnyFailure(methodCall),
             "All" => FormatAllFailure(methodCall),
             _ => new[] { "Unsupported LINQ operation" }
         };
@@ -29,6 +29,18 @@ static class LinqOperationFormatter
         return new FormattedEvaluationResult(expressionText, value, lines);
     }
     
+    public static FormattedEvaluationResult BuildCapturedAnyResult(string expressionText, IReadOnlyList<object?> preview, int count, string predicateText)
+    {
+        if (count == 0)
+            return new FormattedEvaluationResult(expressionText, false, ["Any failed: collection is empty"]);
+
+        var items = string.Join(", ", preview.Select(ValueFormatter.Format));
+        if (count > CollectionPreviewLimit)
+            items += ", ...";
+        return new FormattedEvaluationResult(expressionText, false,
+            [$"Any failed: no items matched {predicateText} in [{items}]"]);
+    }
+
     public static FormattedEvaluationResult BuildCapturedAllResult(string expressionText, object? firstFailure, string predicateText) =>
         new(expressionText, false, [$"All failed: first item {ValueFormatter.Format(firstFailure)} did not match {predicateText}"]);
 
@@ -43,6 +55,9 @@ static class LinqOperationFormatter
         if (IsUnavailable(item))
             return new[] { DescribeUnavailable(item) };
 
+        if (collection is IEnumerable && !ReplayableCollection.IsKnownReplayable(collection))
+            return [$"Contains failed: searched for {FormatValue(item)} (collection preview unavailable without another enumeration)"];
+
         var collectionStr = FormatCollection(collection);
         var count = GetCount(collection);
         
@@ -53,24 +68,10 @@ static class LinqOperationFormatter
         };
     }
     
-    static IReadOnlyList<string> FormatAnyFailure(MethodCallExpression methodCall, object? collection)
-    {
-        if (IsUnavailable(collection))
-            return new[] { DescribeUnavailable(collection) };
-
-        var count = GetCount(collection);
-        
-        if (count == 0)
-            return new[] { "Any failed: collection is empty" };
-        
-        var collectionStr = FormatCollection(collection);
-        var predicateStr = GetPredicateString(methodCall);
-            
-        return new[]
-        {
-            $"Any failed: no items matched {predicateStr} in {collectionStr}"
-        };
-    }
+    static IReadOnlyList<string> FormatAnyFailure(MethodCallExpression methodCall) =>
+        methodCall.Arguments.Count == (methodCall.Object is null ? 1 : 0)
+            ? ["Any failed: collection is empty"]
+            : [$"Any failed: no items matched {GetPredicateString(methodCall)}"];
     
     static IReadOnlyList<string> FormatAllFailure(MethodCallExpression methodCall) =>
         [$"All failed: {GetPredicateString(methodCall)} returned false"];
@@ -106,8 +107,8 @@ static class LinqOperationFormatter
     
     static int GetCount(object? collection) => collection switch
     {
+        string value => value.Length,
         ICollection coll => coll.Count,
-        IEnumerable enumerable => enumerable.Cast<object>().Count(),
         _ => 0
     };
     

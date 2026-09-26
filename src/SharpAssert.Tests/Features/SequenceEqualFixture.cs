@@ -63,6 +63,17 @@ public class SequenceEqualFixture : TestBase
         }
 
         [Test]
+        public void Should_show_diff_for_list_values()
+        {
+            var seq1 = new List<int> { 1, 2 };
+            var seq2 = new List<int> { 1, 3 };
+
+            var exception = NUnit.Framework.Assert.Throws<SharpAssertionException>(() => Assert(seq1.SequenceEqual(seq2)));
+
+            NUnit.Framework.Assert.That(exception!.Message, Does.Contain("Unified diff:"));
+        }
+
+        [Test]
         public void Should_pass_when_equal()
         {
             var seq1 = new List<int> { 1, 2, 3 };

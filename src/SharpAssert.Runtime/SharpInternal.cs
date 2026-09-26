@@ -130,6 +130,65 @@ public static class SharpInternal
         throw new SharpAssertionException(analysis.Format(), analysis);
     }
 
+    public static void AssertAny<T>(
+        IEnumerable<T> source,
+        Func<ExprNode> describe,
+        string file,
+        int line,
+        Func<string?>? messageFactory)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        var passed = Enumerable.Any(source);
+        var message = messageFactory?.Invoke();
+        if (message is not null && string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Message must be either null or non-empty", "message");
+
+        if (passed)
+            return;
+
+        var exprNode = describe();
+        var context = new AssertionContext(exprNode.Text, file, line, message, exprNode);
+        var result = new FormattedEvaluationResult(exprNode.Text, false, ["Any failed: collection is empty"]);
+        var analysis = new AssertionEvaluationResult(context, result);
+        throw new SharpAssertionException(analysis.Format(), analysis);
+    }
+
+    public static void AssertAny<T>(
+        IEnumerable<T> source,
+        Func<T, bool> predicate,
+        string predicateText,
+        Func<ExprNode> describe,
+        string file,
+        int line,
+        Func<string?>? messageFactory)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(predicate);
+
+        var preview = new List<object?>();
+        var count = 0;
+        var passed = Enumerable.Any(source, item =>
+        {
+            if (count < LinqOperationFormatter.CollectionPreviewLimit)
+                preview.Add(item);
+            count++;
+            return predicate(item);
+        });
+
+        var message = messageFactory?.Invoke();
+        if (message is not null && string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Message must be either null or non-empty", "message");
+
+        if (passed)
+            return;
+
+        var exprNode = describe();
+        var context = new AssertionContext(exprNode.Text, file, line, message, exprNode);
+        var result = LinqOperationFormatter.BuildCapturedAnyResult(exprNode.Text, preview, count, predicateText);
+        var analysis = new AssertionEvaluationResult(context, result);
+        throw new SharpAssertionException(analysis.Format(), analysis);
+    }
+
     public static void AssertAll<T>(
         IEnumerable<T> source,
         Func<T, bool> predicate,

@@ -29,6 +29,8 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Implicit Using Symbols:** The per-file rewriter misses SDK-generated `global using` directives unless the MSBuild task supplies the project's `.GlobalUsings.g.cs`; missing `System` caused delegate calls to remain on the old path.
 - **Local Functions:** Expression trees cannot reference local functions; rewrite bool assertions containing them to direct boolean validation instead of a captured expression tree.
 - **All Diagnostic Trade-off:** `Enumerable.All` stops at the first false item, so a no-replay diagnostic can show only that item; pass the original predicate through a recording wrapper and render the recorded item without re-enumerating or invoking the predicate again.
+- **Any Failure Preview:** Failed `Enumerable.Any(predicate)` visits every item; record a bounded preview during that traversal so diagnostics do not enumerate the source again. Failed `Enumerable.Any()` needs only the empty-collection message.
+- **Non-Replayable Collections:** On `Contains`/`SequenceEqual` failures, inspect arrays, strings, and exact `List<T>` instances only; for a custom `IEnumerable`, omit the preview or diff rather than enumerate user code again.
 - **Enumerable Binding:** `typeof(Enumerable).Assembly` alone does not let the isolated Roslyn compilation bind `Enumerable.All`; add the runtime `System.Runtime.dll` reference to resolve `IEnumerable<T>` and detect the actual LINQ method.
 - **Expression Tree Limitations:** Expression trees cannot contain local functions. All logic must be implemented as instance or static methods.
 - **Binary Comparisons (`==`, `!=`, `>`, etc.):**
