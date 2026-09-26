@@ -17,22 +17,26 @@ static class SequenceEqualComparer
     {
         var firstSequence = getValue(methodCall.Object ?? methodCall.Arguments[0]);
         var secondSequence = getValue(methodCall.Arguments.Count > 1 ? methodCall.Arguments[1] : methodCall.Arguments[0]);
+        return BuildComparison(firstSequence, secondSequence, methodCall.Arguments.Count > 2);
+    }
 
+    public static SequenceEqualComparisonResult BuildCapturedResult(object? firstSequence, object? secondSequence) =>
+        BuildComparison(firstSequence, secondSequence, false);
+
+    static SequenceEqualComparisonResult BuildComparison(object? firstSequence, object? secondSequence, bool hasComparer)
+    {
         if (IsUnavailable(firstSequence) || IsUnavailable(secondSequence))
         {
             var error = $"{DescribeUnavailable(firstSequence)}/{DescribeUnavailable(secondSequence)}";
             return new SequenceEqualComparisonResult(
                 new AssertionOperand(firstSequence, typeof(object)),
                 new AssertionOperand(secondSequence, typeof(object)),
-                methodCall.Arguments.Count > 2,
+                hasComparer,
                 null,
                 null,
                 false,
                 $"SequenceEqual failed: value unavailable ({error})");
         }
-        
-        var hasComparer = methodCall.Arguments.Count > 2 ||
-                         (methodCall.Object == null && methodCall.Arguments.Count > 2);
         
         if (firstSequence is not IEnumerable firstEnum || secondSequence is not IEnumerable secondEnum)
         {

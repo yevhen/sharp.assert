@@ -10,10 +10,12 @@ public static class SharpAssertRewriter
     const string NewLine = "\n";
     const int FirstLineNumber = 1;
 
-    public static string Rewrite(string source, string fileName)
+    public static string Rewrite(string source, string fileName) => Rewrite(source, fileName, null);
+
+    public static string Rewrite(string source, string fileName, string? globalUsings)
     {
         var syntaxTree = CSharpSyntaxTree.ParseText(source, path: fileName);
-        var semanticModel = CreateSemanticModel(syntaxTree);
+        var semanticModel = CreateSemanticModel(syntaxTree, globalUsings);
         var absoluteFileName = GetAbsolutePath(fileName);
 
         var rewriter = new SharpAssertSyntaxRewriter(semanticModel, absoluteFileName, fileName);
@@ -25,7 +27,7 @@ public static class SharpAssertRewriter
         return AddFileLineDirective(rewrittenRoot, absoluteFileName);
     }
 
-    static SemanticModel CreateSemanticModel(SyntaxTree syntaxTree)
+    static SemanticModel CreateSemanticModel(SyntaxTree syntaxTree, string? globalUsings)
     {
         var references = new MetadataReference[]
         {
@@ -38,6 +40,9 @@ public static class SharpAssertRewriter
         var compilation = CSharpCompilation.Create("RewriterAnalysis")
             .AddReferences(references)
             .AddSyntaxTrees(syntaxTree);
+
+        if (globalUsings is not null)
+            compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(globalUsings));
 
         return compilation.GetSemanticModel(syntaxTree);
     }
@@ -112,7 +117,7 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
             return RewriteToExpectation(node);
 
         if (condition is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax member, ArgumentList.Arguments.Count: 1 } call &&
-            CanUseFastMethodCall(call, member))
+            (CanUseFastArraySequenceEqual(call, member) || CanUseFastMethodCall(call, member)))
             return RewriteToMethodCall(node, call, member);
 
         if (CanUseSimpleBoolean(condition) && IsBooleanAssertion(condition))
@@ -121,6 +126,12 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         if (condition is BinaryExpressionSyntax comparison &&
             IsBinaryOperation(node) && CanUseFastComparison(comparison))
             return RewriteToComparison(node, comparison);
+
+        if (IsBooleanAssertion(condition) && ContainsLocalFunction(condition))
+            return RewriteToBoolean(node, condition);
+
+        if (IsBooleanAssertion(condition) && TryCapture(condition, out var captured, out var count))
+            return RewriteToCaptured(node, captured, count);
 
         return RewriteToLambda(node);
     }
@@ -171,6 +182,11 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         var typeInfo = semanticModel.GetTypeInfo(expression);
         return typeInfo.Type?.SpecialType == SpecialType.System_Boolean;
     }
+
+    bool ContainsLocalFunction(ExpressionSyntax condition) =>
+        condition.DescendantNodesAndSelf()
+            .OfType<InvocationExpressionSyntax>()
+            .Any(call => semanticModel.GetSymbolInfo(call).Symbol is IMethodSymbol { MethodKind: MethodKind.LocalFunction });
 
     static bool CanUseSimpleBoolean(ExpressionSyntax condition)
     {
@@ -257,6 +273,12 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         return AddLineDirectives(invocation, node, data.LineNumber);
     }
 
+    bool CanUseFastArraySequenceEqual(InvocationExpressionSyntax call, MemberAccessExpressionSyntax member) =>
+        member.Name.Identifier.ValueText == "SequenceEqual" &&
+        IsBooleanAssertion(call) &&
+        semanticModel.GetTypeInfo(member.Expression).Type is IArrayTypeSymbol &&
+        semanticModel.GetTypeInfo(call.ArgumentList.Arguments[0].Expression).Type is IArrayTypeSymbol;
+
     bool CanUseFastMethodCall(InvocationExpressionSyntax call, MemberAccessExpressionSyntax member)
     {
         var name = member.Name.Identifier.ValueText;
@@ -293,7 +315,12 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
             CreateNumericLiteralArgument(data.LineNumber),
             CreateMessageArgument(data.MessageExpression)
         ]);
-        var methodName = member.Name.Identifier.ValueText == "Contains" ? "AssertContains" : "AssertMethodCall";
+        var methodName = member.Name.Identifier.ValueText switch
+        {
+            "Contains" => "AssertContains",
+            "SequenceEqual" => "AssertSequenceEqual",
+            _ => "AssertMethodCall"
+        };
         var invocation = SyntaxFactory.InvocationExpression(CreateSharpInternalMethodAccess(methodName))
             .WithArgumentList(SyntaxFactory.ArgumentList(arguments));
         return AddLineDirectives(invocation, node, data.LineNumber);
@@ -369,6 +396,148 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         var invocation = SyntaxFactory.InvocationExpression(CreateSharpInternalMethodAccess("AssertExpectationValue"))
             .WithArgumentList(SyntaxFactory.ArgumentList(arguments));
         return AddLineDirectives(invocation, node, data.LineNumber);
+    }
+
+    InvocationExpressionSyntax RewriteToCaptured(InvocationExpressionSyntax node, ExpressionSyntax captured, int count)
+    {
+        var data = ExtractRewriteData(node);
+        var parameter = SyntaxFactory.Parameter(SyntaxFactory.Identifier("session"));
+        var parameters = SyntaxFactory.ParameterList(SyntaxFactory.SingletonSeparatedList(parameter));
+        var evaluate = SyntaxFactory.ParenthesizedLambdaExpression(parameters, captured);
+        var expression = CreateLambdaExpression(captured);
+        var describe = SyntaxFactory.ParenthesizedLambdaExpression(parameters, expression);
+        ExpressionSyntax messageFactory = data.MessageExpression is null
+            ? SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression)
+            : CreateLambdaExpression(data.MessageExpression);
+
+        var arguments = SyntaxFactory.SeparatedList([
+            CreateNumericLiteralArgument(count),
+            SyntaxFactory.Argument(evaluate),
+            SyntaxFactory.Argument(describe),
+            SyntaxFactory.Argument(CreateLambdaExpression(GenerateExprNodeSyntax(data.Expression))),
+            CreateStringLiteralArgument(fileName),
+            CreateNumericLiteralArgument(data.LineNumber),
+            SyntaxFactory.Argument(messageFactory)
+        ]);
+        var invocation = SyntaxFactory.InvocationExpression(CreateSharpInternalMethodAccess("AssertCaptured"))
+            .WithArgumentList(SyntaxFactory.ArgumentList(arguments));
+        return AddLineDirectives(invocation, node, data.LineNumber);
+    }
+
+    bool TryCapture(ExpressionSyntax expression, out ExpressionSyntax captured, out int count)
+    {
+        if (semanticModel.GetConstantValue(expression).HasValue)
+        {
+            captured = null!;
+            count = 0;
+            return false;
+        }
+
+        count = 0;
+        captured = Capture(expression, ref count)!;
+        return captured is not null;
+    }
+
+    ExpressionSyntax? Capture(ExpressionSyntax expression, ref int count)
+    {
+        if (!CanCaptureType(expression))
+            return null;
+
+        ExpressionSyntax body = expression;
+        if (expression is ParenthesizedExpressionSyntax parenthesized)
+        {
+            var inner = Capture(parenthesized.Expression, ref count);
+            if (inner is null)
+                return null;
+            body = parenthesized.WithExpression(inner);
+        }
+        else if (expression is BinaryExpressionSyntax binary && IsBinaryComparisonExpression(binary))
+        {
+            if (binary.OperatorToken.IsKind(SyntaxKind.AmpersandToken) ||
+                binary.OperatorToken.IsKind(SyntaxKind.BarToken))
+                return null;
+
+            if (binary.OperatorToken.IsKind(SyntaxKind.EqualsEqualsToken) ||
+                binary.OperatorToken.IsKind(SyntaxKind.ExclamationEqualsToken) ||
+                binary.OperatorToken.IsKind(SyntaxKind.LessThanToken) ||
+                binary.OperatorToken.IsKind(SyntaxKind.LessThanEqualsToken) ||
+                binary.OperatorToken.IsKind(SyntaxKind.GreaterThanToken) ||
+                binary.OperatorToken.IsKind(SyntaxKind.GreaterThanEqualsToken))
+            {
+                if (!CanUseFastComparison(binary))
+                    return null;
+            }
+
+            var left = Capture(binary.Left, ref count);
+            var right = Capture(binary.Right, ref count);
+            if (left is null || right is null)
+                return null;
+            body = binary.WithLeft(left).WithRight(right);
+        }
+        else if (expression is BinaryExpressionSyntax && semanticModel.GetTypeInfo(expression).Type?.SpecialType == SpecialType.System_Boolean)
+            return null;
+        else if (expression is PrefixUnaryExpressionSyntax unary && unary.IsKind(SyntaxKind.LogicalNotExpression))
+        {
+            var operand = Capture(unary.Operand, ref count);
+            if (operand is null)
+                return null;
+            body = unary.WithOperand(operand);
+        }
+        else if (expression is InvocationExpressionSyntax call)
+        {
+            var method = semanticModel.GetSymbolInfo(call).Symbol as IMethodSymbol;
+            if (method is null || method.Parameters.Any(parameter => parameter.RefKind != RefKind.None || parameter.Type.IsRefLikeType))
+                return null;
+
+            var target = call.Expression;
+            if (target is MemberAccessExpressionSyntax member &&
+                semanticModel.GetSymbolInfo(member.Expression).Symbol is not INamedTypeSymbol &&
+                semanticModel.GetTypeInfo(member.Expression).Type is { IsValueType: false } receiverType &&
+                receiverType.TypeKind != TypeKind.Error)
+            {
+                var receiver = Capture(member.Expression, ref count);
+                if (receiver is null)
+                    return null;
+                target = member.WithExpression(receiver);
+            }
+            else if (target is MemberAccessExpressionSyntax memberWithValueReceiver &&
+                     semanticModel.GetTypeInfo(memberWithValueReceiver.Expression).Type is { IsValueType: true })
+                return null;
+
+            var arguments = new List<ArgumentSyntax>();
+            foreach (var argument in call.ArgumentList.Arguments)
+            {
+                if (argument.Expression is AnonymousFunctionExpressionSyntax)
+                {
+                    arguments.Add(argument);
+                    continue;
+                }
+
+                var capturedArgument = Capture(argument.Expression, ref count);
+                if (capturedArgument is null)
+                    return null;
+                arguments.Add(argument.WithExpression(capturedArgument));
+            }
+
+            body = call.WithExpression(target)
+                .WithArgumentList(call.ArgumentList.WithArguments(SyntaxFactory.SeparatedList(arguments)));
+        }
+
+        var index = count++;
+        var record = SyntaxFactory.InvocationExpression(
+            SyntaxFactory.ParseExpression("session.Record"),
+            SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList([
+                CreateNumericLiteralArgument(index),
+                SyntaxFactory.Argument(body.WithoutLeadingTrivia().WithoutTrailingTrivia())
+            ])));
+        return record.WithTriviaFrom(expression);
+    }
+
+    bool CanCaptureType(ExpressionSyntax expression)
+    {
+        var type = semanticModel.GetTypeInfo(expression).Type;
+        return type is not null && type.TypeKind is not (TypeKind.Error or TypeKind.Dynamic or TypeKind.Pointer) &&
+               type.SpecialType != SpecialType.System_Void && !type.IsRefLikeType;
     }
 
     InvocationExpressionSyntax RewriteToLambda(InvocationExpressionSyntax node)

@@ -20,7 +20,6 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
     public string ProjectDir { get; set; } = string.Empty;
     
     [Required]
-    // Not used internally but kept for compatibility with existing test/build configurations
     public string IntermediateDir { get; set; } = string.Empty;
     public string OutputDir { get; set; } = string.Empty;
     public string LangVersion { get; set; } = "latest";
@@ -54,6 +53,7 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
 
         EnsureDirectoryExists(OutputDir);
 
+        var globalUsings = ReadGlobalUsings();
         var generatedFiles = new List<ITaskItem>();
         var processedSourceFiles = new List<ITaskItem>();
         var fileMappings = new Dictionary<string, string>();
@@ -64,7 +64,7 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
         foreach (var sourceItem in Sources)
         {
             var sourcePath = sourceItem.ItemSpec;
-            var result = ProcessSourceFile(sourcePath);
+            var result = ProcessSourceFile(sourcePath, globalUsings);
             
             if (result.Status == ProcessingStatus.Processed)
                 processedSourceFiles.Add(sourceItem);
@@ -161,11 +161,23 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
         }
     }
 
-    ProcessingResult ProcessSourceFile(string sourcePath)
+    string? ReadGlobalUsings()
+    {
+        var directory = Path.IsPathRooted(IntermediateDir)
+            ? IntermediateDir
+            : Path.Combine(ProjectDir, IntermediateDir);
+        if (!Directory.Exists(directory))
+            return null;
+
+        var path = Directory.EnumerateFiles(directory, "*.GlobalUsings.g.cs").FirstOrDefault();
+        return path is null ? null : File.ReadAllText(path);
+    }
+
+    ProcessingResult ProcessSourceFile(string sourcePath, string? globalUsings)
     {
         try
         {
-            return ProcessSourceFileInternal(sourcePath);
+            return ProcessSourceFileInternal(sourcePath, globalUsings);
         }
         catch (Exception ex)
         {
@@ -175,7 +187,7 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
         }
     }
 
-    ProcessingResult ProcessSourceFileInternal(string sourcePath)
+    ProcessingResult ProcessSourceFileInternal(string sourcePath, string? globalUsings)
     {
         var relativePath = Path.GetRelativePath(ProjectDir, sourcePath);
         LogDiagnostics($"Processing: {relativePath}");
@@ -196,7 +208,7 @@ public class SharpLambdaRewriteTask : Microsoft.Build.Utilities.Task
         var absoluteSourcePath = Path.GetFullPath(sourcePath);
         LogDiagnostics($"Using absolute path for rewriter: {absoluteSourcePath}");
 
-        var rewrittenContent = SharpAssertRewriter.Rewrite(sourceContent, absoluteSourcePath);
+        var rewrittenContent = SharpAssertRewriter.Rewrite(sourceContent, absoluteSourcePath, globalUsings);
         if (rewrittenContent == sourceContent)
         {
             LogDiagnostics($"No Assert calls found, skipping: {relativePath}");

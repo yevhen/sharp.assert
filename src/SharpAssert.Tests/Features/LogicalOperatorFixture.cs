@@ -61,6 +61,27 @@ public class LogicalOperatorFixture : TestBase
         }
 
         [Test]
+        public void Should_rewrite_logical_expression_with_failure_only_diagnostics()
+        {
+            var source = "using static SharpAssert.Sharp; class Sample { void Check(int left, int right) { Assert(left == 1 && right == 2); } }";
+
+            var rewritten = SharpAssertRewriter.Rewrite(source, "Sample.cs");
+
+            NUnit.Framework.Assert.That(rewritten, Does.Contain("SharpInternal.AssertCaptured"));
+            NUnit.Framework.Assert.That(rewritten, Does.Not.Contain("SharpInternal.AssertValue"));
+        }
+
+        [Test]
+        public void Should_rewrite_logical_expression_with_delegate_calls()
+        {
+            var source = "using System; using static SharpAssert.Sharp; class Sample { void Check(Func<int> next) { Assert(next() == 1 && next() == 2); } }";
+
+            var rewritten = SharpAssertRewriter.Rewrite(source, "Sample.cs");
+
+            NUnit.Framework.Assert.That(rewritten, Does.Contain("SharpInternal.AssertCaptured"));
+        }
+
+        [Test]
         public void Should_evaluate_each_reached_AND_operand_once()
         {
             var calls = 0;

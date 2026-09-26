@@ -16,7 +16,9 @@ var scenarios = new (string Name, int Iterations, Action<int> Run)[]
     ("Sharp comparison with message pass", 20000, index => SharpMessagePass(index, index)),
     ("Sharp boolean property pass", 20000, index => SharpPropertyPass(ResultSink.Property)),
     ("Sharp expectation pass", 20000, index => SharpExpectationPass(index)),
-    ("Sharp logical pass (fallback)", 20000, index => SharpLogicalPass(index)),
+    ("Sharp logical pass", 20000, index => SharpLogicalPass(index)),
+    ("Sharp static two-argument pass", 20000, index => SharpStaticPass(index)),
+    ("Sharp array SequenceEqual pass", 20000, index => SharpArraySequencePass(ResultSink.Values)),
     ("Sharp Contains pass", 20000, index => SharpContainsPass(ResultSink.Text)),
     ("Sharp StartsWith pass", 20000, index => SharpStartsWithPass(ResultSink.Text)),
     ("Sharp direct pass (basic diagnostics)", 20000, index => SharpDirectPass(index, index)),
@@ -25,6 +27,8 @@ var scenarios = new (string Name, int Iterations, Action<int> Run)[]
     ("Sharp rewritten fail", 1000, index => SharpFail(index, index + 1)),
     ("Sharp boolean fail", 1000, index => SharpBooleanFail(index < 0)),
     ("Sharp comparison with message fail", 1000, index => SharpMessageFail(index, index + 1)),
+    ("Sharp logical fail", 1000, index => SharpLogicalFail(index)),
+    ("Sharp array SequenceEqual fail", 1000, index => SharpArraySequenceFail(ResultSink.Values, ResultSink.OtherValues)),
     ("Sharp direct fail (basic diagnostics)", 1000, index => SharpDirectFail(index, index + 1)),
     ("NUnit constraint fail", 1000, index => NUnitConstraintFail(index, index + 1)),
     ("NUnit boolean fail", 1000, index => NUnitBooleanFail(index, index + 1))
@@ -109,6 +113,18 @@ static void SharpLogicalPass(int index)
 }
 
 [MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpStaticPass(int index)
+{
+    Assert(BenchmarkPredicates.IsEvenSum(index, index));
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpArraySequencePass(int[] values)
+{
+    Assert(values.SequenceEqual(values));
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
 static void SharpContainsPass(string value)
 {
     var needle = "arp";
@@ -170,6 +186,34 @@ static void SharpMessageFail(int actual, int expected)
 }
 
 [MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpLogicalFail(int index)
+{
+    try
+    {
+        Assert(index >= 0 && index < 0);
+        throw new InvalidOperationException("Expected SharpAssert failure");
+    }
+    catch (SharpAssert.SharpAssertionException error)
+    {
+        Volatile.Write(ref ResultSink.Last, error);
+    }
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpArraySequenceFail(int[] actual, int[] expected)
+{
+    try
+    {
+        Assert(actual.SequenceEqual(expected));
+        throw new InvalidOperationException("Expected SharpAssert failure");
+    }
+    catch (SharpAssert.SharpAssertionException error)
+    {
+        Volatile.Write(ref ResultSink.Last, error);
+    }
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
 static void SharpDirectFail(int actual, int expected)
 {
     try
@@ -211,6 +255,11 @@ static void NUnitBooleanFail(int actual, int expected)
     }
 }
 
+static class BenchmarkPredicates
+{
+    public static bool IsEvenSum(int left, int right) => (left + right) % 2 == 0;
+}
+
 sealed class BooleanProperty
 {
     public bool IsValid => true;
@@ -221,4 +270,6 @@ static class ResultSink
     public static object? Last;
     public static readonly BooleanProperty Property = new();
     public static readonly string Text = "SharpAssert";
+    public static readonly int[] Values = [1, 2, 3];
+    public static readonly int[] OtherValues = [1, 2, 4];
 }

@@ -4,6 +4,7 @@ using SharpAssert.Core;
 using SharpAssert.Features.Async;
 using SharpAssert.Features.Dynamic;
 using SharpAssert.Features.LinqOperations;
+using SharpAssert.Features.SequenceEqual;
 using SharpAssert.Features.Shared;
 
 namespace SharpAssert;
@@ -55,6 +56,33 @@ public static class SharpInternal
         throw new SharpAssertionException(analysis.Format(), analysis);
     }
 
+    public static void AssertCaptured(
+        int count,
+        Func<CaptureSession, bool> evaluate,
+        Func<CaptureSession, Expression<Func<bool>>> describeExpression,
+        Func<ExprNode> describeSource,
+        string file,
+        int line,
+        Func<string?>? messageFactory)
+    {
+        var session = new CaptureSession(count);
+        var passed = evaluate(session);
+        var message = messageFactory?.Invoke();
+        if (message is not null && string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Message must be either null or non-empty", "message");
+
+        if (passed)
+            return;
+
+        var exprNode = describeSource();
+        var context = new AssertionContext(exprNode.Text, file, line, message, exprNode);
+        var analysis = ExpressionAnalyzer.AnalyzeCaptured(describeExpression(session), session, context);
+        if (analysis.Passed)
+            return;
+
+        throw new SharpAssertionException(analysis.Format(), analysis);
+    }
+
     public static void AssertExpectationValue(
         Expectation expectation,
         ExprNode exprNode,
@@ -98,6 +126,29 @@ public static class SharpInternal
         var context = new AssertionContext(exprNode.Text, file, line, message, exprNode);
         var result = new MethodCallEvaluationResult(exprNode.Text, false,
             [new ValueEvaluationResult(exprNode.Arguments![0].Text, argument, typeof(TArgument))]);
+        var analysis = new AssertionEvaluationResult(context, result);
+        throw new SharpAssertionException(analysis.Format(), analysis);
+    }
+
+    public static void AssertSequenceEqual<TReceiver, TArgument>(
+        TReceiver receiver,
+        TArgument argument,
+        Func<TReceiver, TArgument, bool> predicate,
+        Func<ExprNode> describe,
+        string file,
+        int line,
+        string? message = null)
+    {
+        if (message is not null && string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Message must be either null or non-empty", nameof(message));
+
+        if (predicate(receiver, argument))
+            return;
+
+        var exprNode = describe();
+        var context = new AssertionContext(exprNode.Text, file, line, message, exprNode);
+        var comparison = SequenceEqualComparer.BuildCapturedResult(receiver, argument);
+        var result = new BinaryComparisonEvaluationResult(exprNode.Text, ExpressionType.Equal, comparison, false);
         var analysis = new AssertionEvaluationResult(context, result);
         throw new SharpAssertionException(analysis.Format(), analysis);
     }

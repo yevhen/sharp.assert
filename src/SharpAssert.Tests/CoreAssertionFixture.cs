@@ -158,6 +158,17 @@ public class CoreAssertionFixture : TestBase
         }
 
         [Test]
+        public void Should_rewrite_static_call_with_two_arguments_without_eager_diagnostics()
+        {
+            var source = "using static SharpAssert.Sharp; class Sample { static bool Check(int left, int right) => false; void Verify(int a, int b) { Assert(Check(a, b)); } }";
+
+            var rewritten = SharpAssertRewriter.Rewrite(source, "Sample.cs");
+
+            rewritten.Should().Contain("SharpInternal.AssertCaptured");
+            rewritten.Should().NotContain("SharpInternal.AssertValue");
+        }
+
+        [Test]
         public void Should_not_repeat_plain_method_argument_when_failure_is_formatted()
         {
             var calls = 0;

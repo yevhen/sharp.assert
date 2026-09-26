@@ -31,6 +31,14 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
         return new AssertionEvaluationResult(context, result);
     }
 
+    internal static AssertionEvaluationResult AnalyzeCaptured(Expression<Func<bool>> expression, CaptureSession session, AssertionContext context)
+    {
+        var cache = new Dictionary<Expression, object?>(ExprComparer);
+        var body = new CapturedExpressionVisitor(session, cache).Visit(expression.Body)!;
+        var result = AnalyzeExpression(body, cache, context);
+        return new AssertionEvaluationResult(context, result);
+    }
+
     static EvaluationResult AnalyzeExpression(Expression expression, Dictionary<Expression, object?> cache, AssertionContext context)
     {
         switch (expression)
