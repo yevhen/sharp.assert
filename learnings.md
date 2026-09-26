@@ -18,7 +18,7 @@ This document is organized by topic to consolidate key learnings about the proje
 
 ## Runtime: Expression Tree Analysis
 
-- **Single Evaluation Principle:** A core requirement is to evaluate each operand and sub-expression only once. This is achieved by using a visitor pattern (`ExpressionAnalyzer`) combined with a `ConcurrentDictionary` to cache the results of evaluated sub-expressions.
+- **Single Evaluation Principle:** `ExpressionAnalyzer` uses a per-assertion dictionary of evaluated expression values; do not share expression caches across assertions because expression trees capture local values and concurrent writes corrupt a normal dictionary.
 - **Expression Tree Limitations:** Expression trees cannot contain local functions. All logic must be implemented as instance or static methods.
 - **Binary Comparisons (`==`, `!=`, `>`, etc.):**
     - These are analyzed to extract the final values of the left and right operands for inclusion in the failure message.

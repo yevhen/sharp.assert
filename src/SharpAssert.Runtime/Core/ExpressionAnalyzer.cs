@@ -12,7 +12,6 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
     static readonly string[] LinqOperationMethods = ["Contains", "Any", "All"];
     const string SequenceEqualMethod = "SequenceEqual";
     static readonly ReferenceEqualityComparer ExprComparer = ReferenceEqualityComparer.Instance;
-    static readonly Dictionary<Expression, Func<object>> CompiledCache = new(ExprComparer);
 
     public static string AnalyzeFailure(Expression<Func<bool>> expression, AssertionContext context)
     {
@@ -146,22 +145,11 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
         if (cache.TryGetValue(expression, out var cached))
             return cached;
 
-        var value = CompileAndEvaluate(expression);
+        var value = ExpressionValueEvaluator.Evaluate(expression);
         cache[expression] = value;
         return value;
     }
-    
-    static object? CompileAndEvaluate(Expression expression)
-    {
-        if (!CompiledCache.TryGetValue(expression, out var compiled))
-        {
-            compiled = ExpressionValueEvaluator.Compile(expression);
-            CompiledCache[expression] = compiled;
-        }
 
-        return compiled();
-    }
-    
     static bool EvaluateBinaryExpression(ExpressionType nodeType, object? leftValue, object? rightValue) => nodeType switch
     {
         Equal => Equals(leftValue, rightValue),

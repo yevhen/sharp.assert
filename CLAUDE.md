@@ -377,6 +377,7 @@ async\method: Suffix with `Async` =\> `GetDataAsync()`
 
 - NEVER use underscores for private/internal members
 - NEVER create coverage reports on top level. Always specify subfolder under ./TestResults dir
+- `ExpressionAnalyzer` must keep evaluated expression values local to each assertion; a process-wide dictionary races under parallel NUnit fixtures and retains captured values.
 
 # BUG HUNTING METHODOLOGY
 
