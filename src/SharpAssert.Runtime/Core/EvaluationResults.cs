@@ -172,6 +172,7 @@ record LogicalEvaluationResult(
 
         return Operator switch
         {
+            LogicalOperator.AndAlso when ShortCircuited => "&&: Left operand was false",
             LogicalOperator.AndAlso when !leftFailed && !rightFailed => "&&: Both operands were true",
             LogicalOperator.AndAlso when leftFailed && rightFailed => "&&: Both operands were false",
             LogicalOperator.AndAlso when leftFailed => "&&: Left operand was false",

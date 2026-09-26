@@ -19,6 +19,27 @@ public class ExpectationsFixture : TestBase
         }
 
         [Test]
+        public void Should_rewrite_expectation_without_expression_tree()
+        {
+            var source = "using SharpAssert; using static SharpAssert.Sharp; class Sample { void Check() { Assert(Expectation.From(() => true, () => new string[0])); } }";
+
+            var rewritten = SharpAssertRewriter.Rewrite(source, "Sample.cs");
+
+            NUnit.Framework.Assert.That(rewritten, Does.Contain("SharpInternal.AssertExpectationValue"));
+            NUnit.Framework.Assert.That(rewritten, Does.Not.Contain("SharpInternal.AssertValue"));
+        }
+
+        [Test]
+        public void Should_create_and_evaluate_expectation_once()
+        {
+            var evaluations = 0;
+            var expectation = Expectation.From(() => { evaluations++; return false; }, () => ["Failed"]);
+
+            AssertFails(() => Assert(expectation), ExpectationResults.Fail("expectation", "Failed"));
+            NUnit.Framework.Assert.That(evaluations, Is.EqualTo(1));
+        }
+
+        [Test]
         public void Should_fail_for_failing_expectation()
         {
             var expectation = new FixedExpectation(ExpectationResults.Fail("broken", "Broken"));

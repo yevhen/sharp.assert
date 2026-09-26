@@ -95,6 +95,40 @@ public class BinaryComparisonFixture : TestBase
         }
 
         [Test]
+        public void Should_capture_operands_once_with_a_message()
+        {
+            callCount = 0;
+
+            var exception = NUnit.Framework.Assert.Throws<SharpAssertionException>(() =>
+                Assert(GetValue() == GetValue(), "Values differ"));
+
+            exception.Result!.Result.Should().BeEquivalentTo(
+                BinaryComparison("GetValue() == GetValue()", Equal, Comparison(10, 20)));
+            exception.Result.Context.Message.Should().Be("Values differ");
+            callCount.Should().Be(2);
+        }
+
+        [Test]
+        public void Should_reject_invalid_message_for_passing_comparison()
+        {
+            var actual = 2;
+            var expected = 2;
+
+            NUnit.Framework.Assert.Throws<ArgumentException>(() => Assert(actual == expected, " "));
+        }
+
+        [Test]
+        public void Should_rewrite_comparison_with_message_without_expression_tree()
+        {
+            var source = "using static SharpAssert.Sharp; class Sample { void Check(int left, int right) { Assert(left == right, \"Values differ\"); } }";
+
+            var rewritten = SharpAssertRewriter.Rewrite(source, "Sample.cs");
+
+            rewritten.Should().Contain("SharpInternal.AssertComparison");
+            rewritten.Should().NotContain("SharpInternal.AssertValue");
+        }
+
+        [Test]
         public void Should_evaluate_each_operand_once_on_success()
         {
             var calls = 0;

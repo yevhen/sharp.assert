@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Linq.Expressions;
+using System.Reflection;
 using SharpAssert.Features.LinqOperations;
 using SharpAssert.Features.SequenceEqual;
 using SharpAssert.Features.Shared;
@@ -12,6 +13,7 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
     static readonly string[] LinqOperationMethods = ["Contains", "Any", "All"];
     const string SequenceEqualMethod = "SequenceEqual";
     static readonly ReferenceEqualityComparer ExprComparer = ReferenceEqualityComparer.Instance;
+    static readonly MethodInfo CaptureMethod = typeof(ExpressionAnalyzer).GetMethod(nameof(Capture), BindingFlags.NonPublic | BindingFlags.Static)!;
 
     public static string AnalyzeFailure(Expression<Func<bool>> expression, AssertionContext context)
     {
@@ -81,7 +83,9 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
             return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.OrElse, leftResult, orRightResult, orValue, false, binaryExpr.NodeType);
         }
 
-        // AND - always evaluate both operands
+        if (!leftBool)
+            return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.AndAlso, leftResult, null, false, true, binaryExpr.NodeType);
+
         var (andRightBool, andRightResult) = AnalyzeLogicalOperand(binaryExpr.Right, cache, context, context.ExprNode.Right!);
         var andValue = leftBool && andRightBool;
 
@@ -116,11 +120,11 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
             return new ValueEvaluationResult(exprText, value, methodCall.Type);
 
         if (LinqOperationMethods.Contains(methodName))
-            return LinqOperationFormatter.BuildResult(methodCall, exprText, value);
+            return LinqOperationFormatter.BuildResult(methodCall, exprText, value, expression => GetValue(expression, cache));
 
         if (methodName == SequenceEqualMethod)
         {
-            var comparison = SequenceEqualComparer.BuildResult(methodCall);
+            var comparison = SequenceEqualComparer.BuildResult(methodCall, expression => GetValue(expression, cache));
             return new BinaryComparisonEvaluationResult(exprText, Equal, comparison, value);
         }
 
@@ -145,7 +149,30 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
         if (cache.TryGetValue(expression, out var cached))
             return cached;
 
-        var value = ExpressionValueEvaluator.Evaluate(expression);
+        var evaluation = expression is MethodCallExpression call ? CaptureMethodArguments(call, cache) : expression;
+        var value = ExpressionValueEvaluator.Evaluate(evaluation);
+        cache[expression] = value;
+        return value;
+    }
+
+    static Expression CaptureMethodArguments(MethodCallExpression call, Dictionary<Expression, object?> cache)
+    {
+        if (call.Object?.Type.IsByRefLike == true ||
+            call.Method.GetParameters().Any(parameter => parameter.ParameterType.IsByRef) ||
+            call.Arguments.Any(argument => argument.Type.IsByRefLike))
+            return call;
+
+        var receiver = call.Object is null ? null : CaptureValue(call.Object, cache);
+        var arguments = call.Arguments.Select(argument => CaptureValue(argument, cache));
+        return call.Update(receiver, arguments);
+    }
+
+    static Expression CaptureValue(Expression expression, Dictionary<Expression, object?> cache) =>
+        Expression.Call(CaptureMethod.MakeGenericMethod(expression.Type),
+            Expression.Constant(cache), Expression.Constant(expression, typeof(Expression)), expression);
+
+    static T Capture<T>(Dictionary<Expression, object?> cache, Expression expression, T value)
+    {
         cache[expression] = value;
         return value;
     }

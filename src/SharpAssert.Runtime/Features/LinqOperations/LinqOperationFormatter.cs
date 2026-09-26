@@ -11,17 +11,17 @@ static class LinqOperationFormatter
 {
     const int CollectionPreviewLimit = 10;
     
-    public static FormattedEvaluationResult BuildResult(MethodCallExpression methodCall, string expressionText, bool value)
+    public static FormattedEvaluationResult BuildResult(MethodCallExpression methodCall, string expressionText, bool value, Func<Expression, object?> getValue)
     {
         var methodName = methodCall.Method.Name;
-        var collection = GetValue(methodCall.Object ?? methodCall.Arguments[0]);
+        var collection = getValue(methodCall.Object ?? methodCall.Arguments[0]);
 
         if (IsUnavailable(collection))
             return new FormattedEvaluationResult(expressionText, value, new[] { DescribeUnavailable(collection) });
         
         var lines = methodName switch
         {
-            "Contains" => FormatContainsFailure(methodCall, collection),
+            "Contains" => FormatContainsFailure(methodCall, collection, getValue),
             "Any" => FormatAnyFailure(methodCall, collection),
             "All" => FormatAllFailure(methodCall, collection),
             _ => new[] { "Unsupported LINQ operation" }
@@ -30,9 +30,14 @@ static class LinqOperationFormatter
         return new FormattedEvaluationResult(expressionText, value, lines);
     }
     
-    static IReadOnlyList<string> FormatContainsFailure(MethodCallExpression methodCall, object? collection)
+    public static FormattedEvaluationResult BuildCapturedContainsResult(string expressionText, object? collection, object? item) =>
+        new(expressionText, false, FormatContainsFailure(collection, item));
+
+    static IReadOnlyList<string> FormatContainsFailure(MethodCallExpression methodCall, object? collection, Func<Expression, object?> getValue) =>
+        FormatContainsFailure(collection, getValue(methodCall.Arguments.Last()));
+
+    static IReadOnlyList<string> FormatContainsFailure(object? collection, object? item)
     {
-        var item = GetValue(methodCall.Arguments.Last()); // Contains item
         if (IsUnavailable(item))
             return new[] { DescribeUnavailable(item) };
 
@@ -150,8 +155,6 @@ static class LinqOperationFormatter
     };
     
     static string FormatValue(object? value) => ValueFormatter.Format(value);
-    
-    static object? GetValue(Expression expression) => Evaluate(expression);
     
     static string GetPredicateString(MethodCallExpression methodCall) => 
         methodCall.Arguments.Count > 1 ? 

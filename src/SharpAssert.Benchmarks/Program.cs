@@ -13,11 +13,18 @@ var scenarios = new (string Name, int Iterations, Action<int> Run)[]
 {
     ("Sharp rewritten pass", 20000, index => SharpPass(index, index)),
     ("Sharp boolean pass", 20000, index => SharpBooleanPass(index >= 0)),
+    ("Sharp comparison with message pass", 20000, index => SharpMessagePass(index, index)),
+    ("Sharp boolean property pass", 20000, index => SharpPropertyPass(ResultSink.Property)),
+    ("Sharp expectation pass", 20000, index => SharpExpectationPass(index)),
+    ("Sharp logical pass (fallback)", 20000, index => SharpLogicalPass(index)),
+    ("Sharp Contains pass", 20000, index => SharpContainsPass(ResultSink.Text)),
+    ("Sharp StartsWith pass", 20000, index => SharpStartsWithPass(ResultSink.Text)),
     ("Sharp direct pass (basic diagnostics)", 20000, index => SharpDirectPass(index, index)),
     ("NUnit constraint pass", 20000, index => NUnitConstraintPass(index, index)),
     ("NUnit boolean pass", 20000, index => NUnitBooleanPass(index, index)),
     ("Sharp rewritten fail", 1000, index => SharpFail(index, index + 1)),
     ("Sharp boolean fail", 1000, index => SharpBooleanFail(index < 0)),
+    ("Sharp comparison with message fail", 1000, index => SharpMessageFail(index, index + 1)),
     ("Sharp direct fail (basic diagnostics)", 1000, index => SharpDirectFail(index, index + 1)),
     ("NUnit constraint fail", 1000, index => NUnitConstraintFail(index, index + 1)),
     ("NUnit boolean fail", 1000, index => NUnitBooleanFail(index, index + 1))
@@ -49,7 +56,7 @@ foreach (var (name, iterations, run) in scenarios)
 }
 
 Console.WriteLine("Parallel pass (up to 4 workers),Operations,ops/s");
-foreach (var (name, _, run) in scenarios.Take(4))
+foreach (var (name, _, run) in scenarios.Take(7))
 {
     var throughputs = new double[7];
     for (var sample = 0; sample < throughputs.Length; sample++)
@@ -78,6 +85,43 @@ static void SharpBooleanPass(bool actual)
 }
 
 [MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpMessagePass(int actual, int expected)
+{
+    Assert(actual == expected, "Values differ");
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpPropertyPass(BooleanProperty value)
+{
+    Assert(value.IsValid);
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpExpectationPass(int index)
+{
+    Assert(SharpAssert.Expectation.From(() => index >= 0, () => ["Negative"]));
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpLogicalPass(int index)
+{
+    Assert(index >= 0 && index < 200001);
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpContainsPass(string value)
+{
+    var needle = "arp";
+    Assert(value.Contains(needle));
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpStartsWithPass(string value)
+{
+    Assert(value.StartsWith("Sha"));
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
 static void NUnitConstraintPass(int actual, int expected) => NUnitAssert.That(actual, NUnit.Framework.Is.EqualTo(expected));
 
 [MethodImpl(MethodImplOptions.NoInlining)]
@@ -103,6 +147,20 @@ static void SharpBooleanFail(bool actual)
     try
     {
         Assert(actual);
+        throw new InvalidOperationException("Expected SharpAssert failure");
+    }
+    catch (SharpAssert.SharpAssertionException error)
+    {
+        Volatile.Write(ref ResultSink.Last, error);
+    }
+}
+
+[MethodImpl(MethodImplOptions.NoInlining)]
+static void SharpMessageFail(int actual, int expected)
+{
+    try
+    {
+        Assert(actual == expected, "Values differ");
         throw new InvalidOperationException("Expected SharpAssert failure");
     }
     catch (SharpAssert.SharpAssertionException error)
@@ -153,7 +211,14 @@ static void NUnitBooleanFail(int actual, int expected)
     }
 }
 
+sealed class BooleanProperty
+{
+    public bool IsValid => true;
+}
+
 static class ResultSink
 {
     public static object? Last;
+    public static readonly BooleanProperty Property = new();
+    public static readonly string Text = "SharpAssert";
 }

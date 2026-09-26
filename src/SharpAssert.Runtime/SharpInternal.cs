@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using SharpAssert.Core;
 using SharpAssert.Features.Async;
 using SharpAssert.Features.Dynamic;
+using SharpAssert.Features.LinqOperations;
 using SharpAssert.Features.Shared;
 
 namespace SharpAssert;
@@ -54,13 +55,72 @@ public static class SharpInternal
         throw new SharpAssertionException(analysis.Format(), analysis);
     }
 
-    public static void AssertBoolean(bool condition, string expr, string file, int line)
+    public static void AssertExpectationValue(
+        Expectation expectation,
+        ExprNode exprNode,
+        string file,
+        int line,
+        string? message = null)
     {
+        var context = new ExpectationContext(exprNode.Text, file, line, message, exprNode);
+        AssertExpectation(expectation, context);
+    }
+
+    public static void AssertBoolean(bool condition, string expr, string file, int line, string? message = null)
+    {
+        if (message is not null && string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Message must be either null or non-empty", nameof(message));
+
         if (condition)
             return;
 
-        var context = new AssertionContext(expr, file, line, null, new ExprNode(expr));
+        var context = new AssertionContext(expr, file, line, message, new ExprNode(expr));
         var analysis = new AssertionEvaluationResult(context, new ValueEvaluationResult(expr, false, typeof(bool)));
+        throw new SharpAssertionException(analysis.Format(), analysis);
+    }
+
+    public static void AssertMethodCall<TReceiver, TArgument>(
+        TReceiver receiver,
+        TArgument argument,
+        Func<TReceiver, TArgument, bool> predicate,
+        Func<ExprNode> describe,
+        string file,
+        int line,
+        string? message = null)
+    {
+        if (message is not null && string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Message must be either null or non-empty", nameof(message));
+
+        if (predicate(receiver, argument))
+            return;
+
+        var exprNode = describe();
+        var context = new AssertionContext(exprNode.Text, file, line, message, exprNode);
+        var result = new MethodCallEvaluationResult(exprNode.Text, false,
+            [new ValueEvaluationResult(exprNode.Arguments![0].Text, argument, typeof(TArgument))]);
+        var analysis = new AssertionEvaluationResult(context, result);
+        throw new SharpAssertionException(analysis.Format(), analysis);
+    }
+
+    public static void AssertContains<TReceiver, TArgument>(
+        TReceiver receiver,
+        TArgument argument,
+        Func<TReceiver, TArgument, bool> contains,
+        Func<ExprNode> describe,
+        string file,
+        int line,
+        string? message = null)
+    {
+        if (message is not null && string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Message must be either null or non-empty", nameof(message));
+
+        if (contains(receiver, argument))
+            return;
+
+        var exprNode = describe();
+        var context = new AssertionContext(exprNode.Text, file, line, message, exprNode);
+        var result = LinqOperationFormatter.BuildCapturedContainsResult(exprNode.Text, receiver, argument);
+        var analysis = new AssertionEvaluationResult(context, result);
         throw new SharpAssertionException(analysis.Format(), analysis);
     }
 
@@ -71,13 +131,17 @@ public static class SharpInternal
         BinaryOp op,
         Func<ExprNode> describe,
         string file,
-        int line)
+        int line,
+        string? message = null)
     {
+        if (message is not null && string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Message must be either null or non-empty", nameof(message));
+
         if (comparison(left, right))
             return;
 
         var exprNode = describe();
-        var context = new AssertionContext(exprNode.Text, file, line, null, exprNode);
+        var context = new AssertionContext(exprNode.Text, file, line, message, exprNode);
         var result = ComparerService.GetComparisonResult(
             new AssertionOperand(left, typeof(TLeft)),
             new AssertionOperand(right, typeof(TRight)));

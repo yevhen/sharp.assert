@@ -41,6 +41,156 @@ public class CoreAssertionFixture : TestBase
         }
 
         [Test]
+        public void Should_evaluate_boolean_property_once_on_failure()
+        {
+            var counter = new BooleanCounter();
+
+            AssertFails(() => Assert(counter.Value), Value("counter.Value", false, typeof(bool)));
+            counter.Calls.Should().Be(1);
+        }
+
+        [Test]
+        public void Should_preserve_message_for_boolean_property()
+        {
+            var counter = new BooleanCounter();
+
+            var exception = NUnit.Framework.Assert.Throws<SharpAssertionException>(() => Assert(counter.Value, "Property failed"));
+            exception.Result!.Context.Message.Should().Be("Property failed");
+            counter.Calls.Should().Be(1);
+        }
+
+        [Test]
+        public void Should_evaluate_argumentless_method_once_on_failure()
+        {
+            var counter = new BooleanCounter();
+
+            AssertFails(() => Assert(counter.Check()), Value("counter.Check()", false, typeof(bool)));
+            counter.Calls.Should().Be(1);
+        }
+
+        [Test]
+        public void Should_not_repeat_method_argument_when_failure_is_formatted()
+        {
+            var calls = 0;
+            Func<string> needle = () => { calls++; return "missing"; };
+
+            NUnit.Framework.Assert.Throws<SharpAssertionException>(() => Assert("abc".Contains(needle())));
+
+            calls.Should().Be(1);
+        }
+
+        [Test]
+        public void Should_preserve_contains_diagnostics_and_argument_order()
+        {
+            var calls = new List<string>();
+            Func<string> source = () => { calls.Add("source"); return "abc"; };
+            Func<string> needle = () => { calls.Add("needle"); return "missing"; };
+
+            var exception = NUnit.Framework.Assert.Throws<SharpAssertionException>(() => Assert(source().Contains(needle())));
+
+            exception.Result!.Format().Should().Contain("Contains failed: searched for \"missing\" in [a, b, c]");
+            calls.Should().Equal("source", "needle");
+        }
+
+        [Test]
+        public void Should_rewrite_contains_without_expression_tree()
+        {
+            var source = "using static SharpAssert.Sharp; class Sample { void Check(string value, string needle) { Assert(value.Contains(needle)); } }";
+
+            var rewritten = SharpAssertRewriter.Rewrite(source, "Sample.cs");
+
+            rewritten.Should().Contain("SharpInternal.AssertContains");
+            rewritten.Should().NotContain("SharpInternal.AssertValue");
+        }
+
+        [Test]
+        public void Should_rewrite_single_argument_method_without_expression_tree()
+        {
+            var source = "using static SharpAssert.Sharp; class Sample { void Check(string value, string prefix) { Assert(value.StartsWith(prefix)); } }";
+
+            var rewritten = SharpAssertRewriter.Rewrite(source, "Sample.cs");
+
+            rewritten.Should().Contain("SharpInternal.AssertMethodCall");
+            rewritten.Should().NotContain("SharpInternal.AssertValue");
+        }
+
+        [Test]
+        public void Should_preserve_single_argument_method_diagnostics()
+        {
+            var value = "abc";
+            var prefix = "missing";
+
+            AssertFails(() => Assert(value.StartsWith(prefix)),
+                new MethodCallEvaluationResult("value.StartsWith(prefix)", false,
+                    [Value("prefix", prefix, typeof(string))]));
+        }
+
+        [Test]
+        public void Should_rewrite_contains_with_literal_without_expression_tree()
+        {
+            var source = "using static SharpAssert.Sharp; class Sample { void Check(string value) { Assert(value.Contains(\"arp\")); } }";
+
+            var rewritten = SharpAssertRewriter.Rewrite(source, "Sample.cs");
+
+            rewritten.Should().Contain("SharpInternal.AssertContains");
+        }
+
+        [Test]
+        public void Should_rewrite_contains_in_top_level_program()
+        {
+            var source = "using static SharpAssert.Sharp; System.Console.WriteLine(1); static void Check(string value) { Assert(value.Contains(\"arp\")); }";
+
+            var rewritten = SharpAssertRewriter.Rewrite(source, "Program.cs");
+
+            rewritten.Should().Contain("SharpInternal.AssertContains");
+        }
+
+        [Test]
+        public void Should_not_repeat_sequence_argument_when_failure_is_formatted()
+        {
+            var calls = 0;
+            Func<int[]> expected = () => { calls++; return [2]; };
+            var actual = new[] { 1 };
+
+            NUnit.Framework.Assert.Throws<SharpAssertionException>(() => Assert(Enumerable.SequenceEqual(actual, expected())));
+
+            calls.Should().Be(1);
+        }
+
+        [Test]
+        public void Should_not_repeat_plain_method_argument_when_failure_is_formatted()
+        {
+            var calls = 0;
+            Func<int> next = () => ++calls;
+
+            NUnit.Framework.Assert.Throws<SharpAssertionException>(() => Assert(IsEven(next())));
+
+            calls.Should().Be(1);
+        }
+
+        [Test]
+        public void Should_rewrite_argumentless_method_without_expression_tree()
+        {
+            var source = "using static SharpAssert.Sharp; class Sample { bool Check() => true; void Verify() { Assert(Check()); } }";
+
+            var rewritten = SharpAssertRewriter.Rewrite(source, "Sample.cs");
+
+            rewritten.Should().Contain("SharpInternal.AssertBoolean");
+            rewritten.Should().NotContain("SharpInternal.AssertValue");
+        }
+
+        [Test]
+        public void Should_rewrite_boolean_property_without_expression_tree()
+        {
+            var source = "using static SharpAssert.Sharp; class Sample { bool Value => true; void Check(Sample counter) { Assert(counter.Value); } }";
+
+            var rewritten = SharpAssertRewriter.Rewrite(source, "Sample.cs");
+
+            rewritten.Should().Contain("SharpInternal.AssertBoolean");
+            rewritten.Should().NotContain("SharpInternal.AssertValue");
+        }
+
+        [Test]
         public void Should_include_expression_text()
         {
             // Compiler optimizes "1 == 2" to constant "False" in expression tree
@@ -225,6 +375,20 @@ public class CoreAssertionFixture : TestBase
             });
 
             await action.Should().ThrowAsync<SharpAssertionException>();
+        }
+    }
+
+    static bool IsEven(int value) => value % 2 == 0;
+
+    sealed class BooleanCounter
+    {
+        public int Calls { get; private set; }
+        public bool Value => Check();
+
+        public bool Check()
+        {
+            Calls++;
+            return false;
         }
     }
 
