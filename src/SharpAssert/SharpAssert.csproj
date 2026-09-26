@@ -12,7 +12,7 @@
     <PackageId>SharpAssert</PackageId>
     <Title>SharpAssert</Title>
     <Description>A pytest inspired assertion library for .NET with no special syntax.</Description>
-    <PackageReleaseNotes>Initial release of SharpAssert</PackageReleaseNotes>
+    <PackageReleaseNotes>Faster successful assertions with failure-only diagnostics; captured operand values prevent repeated evaluation for supported expressions.</PackageReleaseNotes>
   </PropertyGroup>
 
   <!-- MSBuild task packages typically don't need symbol packages -->
