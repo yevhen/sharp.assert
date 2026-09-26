@@ -32,6 +32,7 @@ public static class SharpAssertRewriter
         var references = new MetadataReference[]
         {
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+            MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "System.Runtime.dll")),
             MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
             MetadataReference.CreateFromFile(typeof(Sharp).Assembly.Location)
@@ -113,6 +114,9 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
 
         HasRewrites = true;
         var condition = node.ArgumentList.Arguments[0].Expression;
+        if (condition is InvocationExpressionSyntax allCall && IsEnumerableAllCall(allCall))
+            return RewriteToAll(node, allCall);
+
         if (IsExpectationAssertion(condition))
             return RewriteToExpectation(node);
 
@@ -204,6 +208,12 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         };
         return name is not ("Contains" or "Any" or "All" or "SequenceEqual");
     }
+
+    bool IsEnumerableAllCall(InvocationExpressionSyntax call) =>
+        semanticModel.GetSymbolInfo(call).Symbol is IMethodSymbol method &&
+        method.Name == "All" &&
+        method.ContainingType.ToDisplayString() == "System.Linq.Enumerable" &&
+        IsBooleanAssertion(call);
 
     bool IsExpectationAssertion(ExpressionSyntax expression)
     {
@@ -394,6 +404,32 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
             CreateMessageArgument(data.MessageExpression)
         ]);
         var invocation = SyntaxFactory.InvocationExpression(CreateSharpInternalMethodAccess("AssertExpectationValue"))
+            .WithArgumentList(SyntaxFactory.ArgumentList(arguments));
+        return AddLineDirectives(invocation, node, data.LineNumber);
+    }
+
+    InvocationExpressionSyntax RewriteToAll(InvocationExpressionSyntax node, InvocationExpressionSyntax call)
+    {
+        var data = ExtractRewriteData(node);
+        var isStatic = call.ArgumentList.Arguments.Count == 2;
+        var source = isStatic
+            ? call.ArgumentList.Arguments[0].Expression
+            : ((MemberAccessExpressionSyntax)call.Expression).Expression;
+        var predicate = call.ArgumentList.Arguments[isStatic ? 1 : 0].Expression;
+        ExpressionSyntax messageFactory = data.MessageExpression is null
+            ? SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression)
+            : CreateLambdaExpression(data.MessageExpression);
+
+        var arguments = SyntaxFactory.SeparatedList([
+            SyntaxFactory.Argument(source),
+            SyntaxFactory.Argument(predicate),
+            CreateStringLiteralArgument(predicate.ToString()),
+            SyntaxFactory.Argument(CreateLambdaExpression(GenerateExprNodeSyntax(data.Expression))),
+            CreateStringLiteralArgument(fileName),
+            CreateNumericLiteralArgument(data.LineNumber),
+            SyntaxFactory.Argument(messageFactory)
+        ]);
+        var invocation = SyntaxFactory.InvocationExpression(CreateSharpInternalMethodAccess("AssertAll"))
             .WithArgumentList(SyntaxFactory.ArgumentList(arguments));
         return AddLineDirectives(invocation, node, data.LineNumber);
     }

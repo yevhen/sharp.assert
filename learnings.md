@@ -28,7 +28,8 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Captured Boolean Analysis:** Wrap typed subexpressions with a per-assertion `Record` call, strip the wrappers and seed the analyzer cache only on failure; this preserves short-circuit order while deferring expression-tree construction. Exclude ref-like operands, value-type receivers, constant-folded and custom comparisons until their semantics are verified.
 - **Implicit Using Symbols:** The per-file rewriter misses SDK-generated `global using` directives unless the MSBuild task supplies the project's `.GlobalUsings.g.cs`; missing `System` caused delegate calls to remain on the old path.
 - **Local Functions:** Expression trees cannot reference local functions; rewrite bool assertions containing them to direct boolean validation instead of a captured expression tree.
-- **All Diagnostic Trade-off:** `Enumerable.All` stops at the first false item, but the existing formatter invokes the predicate again for every item to list all failures; a no-replay diagnostic cannot show all failing items without changing short-circuit behavior.
+- **All Diagnostic Trade-off:** `Enumerable.All` stops at the first false item, so a no-replay diagnostic can show only that item; pass the original predicate through a recording wrapper and render the recorded item without re-enumerating or invoking the predicate again.
+- **Enumerable Binding:** `typeof(Enumerable).Assembly` alone does not let the isolated Roslyn compilation bind `Enumerable.All`; add the runtime `System.Runtime.dll` reference to resolve `IEnumerable<T>` and detect the actual LINQ method.
 - **Expression Tree Limitations:** Expression trees cannot contain local functions. All logic must be implemented as instance or static methods.
 - **Binary Comparisons (`==`, `!=`, `>`, etc.):**
     - These are analyzed to extract the final values of the left and right operands for inclusion in the failure message.

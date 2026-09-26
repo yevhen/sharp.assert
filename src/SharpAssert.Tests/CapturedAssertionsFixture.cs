@@ -125,6 +125,79 @@ public class CapturedAssertionsFixture
     }
 
     [Test]
+    public void Should_rewrite_Enumerable_All_without_expression_tree()
+    {
+        var source = "using static SharpAssert.Sharp; class Sample { void Check(int[] items) { Assert(items.All(x => x > 0)); } }";
+
+        var rewritten = SharpAssertRewriter.Rewrite(source, "Sample.cs", "global using System; global using System.Linq;");
+
+        rewritten.Should().Contain("SharpInternal.AssertAll");
+    }
+
+    [Test]
+    public void Should_not_repeat_All_predicate_or_enumeration()
+    {
+        var yields = 0;
+        var calls = 0;
+        IEnumerable<int> Items()
+        {
+            yields++;
+            yield return -1;
+            yields++;
+            yield return 0;
+        }
+        var items = Items();
+        Func<int, bool> predicate = item => { calls++; return item > 0; };
+
+        SharpAssertionException? exception = null;
+        try
+        {
+            Assert(items.All(predicate));
+        }
+        catch (SharpAssertionException error)
+        {
+            exception = error;
+        }
+
+        exception.Should().NotBeNull();
+        exception!.Result!.Format().Should().Contain("first item -1");
+        yields.Should().Be(1);
+        calls.Should().Be(1);
+    }
+
+    [Test]
+    public void Should_capture_static_Enumerable_All_failure_once()
+    {
+        var calls = 0;
+        var items = new[] { -1, 0 };
+        Func<int, bool> predicate = item => { calls++; return item > 0; };
+
+        SharpAssertionException? exception = null;
+        try
+        {
+            Assert(Enumerable.All(items, predicate));
+        }
+        catch (SharpAssertionException error)
+        {
+            exception = error;
+        }
+
+        exception.Should().NotBeNull();
+        exception!.Result!.Format().Should().Contain("first item -1");
+        calls.Should().Be(1);
+    }
+
+    [Test]
+    public void Should_preserve_Enumerable_All_null_source_error()
+    {
+        IEnumerable<int>? items = null;
+
+        Action assertion = () => Assert(items!.All(item => item > 0));
+
+        assertion.Should().Throw<ArgumentNullException>().WithParameterName("source");
+    }
+
+    [Test]
     public void Should_capture_array_sequence_arguments_once()
     {
         var calls = 0;

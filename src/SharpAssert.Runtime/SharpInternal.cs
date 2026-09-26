@@ -130,6 +130,41 @@ public static class SharpInternal
         throw new SharpAssertionException(analysis.Format(), analysis);
     }
 
+    public static void AssertAll<T>(
+        IEnumerable<T> source,
+        Func<T, bool> predicate,
+        string predicateText,
+        Func<ExprNode> describe,
+        string file,
+        int line,
+        Func<string?>? messageFactory)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(predicate);
+
+        object? firstFailure = null;
+        var passed = Enumerable.All(source, item =>
+        {
+            var matches = predicate(item);
+            if (!matches)
+                firstFailure = item;
+            return matches;
+        });
+
+        var message = messageFactory?.Invoke();
+        if (message is not null && string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Message must be either null or non-empty", "message");
+
+        if (passed)
+            return;
+
+        var exprNode = describe();
+        var context = new AssertionContext(exprNode.Text, file, line, message, exprNode);
+        var result = LinqOperationFormatter.BuildCapturedAllResult(exprNode.Text, firstFailure, predicateText);
+        var analysis = new AssertionEvaluationResult(context, result);
+        throw new SharpAssertionException(analysis.Format(), analysis);
+    }
+
     public static void AssertSequenceEqual<TReceiver, TArgument>(
         TReceiver receiver,
         TArgument argument,

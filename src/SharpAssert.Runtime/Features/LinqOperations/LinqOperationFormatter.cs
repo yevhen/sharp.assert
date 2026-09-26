@@ -2,7 +2,6 @@ using System.Collections;
 using System.Linq.Expressions;
 using SharpAssert.Core;
 using SharpAssert.Features.Shared;
-using static SharpAssert.Features.Shared.ExpressionValueEvaluator;
 using static SharpAssert.Features.Shared.EvaluationUnavailableHelpers;
 
 namespace SharpAssert.Features.LinqOperations;
@@ -23,13 +22,16 @@ static class LinqOperationFormatter
         {
             "Contains" => FormatContainsFailure(methodCall, collection, getValue),
             "Any" => FormatAnyFailure(methodCall, collection),
-            "All" => FormatAllFailure(methodCall, collection),
+            "All" => FormatAllFailure(methodCall),
             _ => new[] { "Unsupported LINQ operation" }
         };
 
         return new FormattedEvaluationResult(expressionText, value, lines);
     }
     
+    public static FormattedEvaluationResult BuildCapturedAllResult(string expressionText, object? firstFailure, string predicateText) =>
+        new(expressionText, false, [$"All failed: first item {ValueFormatter.Format(firstFailure)} did not match {predicateText}"]);
+
     public static FormattedEvaluationResult BuildCapturedContainsResult(string expressionText, object? collection, object? item) =>
         new(expressionText, false, FormatContainsFailure(collection, item));
 
@@ -70,56 +72,11 @@ static class LinqOperationFormatter
         };
     }
     
-    static IReadOnlyList<string> FormatAllFailure(MethodCallExpression methodCall, object? collection)
-    {
-        if (IsUnavailable(collection))
-            return new[] { DescribeUnavailable(collection) };
-
-        var predicateStr = GetPredicateString(methodCall);
-        var predicateArg = GetPredicateArgument(methodCall);
-
-        var failingItems = FindFailingItems(collection, predicateArg);
-        var failingStr = failingItems.Any()
-            ? FormatCollection(failingItems)
-            : FormatCollection(collection);
-        
-        return new[]
-        {
-            $"All failed: items {failingStr} did not match {predicateStr}"
-        };
-    }
-
-    static Expression? GetPredicateArgument(MethodCallExpression methodCall)
-    {
-        return methodCall.Arguments.Count > 1 ? methodCall.Arguments[1] : null;
-    }
+    static IReadOnlyList<string> FormatAllFailure(MethodCallExpression methodCall) =>
+        [$"All failed: {GetPredicateString(methodCall)} returned false"];
 
     static string ExtractPredicateString(Expression predicateExpr) =>
         predicateExpr is LambdaExpression lambda ? lambda.ToString() : predicateExpr.ToString();
-
-    static IEnumerable<object?> FindFailingItems(object? collection, Expression? predicateExpr)
-    {
-        if (collection is not IEnumerable enumerable || predicateExpr == null)
-            return [];
-
-        var predicate = TryCompilePredicate(predicateExpr, out var compilationFailure);
-        if (compilationFailure != null)
-            return new object?[] { compilationFailure };
-
-        return predicate == null ? [] : FindNonMatchingItems(enumerable, predicate);
-    }
-    
-    static Delegate? TryCompilePredicate(Expression predicateExpr, out EvaluationUnavailable? compilationFailure) =>
-        CompilePredicate(predicateExpr, out compilationFailure);
-
-    public static object?[] FindNonMatchingItems(IEnumerable enumerable, Delegate predicate) =>
-        enumerable.Cast<object?>().Where(item => IsMatching(item, predicate)).ToArray();
-
-    static bool IsMatching(object? item, Delegate predicate)
-    {
-        var matches = (bool)predicate.DynamicInvoke(item)!;
-        return !matches;
-    }
     
     static string FormatCollection(object? collection)
     {
@@ -156,16 +113,7 @@ static class LinqOperationFormatter
     
     static string FormatValue(object? value) => ValueFormatter.Format(value);
     
-    static string GetPredicateString(MethodCallExpression methodCall) => 
-        methodCall.Arguments.Count > 1 ? 
+    static string GetPredicateString(MethodCallExpression methodCall) =>
+        methodCall.Arguments.Count > 1 ?
             ExtractPredicateString(methodCall.Arguments[1]) : "predicate";
-    
-    static Delegate? CompilePredicate(Expression predicateExpr, out EvaluationUnavailable? compilationFailure)
-    {
-        var lambda = predicateExpr as LambdaExpression ?? Expression.Lambda(predicateExpr);
-        if (TryCompileLambda(lambda, out var compiled, out compilationFailure))
-            return compiled;
-
-        return null;
-    }
 }

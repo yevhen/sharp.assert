@@ -38,7 +38,7 @@ public class LinqOperationsFixture : TestBase
             var items = new[] { -1, 0, 1, 2 };
             
             var expected = Formatted("items.All(x => x > 0)",
-                "All failed: items [-1, 0] did not match x => (x > 0)");
+                "All failed: first item -1 did not match x => x > 0");
 
             AssertFails(() => Assert(items.All(x => x > 0)), expected);
         }
