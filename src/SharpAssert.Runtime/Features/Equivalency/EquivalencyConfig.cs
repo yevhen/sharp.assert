@@ -63,7 +63,19 @@ public sealed class EquivalencyConfig<T>
     /// <exception cref="ArgumentException">
     /// Thrown when the expression does not refer to a property or field.
     /// </exception>
-    public EquivalencyConfig<T> Excluding(Expression<Func<T, object>> memberSelector)
+#nullable disable annotations
+    public EquivalencyConfig<T> Excluding(Expression<Func<T, object>> memberSelector) =>
+        Excluding<object>(memberSelector);
+#nullable restore annotations
+
+    /// <summary>Excludes the selected property or field from comparison.</summary>
+    /// <typeparam name="TMember">The member type, which can be nullable.</typeparam>
+    /// <param name="memberSelector">An expression that selects a property or field.</param>
+    /// <returns>This configuration instance.</returns>
+    /// <exception cref="ArgumentException">The expression does not select a property or field.</exception>
+    /// <remarks>The selector is not executed. Use separate configurations for concurrent comparisons.</remarks>
+    /// <example><code>config.Excluding(item => item.Name);</code></example>
+    public EquivalencyConfig<T> Excluding<TMember>(Expression<Func<T, TMember>> memberSelector)
     {
         var memberName = GetMemberName(memberSelector);
         ComparisonConfig.MembersToIgnore.Add(memberName);
@@ -77,12 +89,12 @@ public sealed class EquivalencyConfig<T>
     /// <returns>This configuration instance for method chaining.</returns>
     /// <remarks>
     /// <para>
-    /// When you use <see cref="Including"/>, only explicitly included members will be compared.
+    /// When you use <see cref="Including{TMember}"/>, only explicitly included members will be compared.
     /// All other members are ignored. This is useful when you only care about a few properties
     /// in a large object graph.
     /// </para>
     /// <para>
-    /// Combining <see cref="Including"/> with <see cref="Excluding"/> allows fine-grained control:
+    /// Combining <see cref="Including{TMember}"/> with <see cref="Excluding{TMember}"/> allows fine-grained control:
     /// include a subset of members, then exclude specific ones from that subset.
     /// </para>
     /// </remarks>
@@ -99,7 +111,19 @@ public sealed class EquivalencyConfig<T>
     /// <exception cref="ArgumentException">
     /// Thrown when the expression does not refer to a property or field.
     /// </exception>
-    public EquivalencyConfig<T> Including(Expression<Func<T, object>> memberSelector)
+#nullable disable annotations
+    public EquivalencyConfig<T> Including(Expression<Func<T, object>> memberSelector) =>
+        Including<object>(memberSelector);
+#nullable restore annotations
+
+    /// <summary>Restricts comparison to the selected property or field.</summary>
+    /// <typeparam name="TMember">The member type, which can be nullable.</typeparam>
+    /// <param name="memberSelector">An expression that selects a property or field.</param>
+    /// <returns>This configuration instance.</returns>
+    /// <exception cref="ArgumentException">The expression does not select a property or field.</exception>
+    /// <remarks>The selector is not executed. Use separate configurations for concurrent comparisons.</remarks>
+    /// <example><code>config.Including(item => item.Name);</code></example>
+    public EquivalencyConfig<T> Including<TMember>(Expression<Func<T, TMember>> memberSelector)
     {
         var memberName = GetMemberName(memberSelector);
         ComparisonConfig.MembersToInclude.Add(memberName);
@@ -372,7 +396,7 @@ public sealed class EquivalencyConfig<T>
         return this;
     }
 
-    static string GetMemberName(Expression<Func<T, object>> expression)
+    static string GetMemberName(LambdaExpression expression)
     {
         if (expression.Body is MemberExpression memberExpr)
             return memberExpr.Member.Name;

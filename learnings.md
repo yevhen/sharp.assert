@@ -88,6 +88,8 @@ This document is organized by topic to consolidate key learnings about the proje
 
 ## API Design & Dependencies
 
+- Nullable equivalency selectors use generic overloads. The legacy non-generic signatures use nullable-oblivious annotations: `Expression<Func<T, object?>>` would cause CS8620 for existing `Expression<Func<T, object>>` variables. Keep nullable warnings enabled and test both forms.
+
 - CompareNETObjects 4.84.0 uses System.Drawing.Common 8 for FontComparer; NuGet selects that dependency on Linux too and can replace a consumer's System.Drawing.Common 6. Use SharpAssert.CompareNETObjects 4.84.0-sharpassert.1, built from upstream v4.84 without font comparison. Publish the fork package before a SharpAssert release.
 - ComparisonDependencyFixture checks assembly references and retained dictionary, DateOnly, TimeOnly, and DataTable comparison. Check packed NuGet dependencies too; assembly checks alone do not prove the restore graph.
 
