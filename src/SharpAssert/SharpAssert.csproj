@@ -12,7 +12,6 @@
     <PackageId>SharpAssert</PackageId>
     <Title>SharpAssert</Title>
     <Description>A pytest inspired assertion library for .NET with no special syntax.</Description>
-    <PackageReleaseNotes>Remove the System.Drawing.Common dependency from object comparison to prevent version conflicts in non-Windows consumers.</PackageReleaseNotes>
   </PropertyGroup>
 
   <!-- MSBuild task packages typically don't need symbol packages -->

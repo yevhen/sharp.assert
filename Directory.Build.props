@@ -1,7 +1,8 @@
 <Project>
 
     <PropertyGroup>
-        <Version>1.5.1</Version>
+        <Version>1.6.0</Version>
+        <PackageReleaseNotes>Restore eager AND checks, add native property patterns, compare DateTimeOffset instants, support nullable selectors, and add inline exception diagnostics.</PackageReleaseNotes>
         
         <!-- Version suffix for local development builds -->
         <VersionSuffix Condition="'$(VersionSuffix)' == '' AND '$(CI)' != 'true'">local</VersionSuffix>
