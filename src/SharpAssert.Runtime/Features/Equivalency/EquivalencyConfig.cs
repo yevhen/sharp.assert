@@ -18,6 +18,10 @@ namespace SharpAssert;
 /// how collections are compared.
 /// </para>
 /// <para>
+/// DateTimeOffset values compare by instant, with tick precision. To also compare offsets,
+/// use <c>Using&lt;DateTimeOffset&gt;((left, right) => left.EqualsExact(right))</c>.
+/// </para>
+/// <para>
 /// Configuration methods are chainable, allowing multiple customizations to be applied
 /// in a single expression.
 /// </para>
@@ -39,7 +43,10 @@ namespace SharpAssert;
 /// </example>
 public sealed class EquivalencyConfig<T>
 {
-    internal ComparisonConfig ComparisonConfig { get; } = new();
+    internal ComparisonConfig ComparisonConfig { get; } = new()
+    {
+        CustomComparers = [new CustomComparer<DateTimeOffset, DateTimeOffset>((left, right) => left == right)]
+    };
 
     /// <summary>
     /// Excludes a property or field from the comparison.
@@ -321,7 +328,7 @@ public sealed class EquivalencyConfig<T>
     /// </example>
     public EquivalencyConfig<T> Using<TType>(Func<TType, TType, bool> comparer)
     {
-        ComparisonConfig.CustomComparers.Add(
+        ComparisonConfig.CustomComparers.Insert(0,
             new CustomComparer<TType, TType>((a, b) => comparer(a, b)));
         return this;
     }
@@ -347,7 +354,7 @@ public sealed class EquivalencyConfig<T>
     /// </example>
     public EquivalencyConfig<T> Using<TType>(IEqualityComparer<TType> comparer)
     {
-        ComparisonConfig.CustomComparers.Add(
+        ComparisonConfig.CustomComparers.Insert(0,
             new CustomComparer<TType, TType>((a, b) => comparer.Equals(a, b)));
         return this;
     }
