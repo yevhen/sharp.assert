@@ -47,7 +47,7 @@ This document is organized by topic to consolidate key learnings about the proje
 
 ## Runtime: Diagnostics & Formatting
 
-- Inline exception reads need a guard around the result factory before fast-path argument evaluation. Check capture status without reading exception properties; retain native getter errors outside assertions and do not catch arbitrary InvalidOperationException. Awaited results need an async factory guard.
+- Inline exception reads need a context-aware capture call before fast-path argument evaluation. Pass the action directly and validate captured results without reading properties; extra source lambdas hide `out var`. Keep user lambdas and type syntax unchanged. Do not catch arbitrary InvalidOperationException.
 
 - **Standard Failure Message:** The exception format is inspired by pytest: `Assertion failed: {expr} at {file}:{line}`.
 - **Binary Comparison Message:** For failed binary comparisons, the message is augmented with the evaluated operands:

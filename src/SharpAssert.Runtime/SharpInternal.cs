@@ -94,8 +94,8 @@ public static class SharpInternal
         AssertExpectation(expectation, context);
     }
 
-    public static Sharp.ExceptionResult<T> RequireException<T>(
-        Func<Sharp.ExceptionResult<T>> create,
+    public static Sharp.ExceptionResult<T> CaptureException<T>(
+        Action action,
         string expr,
         string file,
         int line,
@@ -104,18 +104,18 @@ public static class SharpInternal
         Sharp.ExceptionResult<T> result;
         try
         {
-            result = create();
+            result = Sharp.Throws<T>(action);
         }
         catch (SharpAssertionException error) when (error.Result is null)
         {
             throw ExceptionCheckFailure(expr, file, line, messageFactory, error.Message);
         }
 
-        return RequireCapturedException(result, expr, file, line, messageFactory);
+        return RequireException(result, expr, file, line, messageFactory);
     }
 
-    public static async Task<Sharp.ExceptionResult<T>> RequireExceptionAsync<T>(
-        Func<Task<Sharp.ExceptionResult<T>>> create,
+    public static async Task<Sharp.ExceptionResult<T>> CaptureExceptionAsync<T>(
+        Func<Task> action,
         string expr,
         string file,
         int line,
@@ -124,14 +124,24 @@ public static class SharpInternal
         Sharp.ExceptionResult<T> result;
         try
         {
-            result = await create();
+            result = await Sharp.ThrowsAsync<T>(action);
         }
         catch (SharpAssertionException error) when (error.Result is null)
         {
             throw ExceptionCheckFailure(expr, file, line, messageFactory, error.Message);
         }
 
-        return RequireCapturedException(result, expr, file, line, messageFactory);
+        return RequireException(result, expr, file, line, messageFactory);
+    }
+
+    public static Sharp.ExceptionResult<T> RequireException<T>(
+        Sharp.ExceptionResult<T> result, string expr, string file, int line, Func<string?>? messageFactory) where T : Exception
+    {
+        if (result.HasException)
+            return result;
+
+        throw ExceptionCheckFailure(expr, file, line, messageFactory,
+            $"Expected exception of type '{typeof(T).FullName}', but no exception was thrown");
     }
 
     public static void AssertBoolean(bool condition, string expr, string file, int line, string? message = null)
@@ -468,16 +478,6 @@ public static class SharpInternal
             return;
 
         throw new SharpAssertionException(analysis.Format(), analysis);
-    }
-
-    static Sharp.ExceptionResult<T> RequireCapturedException<T>(
-        Sharp.ExceptionResult<T> result, string expr, string file, int line, Func<string?>? messageFactory) where T : Exception
-    {
-        if (result.HasException)
-            return result;
-
-        throw ExceptionCheckFailure(expr, file, line, messageFactory,
-            $"Expected exception of type '{typeof(T).FullName}', but no exception was thrown");
     }
 
     static SharpAssertionException ExceptionCheckFailure(

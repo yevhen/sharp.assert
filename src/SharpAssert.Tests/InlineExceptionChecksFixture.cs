@@ -124,6 +124,48 @@ public class InlineExceptionChecksFixture
     }
 
     [Test]
+    public void Should_keep_action_factory_out_variables_in_the_original_scope()
+    {
+        var source = """
+            using System;
+            using static SharpAssert.Sharp;
+            public class Sample
+            {
+                static Action Operation(out int marker)
+                {
+                    marker = 42;
+                    return () => throw new ArgumentException("expected");
+                }
+                public static void Check()
+                {
+                    Assert(Throws<ArgumentException>(Operation(out var marker)).Message == "expected");
+                    Assert(marker == 42);
+                }
+            }
+            """;
+
+        RewrittenSource.LoadCheck(source)();
+    }
+
+    [Test]
+    public void Should_not_change_exception_checks_inside_the_user_action()
+    {
+        Assert(Throws<ArgumentException>(() =>
+        {
+            Assert(!Throws<InvalidOperationException>(() => { }));
+            throw new ArgumentException("expected");
+        }).Message == "expected");
+    }
+
+    [Test]
+    public void Should_not_guard_exception_result_type_names()
+    {
+        var name = typeof(ExceptionResult<ArgumentException>).Name;
+
+        Assert(Throws<ArgumentException>(() => throw new ArgumentException(name)).Message == typeof(ExceptionResult<ArgumentException>).Name);
+    }
+
+    [Test]
     public void Should_keep_negated_Throws_behavior()
     {
         var calls = 0;

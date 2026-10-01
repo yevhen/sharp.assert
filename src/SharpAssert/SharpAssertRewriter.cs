@@ -1183,26 +1183,54 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
     {
         public override SyntaxNode? Visit(SyntaxNode? node)
         {
-            if (node is not ExpressionSyntax expression || !IsExceptionResultType(semanticModel.GetTypeInfo(expression).Type))
-                return base.Visit(node);
+            if (node is AnonymousFunctionExpressionSyntax)
+                return node;
 
-            if (expression is ParenthesizedExpressionSyntax)
+            if (node is not ExpressionSyntax expression ||
+                !IsExceptionResultType(semanticModel.GetTypeInfo(expression).Type) ||
+                semanticModel.GetSymbolInfo(expression).Symbol is INamedTypeSymbol ||
+                expression is ParenthesizedExpressionSyntax ||
+                expression is InvocationExpressionSyntax call && IsThrowsCall(call))
                 return base.Visit(node);
 
             var value = (ExpressionSyntax)base.Visit(node)!;
-            var hasAwait = value.DescendantNodesAndSelf().OfType<AwaitExpressionSyntax>().Any();
+            return CreateInvocation(SyntaxFactory.IdentifierName("RequireException"), value.WithoutTrivia())
+                .WithTriviaFrom(expression);
+        }
+
+        public override SyntaxNode? VisitInvocationExpression(InvocationExpressionSyntax node)
+        {
+            if (!IsThrowsCall(node))
+                return base.VisitInvocationExpression(node);
+
+            var name = node.Expression is GenericNameSyntax generic
+                ? generic
+                : (GenericNameSyntax)((MemberAccessExpressionSyntax)node.Expression).Name;
+            var methodName = name.Identifier.ValueText == "Throws" ? "CaptureException" : "CaptureExceptionAsync";
+            var action = (ExpressionSyntax)Visit(node.ArgumentList.Arguments[0].Expression)!;
+            return CreateInvocation(name.WithIdentifier(SyntaxFactory.Identifier(methodName)), action).WithTriviaFrom(node);
+        }
+
+        bool IsThrowsCall(InvocationExpressionSyntax call) =>
+            semanticModel.GetSymbolInfo(call).Symbol is IMethodSymbol
+            {
+                Name: "Throws" or "ThrowsAsync",
+                ContainingType.Name: "Sharp"
+            } method && method.ContainingNamespace.ToDisplayString() == "SharpAssert";
+
+        InvocationExpressionSyntax CreateInvocation(SimpleNameSyntax method, ExpressionSyntax value)
+        {
             ExpressionSyntax messageFactory = data.MessageExpression is null
                 ? SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression)
                 : CreateLambdaExpression(data.MessageExpression);
-            var invocation = SyntaxFactory.InvocationExpression(CreateSharpInternalMethodAccess(hasAwait ? "RequireExceptionAsync" : "RequireException"),
+            return SyntaxFactory.InvocationExpression(CreateSharpInternalMethodAccess(method.Identifier.ValueText).WithName(method),
                 SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList([
-                    SyntaxFactory.Argument(hasAwait ? CreateAsyncLambda(value.WithoutTrivia()) : CreateLambdaExpression(value.WithoutTrivia())),
+                    SyntaxFactory.Argument(value),
                     CreateStringLiteralArgument(data.ExpressionText),
                     CreateStringLiteralArgument(fileName),
                     CreateNumericLiteralArgument(data.LineNumber),
                     SyntaxFactory.Argument(messageFactory)
                 ])));
-            return (hasAwait ? (ExpressionSyntax)CreateAwaitExpression(invocation) : invocation).WithTriviaFrom(expression);
         }
     }
 
