@@ -147,6 +147,29 @@ public static class SharpInternal
         throw new SharpAssertionException(analysis.Format(), analysis);
     }
 
+    public static void AssertPattern<T>(
+        T actual,
+        Func<T, bool> matches,
+        string expr,
+        string file,
+        int line,
+        Func<string?>? messageFactory)
+    {
+        var passed = matches(actual);
+        var message = messageFactory?.Invoke();
+        if (message is not null && string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Message must be either null or non-empty", "message");
+
+        if (passed)
+            return;
+
+        var input = actual is null ? "Actual: null" : $"Actual type: {actual.GetType().FullName}";
+        var context = new AssertionContext(expr, file, line, message, new ExprNode(expr));
+        var result = new FormattedEvaluationResult(expr, false, ["Pattern did not match", input]);
+        var analysis = new AssertionEvaluationResult(context, result);
+        throw new SharpAssertionException(analysis.Format(), analysis);
+    }
+
     public static void AssertMethodCall<TReceiver, TArgument>(
         TReceiver receiver,
         TArgument argument,

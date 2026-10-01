@@ -129,6 +129,18 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
                 ? RewriteToComparison(node, inlineComparison)
                 : RewriteToBoolean(node, condition);
 
+        if (condition.DescendantNodesAndSelf().OfType<IsPatternExpressionSyntax>().Any())
+        {
+            var unwrapped = condition;
+            while (unwrapped is ParenthesizedExpressionSyntax group)
+                unwrapped = group.Expression;
+
+            return unwrapped is IsPatternExpressionSyntax pattern && CanCaptureType(pattern.Expression) &&
+                   !pattern.Pattern.DescendantNodesAndSelf().OfType<SingleVariableDesignationSyntax>().Any()
+                ? RewriteToPattern(node, pattern)
+                : RewriteToBoolean(node, condition);
+        }
+
         if (condition is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax member, ArgumentList.Arguments.Count: 1 } call &&
             (CanUseFastArraySequenceEqual(call, member) || CanUseFastMethodCall(call, member)))
             return RewriteToMethodCall(node, call, member);
@@ -288,6 +300,35 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
             CreateMessageArgument(data.MessageExpression)
         ]);
         var invocation = SyntaxFactory.InvocationExpression(CreateSharpInternalMethodAccess("AssertBoolean"))
+            .WithArgumentList(SyntaxFactory.ArgumentList(arguments));
+        return AddLineDirectives(invocation, node, data.LineNumber);
+    }
+
+    InvocationExpressionSyntax RewriteToPattern(InvocationExpressionSyntax node, IsPatternExpressionSyntax pattern)
+    {
+        var data = ExtractRewriteData(node);
+        var name = "patternValue";
+        for (var suffix = 1; pattern.DescendantTokens().Any(token => token.ValueText == name); suffix++)
+            name = $"patternValue{suffix}";
+
+        var parameter = SyntaxFactory.Parameter(SyntaxFactory.Identifier(name));
+        var condition = pattern.WithExpression(SyntaxFactory.IdentifierName(name))
+            .WithIsKeyword(SyntaxFactory.Token(SyntaxFactory.TriviaList(SyntaxFactory.Space),
+                SyntaxKind.IsKeyword, SyntaxFactory.TriviaList(SyntaxFactory.Space)));
+        var matches = SyntaxFactory.ParenthesizedLambdaExpression(
+            SyntaxFactory.ParameterList(SyntaxFactory.SingletonSeparatedList(parameter)), condition);
+        ExpressionSyntax messageFactory = data.MessageExpression is null
+            ? SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression)
+            : CreateLambdaExpression(data.MessageExpression);
+        var arguments = SyntaxFactory.SeparatedList([
+            SyntaxFactory.Argument(pattern.Expression),
+            SyntaxFactory.Argument(matches),
+            CreateStringLiteralArgument(data.ExpressionText),
+            CreateStringLiteralArgument(fileName),
+            CreateNumericLiteralArgument(data.LineNumber),
+            SyntaxFactory.Argument(messageFactory)
+        ]);
+        var invocation = SyntaxFactory.InvocationExpression(CreateSharpInternalMethodAccess("AssertPattern"))
             .WithArgumentList(SyntaxFactory.ArgumentList(arguments));
         return AddLineDirectives(invocation, node, data.LineNumber);
     }

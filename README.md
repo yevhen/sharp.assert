@@ -116,6 +116,18 @@ using (new AssertionScope())
 Assert(x == 5 && y == 10);
 ```
 
+`&&` executes every independent check once. `||` uses short-circuit evaluation.
+Do not use assertion `&&` as a null or type guard for its next operand. Use one
+property pattern for dependent checks:
+
+```csharp
+Assert(value is ExpectedType { Id: 42 });
+```
+
+Property patterns use native C# matching, including nested properties, relational
+patterns, and `and`/`or` patterns. A failed root pattern reports the source pattern
+and the actual input type (or null). Diagnostics do not read the properties again.
+
 Works with custom expectations too:
 
 ```csharp

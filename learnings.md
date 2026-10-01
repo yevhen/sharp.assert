@@ -33,7 +33,8 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Any Failure Preview:** Failed `Enumerable.Any(predicate)` visits every item; record a bounded preview during that traversal so diagnostics do not enumerate the source again. Failed `Enumerable.Any()` needs only the empty-collection message.
 - **Non-Replayable Collections:** On `Contains`/`SequenceEqual` failures, inspect arrays, strings, and exact `List<T>` instances only; for a custom `IEnumerable`, omit the preview or diff rather than enumerate user code again.
 - **Enumerable Binding:** `typeof(Enumerable).Assembly` alone does not let the isolated Roslyn compilation bind `Enumerable.All`; add the runtime `System.Runtime.dll` reference to resolve `IEnumerable<T>` and detect the actual LINQ method.
-- **Expression Tree Limitations:** Expression trees cannot contain local functions. All logic must be implemented as instance or static methods.
+- **Expression Tree Limitations:** Expression trees cannot contain local functions or C# pattern matching. Use executable boolean code for those assertion shapes.
+- **Native Patterns:** Evaluate root property patterns with a typed delegate and report only the source and input type; object formatting can read properties again. Keep variable-binding and composed patterns in direct boolean code to retain C# scope and native matching semantics.
 - **Binary Comparisons (`==`, `!=`, `>`, etc.):**
     - These are analyzed to extract the final values of the left and right operands for inclusion in the failure message.
     - A `BinaryOp` enum is used to represent all C# comparison operators.
