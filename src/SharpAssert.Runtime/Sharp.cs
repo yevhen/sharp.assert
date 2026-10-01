@@ -314,6 +314,8 @@ public static class Sharp
         readonly T? exception;
         readonly bool success;
 
+        internal bool HasException => success;
+
         internal ExceptionResult(T? exception, bool success)
         {
             this.exception = exception;

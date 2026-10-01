@@ -21,9 +21,9 @@ using static SharpAssert.Sharp;
 ## API
 
 ```csharp
-Assert(bool condition [, string message])
-TException Throws<TException>(Action action [, string message])
-Task<TException> ThrowsAsync<TException>(Func<Task> action [, string message])
+Assert(AssertValue value [, string message]) // Accepts bool or Expectation
+ExceptionResult<TException> Throws<TException>(Action action)
+Task<ExceptionResult<TException>> ThrowsAsync<TException>(Func<Task> action)
 ```
 
 ## Native C# Support
@@ -34,7 +34,7 @@ SharpAssert works with standard C# - no special syntax required:
 // Comparisons
 Assert(actual == expected);  // ==, !=, <, >, <=, >=
 
-// Logical - evaluates ALL operands, shows all failures
+// AND executes all independent checks. OR uses short-circuit evaluation.
 Assert(x > 0 && y < 100);   // &&, ||, !
 
 // LINQ
@@ -55,7 +55,13 @@ Assert(await GetAsync() == expected);
 // Exceptions
 Assert(Throws<ArgumentException>(() => code));
 Assert(await ThrowsAsync<InvalidOperationException>(() => asyncCode));
+Assert(Throws<ArgumentException>(() => code).Message == "Invalid input");
 ```
+
+`Throws` returns an expectation, not an exception or a boolean. Assert the result,
+use `!` to negate it, or read `.Exception`, `.Message`, or `.Data` after an exception
+was caught. Rewritten inline checks report a missing exception at the assertion
+location and execute the action once.
 
 ## Custom Expectations
 

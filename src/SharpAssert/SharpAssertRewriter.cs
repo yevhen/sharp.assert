@@ -124,6 +124,11 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         if (IsExpectationAssertion(condition))
             return RewriteToExpectation(node);
 
+        if (ContainsExceptionResult(condition))
+            return condition is BinaryExpressionSyntax inlineComparison && IsBinaryOperation(node) && CanUseFastComparison(inlineComparison)
+                ? RewriteToComparison(node, inlineComparison)
+                : RewriteToBoolean(node, condition);
+
         if (condition is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax member, ArgumentList.Arguments.Count: 1 } call &&
             (CanUseFastArraySequenceEqual(call, member) || CanUseFastMethodCall(call, member)))
             return RewriteToMethodCall(node, call, member);
@@ -276,7 +281,7 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
     {
         var data = ExtractRewriteData(node);
         var arguments = SyntaxFactory.SeparatedList([
-            SyntaxFactory.Argument(EagerCondition(condition)),
+            SyntaxFactory.Argument(EagerCondition(GuardExceptionReads(condition, data))),
             CreateStringLiteralArgument(data.ExpressionText),
             CreateStringLiteralArgument(fileName),
             CreateNumericLiteralArgument(data.LineNumber),
@@ -383,8 +388,8 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
             SyntaxFactory.BinaryExpression(comparison.Kind(), left, right));
 
         var arguments = SyntaxFactory.SeparatedList([
-            SyntaxFactory.Argument(comparison.Left),
-            SyntaxFactory.Argument(comparison.Right),
+            SyntaxFactory.Argument(GuardExceptionReads(comparison.Left, data)),
+            SyntaxFactory.Argument(GuardExceptionReads(comparison.Right, data)),
             SyntaxFactory.Argument(predicate),
             SyntaxFactory.Argument(CreateBinaryOpAccess(GetBinaryOpFromToken(comparison.OperatorToken))),
             SyntaxFactory.Argument(CreateLambdaExpression(GenerateExprNodeSyntax(data.Expression))),
@@ -639,8 +644,8 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         var rewriteData = ExtractRewriteData(node);
         var binaryExpr = (BinaryExpressionSyntax)rewriteData.Expression;
 
-        var leftThunk = CreateAsyncThunk(binaryExpr.Left);
-        var rightThunk = CreateAsyncThunk(binaryExpr.Right);
+        var leftThunk = CreateAsyncThunk(GuardExceptionReads(binaryExpr.Left, rewriteData));
+        var rightThunk = CreateAsyncThunk(GuardExceptionReads(binaryExpr.Right, rewriteData));
         var binaryOp = GetBinaryOpFromToken(binaryExpr.OperatorToken);
 
         var newInvocation = CreateAsyncBinaryInvocation(leftThunk, rightThunk, binaryOp, rewriteData);
@@ -652,7 +657,7 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
     AwaitExpressionSyntax RewriteToAsync(InvocationExpressionSyntax node)
     {
         var rewriteData = ExtractRewriteData(node);
-        var asyncLambda = CreateAsyncLambda(rewriteData.Expression);
+        var asyncLambda = CreateAsyncLambda(EagerCondition(GuardExceptionReads(rewriteData.Expression, rewriteData)));
         var newInvocation = CreateAsyncInvocation(asyncLambda, rewriteData);
         var awaitExpr = CreateAwaitExpression(newInvocation);
 
@@ -1120,6 +1125,44 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         return SyntaxFactory.ParenthesizedLambdaExpression()
             .WithParameterList(SyntaxFactory.ParameterList())
             .WithExpressionBody(castToObject);
+    }
+
+    bool ContainsExceptionResult(ExpressionSyntax expression) =>
+        expression.DescendantNodesAndSelf().OfType<ExpressionSyntax>()
+            .Any(each => IsExceptionResultType(semanticModel.GetTypeInfo(each).Type));
+
+    static bool IsExceptionResultType(ITypeSymbol? type) =>
+        type is INamedTypeSymbol { Name: "ExceptionResult", ContainingType.Name: "Sharp" } &&
+        type.ContainingNamespace.ToDisplayString() == "SharpAssert";
+
+    ExpressionSyntax GuardExceptionReads(ExpressionSyntax expression, RewriteData data) =>
+        (ExpressionSyntax)new ExceptionReadGuard(semanticModel, data, fileName).Visit(expression)!;
+
+    sealed class ExceptionReadGuard(SemanticModel semanticModel, RewriteData data, string fileName) : CSharpSyntaxRewriter
+    {
+        public override SyntaxNode? Visit(SyntaxNode? node)
+        {
+            if (node is not ExpressionSyntax expression || !IsExceptionResultType(semanticModel.GetTypeInfo(expression).Type))
+                return base.Visit(node);
+
+            if (expression is ParenthesizedExpressionSyntax)
+                return base.Visit(node);
+
+            var value = (ExpressionSyntax)base.Visit(node)!;
+            var hasAwait = value.DescendantNodesAndSelf().OfType<AwaitExpressionSyntax>().Any();
+            ExpressionSyntax messageFactory = data.MessageExpression is null
+                ? SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression)
+                : CreateLambdaExpression(data.MessageExpression);
+            var invocation = SyntaxFactory.InvocationExpression(CreateSharpInternalMethodAccess(hasAwait ? "RequireExceptionAsync" : "RequireException"),
+                SyntaxFactory.ArgumentList(SyntaxFactory.SeparatedList([
+                    SyntaxFactory.Argument(hasAwait ? CreateAsyncLambda(value.WithoutTrivia()) : CreateLambdaExpression(value.WithoutTrivia())),
+                    CreateStringLiteralArgument(data.ExpressionText),
+                    CreateStringLiteralArgument(fileName),
+                    CreateNumericLiteralArgument(data.LineNumber),
+                    SyntaxFactory.Argument(messageFactory)
+                ])));
+            return (hasAwait ? (ExpressionSyntax)CreateAwaitExpression(invocation) : invocation).WithTriviaFrom(expression);
+        }
     }
 
     record RewriteData(ExpressionSyntax Expression, string ExpressionText, int LineNumber, ExpressionSyntax? MessageExpression);

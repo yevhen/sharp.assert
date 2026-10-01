@@ -94,6 +94,46 @@ public static class SharpInternal
         AssertExpectation(expectation, context);
     }
 
+    public static Sharp.ExceptionResult<T> RequireException<T>(
+        Func<Sharp.ExceptionResult<T>> create,
+        string expr,
+        string file,
+        int line,
+        Func<string?>? messageFactory) where T : Exception
+    {
+        Sharp.ExceptionResult<T> result;
+        try
+        {
+            result = create();
+        }
+        catch (SharpAssertionException error) when (error.Result is null)
+        {
+            throw ExceptionCheckFailure(expr, file, line, messageFactory, error.Message);
+        }
+
+        return RequireCapturedException(result, expr, file, line, messageFactory);
+    }
+
+    public static async Task<Sharp.ExceptionResult<T>> RequireExceptionAsync<T>(
+        Func<Task<Sharp.ExceptionResult<T>>> create,
+        string expr,
+        string file,
+        int line,
+        Func<string?>? messageFactory) where T : Exception
+    {
+        Sharp.ExceptionResult<T> result;
+        try
+        {
+            result = await create();
+        }
+        catch (SharpAssertionException error) when (error.Result is null)
+        {
+            throw ExceptionCheckFailure(expr, file, line, messageFactory, error.Message);
+        }
+
+        return RequireCapturedException(result, expr, file, line, messageFactory);
+    }
+
     public static void AssertBoolean(bool condition, string expr, string file, int line, string? message = null)
     {
         if (message is not null && string.IsNullOrWhiteSpace(message))
@@ -405,6 +445,29 @@ public static class SharpInternal
             return;
 
         throw new SharpAssertionException(analysis.Format(), analysis);
+    }
+
+    static Sharp.ExceptionResult<T> RequireCapturedException<T>(
+        Sharp.ExceptionResult<T> result, string expr, string file, int line, Func<string?>? messageFactory) where T : Exception
+    {
+        if (result.HasException)
+            return result;
+
+        throw ExceptionCheckFailure(expr, file, line, messageFactory,
+            $"Expected exception of type '{typeof(T).FullName}', but no exception was thrown");
+    }
+
+    static SharpAssertionException ExceptionCheckFailure(
+        string expr, string file, int line, Func<string?>? messageFactory, string details)
+    {
+        var message = messageFactory?.Invoke();
+        if (message is not null && string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Message must be either null or non-empty", "message");
+
+        var context = new AssertionContext(expr, file, line, message, new ExprNode(expr));
+        var analysis = new AssertionEvaluationResult(context,
+            new FormattedEvaluationResult(expr, false, [details]));
+        return new SharpAssertionException(analysis.Format(), analysis);
     }
 
     static void AssertBool(
