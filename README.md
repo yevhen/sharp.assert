@@ -281,6 +281,14 @@ var team2 = new Team { Members = new[] { "Bob", "Alice" } };
 Assert(team1.IsEquivalentTo(team2, config => config.WithoutStrictOrdering()));
 ```
 
+`DateTimeOffset` values compare by instant, including tick precision; offsets can
+differ. To compare offsets too, use an explicit comparer:
+
+```csharp
+Assert(actual.IsEquivalentTo(expected, config =>
+    config.Using<DateTimeOffset>((left, right) => left.EqualsExact(right))));
+```
+
 ### LINQ Operations
 
 Enhanced diagnostics for Contains, Any, All:

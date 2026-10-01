@@ -37,6 +37,9 @@ Assert(actual == expected);  // ==, !=, <, >, <=, >=
 // AND executes all independent checks. OR uses short-circuit evaluation.
 Assert(x > 0 && y < 100);   // &&, ||, !
 
+// Use one property pattern for dependent checks.
+Assert(value is ExpectedType { Id: 42 });
+
 // LINQ
 Assert(items.Contains(value));
 Assert(items.Any(x => x.Valid));
@@ -62,6 +65,13 @@ Assert(Throws<ArgumentException>(() => code).Message == "Invalid input");
 use `!` to negate it, or read `.Exception`, `.Message`, or `.Data` after an exception
 was caught. Rewritten inline checks report a missing exception at the assertion
 location and execute the action once.
+
+Assertion `&&` is not a null or type guard: both independent operands execute.
+Property patterns keep native C# matching semantics. Use a pattern for checks
+that depend on the input type or its non-null properties.
+
+Equivalency compares `DateTimeOffset` values by instant. For strict offset
+comparison, use `config.Using<DateTimeOffset>((left, right) => left.EqualsExact(right))`.
 
 ## Custom Expectations
 
