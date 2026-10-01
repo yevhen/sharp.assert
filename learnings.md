@@ -21,11 +21,12 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Single Evaluation Principle:** `ExpressionAnalyzer` uses a per-assertion dictionary of evaluated expression values; do not share expression caches across assertions because expression trees capture local values and concurrent writes corrupt a normal dictionary.
 - **Parallel Assertion Benchmark:** Release comparison benchmarks under .NET 10 roll-forward show that a rewritten successful numeric comparison dropped from ~5,073 ns and 3,864 B to ~10 ns and 0 B with direct operand evaluation and lazy failure-only expression metadata; repeat on the target .NET 9 runtime.
 - **Fast Comparison Rewriting:** Only rewrite built-in primitive comparisons without a message or constant-folded result; capture each operand once, preserve the real operator, and defer `ExprNode` construction until failure. Keep the expression-tree route for all other cases.
+- **Eager AND Benchmark:** On .NET 10.0.9, the Release logical success benchmark changed from 67 ns/424 B to 64 ns/424 B; primitive comparison stayed at 9 ns/0 B. Benchmark builds used `GenerateDocumentationFile=false` because of the separate CS1591 defect.
 - **Boolean Identifier Fast Path:** A rewritten `Assert(actual)` where `actual` is a bool variable needs only its value and name, not an expression tree; Release success dropped from ~2,813 ns/2,096 B to ~4 ns/0 B on .NET 10 roll-forward.
 - **Failure-Only Metadata:** Built-in comparisons with a message, bool properties, argumentless non-LINQ methods, single-argument instance calls (including `Contains`), and typed `Expectation` expressions can skip expression-tree construction; retain the old path for logical operations and static/multi-argument calls until their operand snapshots cover every diagnostic.
-- **Failure Snapshot Semantics:** When analyzing a method call, capture receiver and argument values during the first invocation and pass the same per-assertion cache to LINQ/SequenceEqual formatters; otherwise formatting re-runs side-effectful arguments. Failed `&&` must not analyze its skipped right operand.
+- **Failure Snapshot Semantics:** When analyzing a method call, capture receiver and argument values during the first invocation and pass the same per-assertion cache to LINQ/SequenceEqual formatters; otherwise formatting re-runs side-effectful arguments. `&&` evaluates both checks once; `||` keeps short-circuit evaluation.
 - **Array SequenceEqual Capture:** `array.SequenceEqual(...)` can bind to `MemoryExtensions.SequenceEqual(ReadOnlySpan<T>, ...)`; capture the array expressions before the implicit span conversion and build sequence diagnostics from those arrays to avoid invoking argument factories twice.
-- **Captured Boolean Analysis:** Wrap typed subexpressions with a per-assertion `Record` call, strip the wrappers and seed the analyzer cache only on failure; this preserves short-circuit order while deferring expression-tree construction. Exclude ref-like operands, value-type receivers, constant-folded and custom comparisons until their semantics are verified.
+- **Captured Boolean Analysis:** Wrap typed subexpressions with a per-assertion `Record` call, strip the wrappers and seed the analyzer cache only on failure; this keeps operand order and defers expression-tree construction. Exclude ref-like operands, value-type receivers, constant-folded and custom comparisons until their semantics are verified.
 - **Implicit Using Symbols:** The per-file rewriter misses SDK-generated `global using` directives unless the MSBuild task supplies the project's `.GlobalUsings.g.cs`; missing `System` caused delegate calls to remain on the old path.
 - **Local Functions:** Expression trees cannot reference local functions; rewrite bool assertions containing them to direct boolean validation instead of a captured expression tree.
 - **All Diagnostic Trade-off:** `Enumerable.All` stops at the first false item, so a no-replay diagnostic can show only that item; pass the original predicate through a recording wrapper and render the recorded item without re-enumerating or invoking the predicate again.
@@ -39,7 +40,8 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Logical Operators (`&&`, `||`, `!`):**
     - These require special handling separate from binary comparisons.
     - `&&` maps to `ExpressionType.AndAlso`, `||` to `ExpressionType.OrElse`, and `!` to `ExpressionType.Not`.
-    - **Short-Circuiting:** The natural short-circuiting behavior of `&&` and `||` is preserved by evaluating the entire expression first and only analyzing the sub-expressions if the assertion fails. This avoids artificially enforcing evaluation rules.
+    - **Evaluation:** Assertion `&&` evaluates both independent checks; `||` keeps short-circuit evaluation. Captured `&` nodes map back to `AndAlso` for diagnostics. Do not change operators inside user predicates.
+    - **Negation:** Use the analyzed operand result for `!`; a second value evaluation repeats calls and can change the assertion result.
     - The `!` operator is a `UnaryExpression` and requires its own handling path.
 
 ## Runtime: Diagnostics & Formatting
@@ -136,6 +138,8 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Wildcard Version Matching:** `Version="1.0.0-dev*"` enables flexible local development while maintaining precise version control in production
 
 ## Development Process & Workflow Insights
+
+- Release warning-as-error builds fail on 25 existing CS1591 errors in collection quantifier APIs. Reproduce with `dotnet build src/SharpAssert.Benchmarks -c Release --no-incremental -warnaserror`; add the missing public API XML documentation in a separate task. Debug solution builds include analysis and pass without warnings.
 
 - **Multi-Layer Testing Strategy Benefits:** Unit (fast dev) → Integration (MSBuild behavior) → Package (real-world usage) → CI (clean environment)
 - **Timestamp-Based Dev Versions:** `1.0.0-dev20250812155111` pattern enables rapid iteration without version conflicts

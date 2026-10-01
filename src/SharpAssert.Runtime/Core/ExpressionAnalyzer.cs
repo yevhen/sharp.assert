@@ -91,9 +91,6 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
             return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.OrElse, leftResult, orRightResult, orValue, false, binaryExpr.NodeType);
         }
 
-        if (!leftBool)
-            return new LogicalEvaluationResult(context.ExprNode.Text, LogicalOperator.AndAlso, leftResult, null, false, true, binaryExpr.NodeType);
-
         var (andRightBool, andRightResult) = AnalyzeLogicalOperand(binaryExpr.Right, cache, context, context.ExprNode.Right!);
         var andValue = leftBool && andRightBool;
 
@@ -113,7 +110,7 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
     static EvaluationResult AnalyzeNot(UnaryExpression unaryExpr, Dictionary<Expression, object?> cache, AssertionContext context)
     {
         var operandResult = AnalyzeExpression(unaryExpr.Operand, cache, context with { ExprNode = context.ExprNode.Operand! });
-        var operandValue = GetValue(unaryExpr.Operand, cache);
+        var operandValue = operandResult.BooleanValue;
 
         return new UnaryEvaluationResult(context.ExprNode.Text, UnaryOperator.Not, operandResult, operandValue, !(bool)operandValue!);
     }

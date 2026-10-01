@@ -30,7 +30,7 @@ public class LogicalOperatorFixture : TestBase
         }
 
         [Test]
-        public void Should_short_circuit_AND_when_left_fails()
+        public void Should_evaluate_both_AND_operands_when_left_fails()
         {
             var left = false;
             var right = false;
@@ -39,16 +39,16 @@ public class LogicalOperatorFixture : TestBase
                 "left && right",
                 LogicalOperator.AndAlso,
                 Value("left", false),
-                null,
+                Value("right", false),
                 value: false,
-                shortCircuited: true,
+                shortCircuited: false,
                 nodeType: ExpressionType.AndAlso);
 
             AssertFails(() => Assert(left && right), expected);
         }
 
         [Test]
-        public void Should_not_evaluate_skipped_AND_operand()
+        public void Should_evaluate_failed_AND_operands_once()
         {
             var calls = 0;
             Func<int> next = () => ++calls;
@@ -56,8 +56,9 @@ public class LogicalOperatorFixture : TestBase
             AssertFails(() => Assert(next() == 0 && next() == 2),
                 Logical("next() == 0 && next() == 2", LogicalOperator.AndAlso,
                     BinaryComparison("next() == 0", Equal, Comparison(1, 0)),
-                    null, false, true, ExpressionType.AndAlso));
-            NUnit.Framework.Assert.That(calls, Is.EqualTo(1));
+                    BinaryComparison("next() == 2", Equal, Comparison(2, 2), true),
+                    false, false, ExpressionType.AndAlso));
+            NUnit.Framework.Assert.That(calls, Is.EqualTo(2));
         }
 
         [Test]
@@ -92,6 +93,35 @@ public class LogicalOperatorFixture : TestBase
                     BinaryComparison("next() == 1", Equal, Comparison(1, 1), true),
                     BinaryComparison("next() == 3", Equal, Comparison(2, 3)),
                     false, false, ExpressionType.AndAlso));
+            NUnit.Framework.Assert.That(calls, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void Should_evaluate_uncaptured_AND_operands_once()
+        {
+            var calls = 0;
+            Func<int> next = () => ++calls;
+            Expression<Func<bool>> condition = () => next() == 0 && next() == 0;
+            var source = new ExprNode("checks", Left: new ExprNode("first"), Right: new ExprNode("second"));
+
+            Action assertion = () => SharpInternal.Assert(condition, source, "checks", "Checks.cs", 1);
+
+            NUnit.Framework.Assert.Throws<SharpAssertionException>(() => assertion());
+            NUnit.Framework.Assert.That(calls, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void Should_not_repeat_uncaptured_negated_AND_checks()
+        {
+            var calls = 0;
+            Func<int> next = () => ++calls;
+            Expression<Func<bool>> condition = () => !(next() == 1 && next() == 2);
+            var source = new ExprNode("negated", Operand: new ExprNode("checks",
+                Left: new ExprNode("first"), Right: new ExprNode("second")));
+
+            Action assertion = () => SharpInternal.Assert(condition, source, "negated", "Checks.cs", 1);
+
+            NUnit.Framework.Assert.Throws<SharpAssertionException>(() => assertion());
             NUnit.Framework.Assert.That(calls, Is.EqualTo(2));
         }
 
@@ -138,9 +168,9 @@ public class LogicalOperatorFixture : TestBase
                 "x == 5 && y == 10",
                 LogicalOperator.AndAlso,
                 BinaryComparison("x == 5", Equal, Comparison(3, 5), false),
-                null,
+                BinaryComparison("y == 10", Equal, Comparison(12, 10), false),
                 false,
-                true,
+                false,
                 ExpressionType.AndAlso);
 
             AssertFails(() => Assert(x == 5 && y == 10), expected);

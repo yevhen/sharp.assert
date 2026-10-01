@@ -21,6 +21,14 @@ sealed class CapturedExpressionVisitor(CaptureSession session, Dictionary<Expres
 {
     static readonly MethodInfo RecordMethod = typeof(CaptureSession).GetMethod(nameof(CaptureSession.Record))!;
 
+    protected override Expression VisitBinary(BinaryExpression node)
+    {
+        if (node is { NodeType: ExpressionType.And, Type: var type, Method: null } && type == typeof(bool))
+            return Expression.AndAlso(Visit(node.Left), Visit(node.Right));
+
+        return base.VisitBinary(node);
+    }
+
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
         if (!node.Method.IsGenericMethod || node.Method.GetGenericMethodDefinition() != RecordMethod)

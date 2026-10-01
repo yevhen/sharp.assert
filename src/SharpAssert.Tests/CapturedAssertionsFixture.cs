@@ -20,6 +20,33 @@ public class CapturedAssertionsFixture
     }
 
     [Test]
+    public void Should_evaluate_local_function_AND_after_failure()
+    {
+        var calls = 0;
+        int Next() => ++calls;
+
+        Action assertion = () => Assert(Next() == 0 && Next() == 0);
+
+        assertion.Should().Throw<SharpAssertionException>();
+        calls.Should().Be(2);
+    }
+
+    [Test]
+    public void Should_evaluate_nested_AND_checks_once_and_keep_OR_short_circuit()
+    {
+        var calls = new List<int>();
+        Func<bool> first = () => { calls.Add(1); return false; };
+        Func<bool> second = () => { calls.Add(2); return true; };
+        Func<bool> third = () => { calls.Add(3); return false; };
+        Func<bool> skipped = () => throw new InvalidOperationException();
+
+        Action assertion = () => Assert(first() && (second() || skipped()) && third());
+
+        assertion.Should().Throw<SharpAssertionException>().Which.Message.Should().Contain("third()");
+        calls.Should().Equal(1, 2, 3);
+    }
+
+    [Test]
     public void Should_use_project_global_usings_for_rewriting()
     {
         var source = "using static SharpAssert.Sharp; class Sample { void Check(Func<int> next) { Assert(next() == 1 && next() == 2); } }";
@@ -74,7 +101,7 @@ public class CapturedAssertionsFixture
 
         exception.Should().NotBeNull();
         exception!.Result!.Context.Message.Should().Be("Mismatch");
-        calls.Should().Equal("left", "message");
+        calls.Should().Equal("left", "right", "message");
     }
 
     [Test]

@@ -275,7 +275,7 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
     {
         var data = ExtractRewriteData(node);
         var arguments = SyntaxFactory.SeparatedList([
-            SyntaxFactory.Argument(condition),
+            SyntaxFactory.Argument(EagerCondition(condition)),
             CreateStringLiteralArgument(data.ExpressionText),
             CreateStringLiteralArgument(fileName),
             CreateNumericLiteralArgument(data.LineNumber),
@@ -541,7 +541,9 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
             var right = Capture(binary.Right, ref count);
             if (left is null || right is null)
                 return null;
-            body = binary.WithLeft(left).WithRight(right);
+            body = binary.IsKind(SyntaxKind.LogicalAndExpression)
+                ? SyntaxFactory.BinaryExpression(SyntaxKind.BitwiseAndExpression, left, right).WithTriviaFrom(binary)
+                : binary.WithLeft(left).WithRight(right);
         }
         else if (expression is BinaryExpressionSyntax && semanticModel.GetTypeInfo(expression).Type?.SpecialType == SpecialType.System_Boolean)
             return null;
@@ -601,6 +603,20 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
             ])));
         return record.WithTriviaFrom(expression);
     }
+
+    static ExpressionSyntax EagerCondition(ExpressionSyntax expression) => expression switch
+    {
+        ParenthesizedExpressionSyntax group => group.WithExpression(EagerCondition(group.Expression)),
+        PrefixUnaryExpressionSyntax unary when unary.IsKind(SyntaxKind.LogicalNotExpression) =>
+            unary.WithOperand(EagerCondition(unary.Operand)),
+        BinaryExpressionSyntax binary when binary.IsKind(SyntaxKind.LogicalAndExpression) =>
+            SyntaxFactory.BinaryExpression(SyntaxKind.BitwiseAndExpression,
+                SyntaxFactory.ParenthesizedExpression(EagerCondition(binary.Left)),
+                SyntaxFactory.ParenthesizedExpression(EagerCondition(binary.Right))).WithTriviaFrom(binary),
+        BinaryExpressionSyntax binary when binary.IsKind(SyntaxKind.LogicalOrExpression) =>
+            binary.WithLeft(EagerCondition(binary.Left)).WithRight(EagerCondition(binary.Right)),
+        _ => expression
+    };
 
     bool CanCaptureType(ExpressionSyntax expression)
     {
