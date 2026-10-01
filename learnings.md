@@ -42,6 +42,7 @@ This document is organized by topic to consolidate key learnings about the proje
     - These require special handling separate from binary comparisons.
     - `&&` maps to `ExpressionType.AndAlso`, `||` to `ExpressionType.OrElse`, and `!` to `ExpressionType.Not`.
     - **Evaluation:** Assertion `&&` evaluates both independent checks; `||` keeps short-circuit evaluation. Captured `&` nodes map back to `AndAlso` for diagnostics. Do not change operators inside user predicates.
+    - **Other Routes:** Apply eager AND to async and dynamic assertion thunks too; neither route uses the expression analyzer. Keep OR short-circuit evaluation.
     - **Negation:** Use the analyzed operand result for `!`; a second value evaluation repeats calls and can change the assertion result.
     - The `!` operator is a `UnaryExpression` and requires its own handling path.
 

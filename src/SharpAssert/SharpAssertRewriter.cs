@@ -708,7 +708,7 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
     InvocationExpressionSyntax RewriteToDynamic(InvocationExpressionSyntax node)
     {
         var rewriteData = ExtractRewriteData(node);
-        var lambda = CreateLambdaExpression(rewriteData.Expression);
+        var lambda = CreateLambdaExpression(EagerCondition(rewriteData.Expression));
         var newInvocation = CreateDynamicInvocation(lambda, rewriteData);
         return AddLineDirectives(newInvocation, node, rewriteData.LineNumber);
     }
