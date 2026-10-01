@@ -84,5 +84,17 @@ public class NullableSelectorsFixture
         configure.Should().Throw<ArgumentException>();
     }
 
+    [TestCase("Including")]
+    [TestCase("Excluding")]
+    public void Should_reject_unary_operations_as_member_selectors(string method)
+    {
+        var config = new EquivalencyConfig<Item>();
+        Action configure = method == "Including"
+            ? () => config.Including(item => -item.Id)
+            : () => config.Excluding(item => -item.Id);
+
+        configure.Should().Throw<ArgumentException>();
+    }
+
     record Item(int Id, string? Name, int? Count);
 }

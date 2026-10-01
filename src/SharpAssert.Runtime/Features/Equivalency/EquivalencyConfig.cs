@@ -408,7 +408,8 @@ public sealed class EquivalencyConfig<T>
         if (expression.Body is MemberExpression memberExpr)
             return memberExpr.Member.Name;
 
-        if (expression.Body is UnaryExpression { Operand: MemberExpression unaryMember })
+        if (expression.Body is UnaryExpression
+            { NodeType: ExpressionType.Convert or ExpressionType.ConvertChecked, Operand: MemberExpression unaryMember })
             return unaryMember.Member.Name;
 
         throw new ArgumentException($"Expression '{expression}' does not refer to a property or field.");
