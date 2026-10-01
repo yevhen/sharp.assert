@@ -7,6 +7,9 @@
         <IsPackable>false</IsPackable>
         <RootNamespace>SharpAssert.PackageTest</RootNamespace>
         <OutputType>Library</OutputType>
+        <SharpAssertPackageVersion Condition="'$(SharpAssertPackageVersion)' == ''">$(Version)</SharpAssertPackageVersion>
+        <NuGetAuditMode>all</NuGetAuditMode>
+        <WarningsAsErrors>$(WarningsAsErrors);NU1603;NU1901;NU1902;NU1903;NU1904</WarningsAsErrors>
     </PropertyGroup>
 
     <ItemGroup>
@@ -17,7 +20,7 @@
         <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
         
         <!-- Single package reference - Runtime dependency comes automatically -->
-        <PackageReference Include="SharpAssert" Version="1.0.0-local" />
+        <PackageReference Include="SharpAssert" Version="$(SharpAssertPackageVersion)" />
     </ItemGroup>
 
     <ItemGroup>

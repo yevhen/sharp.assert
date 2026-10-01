@@ -24,12 +24,14 @@ echo -e "${YELLOW}🔄 Restoring packages from local feed (isolated cache)...${N
 dotnet restore SharpAssert.PackageTesting.sln \
   --packages $PACKAGE_CACHE \
   --configfile nuget.package-tests.config \
+  -p:SharpAssertPackageVersion=1.0.0-local \
   --verbosity quiet
 
 echo -e "${YELLOW}🏗️ Building package test projects...${NC}"
 dotnet build SharpAssert.PackageTesting.sln \
   --packages $PACKAGE_CACHE \
   --no-restore \
+  -p:SharpAssertPackageVersion=1.0.0-local \
   --verbosity quiet
 
 echo -e "${YELLOW}🧪 Running package tests...${NC}"

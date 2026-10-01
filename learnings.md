@@ -119,6 +119,8 @@ This document is organized by topic to consolidate key learnings about the proje
 
 ## Package Testing Isolation Techniques
 
+- **Package Test Version:** Use `$(Version)` for normal restore and `SharpAssertPackageVersion=1.0.0-local` for the local feed; an unavailable `1.0.0-local` can resolve to public 1.0.0 and pull PowerAssert with vulnerable .NET Core 1.1 packages. Treat NU1603 and transitive audit warnings as errors.
+
 - **Separate Solution Files:** Main solution (`SharpAssert.sln`) vs package testing (`SharpAssert.PackageTesting.sln`) prevents dev workflow contamination
 - **NuGet Source Mapping:** `packageSourceMapping` in `nuget.package-tests.config` ensures SharpAssert packages only come from local feed, preventing version conflicts
 - **Package Cache Isolation:** Use `--packages ./test-packages` for isolated cache that doesn't pollute global NuGet cache
