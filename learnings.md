@@ -84,6 +84,9 @@ This document is organized by topic to consolidate key learnings about the proje
 
 ## API Design & Dependencies
 
+- CompareNETObjects 4.84.0 uses System.Drawing.Common 8 for FontComparer; NuGet selects that dependency on Linux too and can replace a consumer's System.Drawing.Common 6. Use SharpAssert.CompareNETObjects 4.84.0-sharpassert.1, built from upstream v4.84 without font comparison. Publish the fork package before a SharpAssert release.
+- ComparisonDependencyFixture checks assembly references and retained dictionary, DateOnly, TimeOnly, and DataTable comparison. Check packed NuGet dependencies too; assembly checks alone do not prove the restore graph.
+
 - **Public API:** The user-facing API is minimal, relying on `[CallerArgumentExpression]`, `[CallerFilePath]`, and `[CallerLineNumber]` to capture the assertion context automatically. These attributes work seamlessly in .NET 9.0.
 - **Dependencies:** `FluentAssertions` is used within the test suite (`SharpAssert.Tests`) for creating readable and maintainable test assertions.
 
