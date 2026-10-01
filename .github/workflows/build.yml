@@ -47,12 +47,14 @@ jobs:
         # Use isolated solution and cache
         dotnet restore SharpAssert.PackageTesting.sln \
           --packages ./ci-packages \
-          --configfile nuget.package-tests.config
+          --configfile nuget.package-tests.config \
+          -p:SharpAssertPackageVersion=1.0.0-local
         
         dotnet build SharpAssert.PackageTesting.sln \
           --packages ./ci-packages \
           --no-restore \
-          --configuration Release
+          --configuration Release \
+          -p:SharpAssertPackageVersion=1.0.0-local
         
         dotnet test SharpAssert.PackageTesting.sln \
           --no-build \

@@ -131,6 +131,7 @@ This document is organized by topic to consolidate key learnings about the proje
 
 ## Package Testing Isolation Techniques
 
+- **CI Package Version:** `scripts/publish-local.sh` creates `1.0.0-local`; pass `SharpAssertPackageVersion=1.0.0-local` to isolated restore and build. Release validation must instead pack and test the exact release version.
 - **Package Test Version:** Use `$(Version)` for normal restore and `SharpAssertPackageVersion=1.0.0-local` for the local feed; an unavailable `1.0.0-local` can resolve to public 1.0.0 and pull PowerAssert with vulnerable .NET Core 1.1 packages. Treat NU1603 and transitive audit warnings as errors.
 
 - **Source Mapping:** Match only `SharpAssert` and `SharpAssert.Runtime` to the local feed. A `SharpAssert*` pattern also captures the published `SharpAssert.CompareNETObjects` dependency and breaks isolated restore with NU1101.

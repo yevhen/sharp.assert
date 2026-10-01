@@ -63,6 +63,56 @@ public class PackageTestFixture
     }
 
     [Test]
+    public void Should_compile_native_property_patterns_from_package()
+    {
+        object value = new Item(42);
+
+        Assert(value is Item { Id: 42 });
+    }
+
+    [Test]
+    public void Should_evaluate_all_independent_AND_checks_from_package()
+    {
+        var calls = 0;
+        Func<bool> check = () => { calls++; return false; };
+
+        Action assertion = () => Assert(check() && check());
+
+        assertion.Should().Throw<SharpAssertionException>();
+        calls.Should().Be(2);
+    }
+
+    [Test]
+    public void Should_compile_nullable_selectors_from_package()
+    {
+        var actual = new Item(42);
+        var expected = new Item(42, "different");
+
+        Assert(actual.IsEquivalentTo(expected, config => config.Excluding(item => item.Name)));
+    }
+
+    [Test]
+    public void Should_compare_DateTimeOffset_instants_from_package()
+    {
+        var actual = DateTimeOffset.UnixEpoch;
+        var expected = actual.ToOffset(TimeSpan.FromHours(2));
+
+        Assert(actual.IsEquivalentTo(expected));
+    }
+
+    [Test]
+    public void Should_report_missing_inline_exceptions_from_package()
+    {
+        var calls = 0;
+        Action operation = () => calls++;
+
+        Action assertion = () => Assert(Throws<ArgumentException>(operation).Message == "expected");
+
+        assertion.Should().Throw<SharpAssertionException>().Which.Message.Should().Contain("no exception was thrown");
+        calls.Should().Be(1);
+    }
+
+    [Test]
     public void Should_work_with_null_values()
     {
         string? nullValue = null;
@@ -76,4 +126,6 @@ public class PackageTestFixture
         ex.Message.Should().Contain("nullValue != null");
         ex.Message.Should().Contain("null");
     }
+
+    record Item(int Id, string? Name = null);
 }
