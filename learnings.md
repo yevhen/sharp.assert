@@ -73,6 +73,8 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Expectation Ergonomics:** Prefer extension methods that construct expectations (e.g., `4.IsEven()`) and suffix expectation types with `Expectation` for clean call sites.
 - **Two Construction Styles:** Provide both `using static` factories (great for unary: `Assert(IsEven(4))`) and extension methods (great for binary/parameterized: `Assert(actual.IsEquivalentTo(expected))`).
 - **Record Inheritance Gotcha:** `record` types can only inherit from `object` or another `record`, so `ExceptionResult<T>` cannot be a record if it must inherit the `Expectation` base class.
+- **Source Trivia:** Prepend file directives without replacing the source header. Map the suffix after each assertion to its original end line, not `#line default`, and start directives on a new line even for inline statements.
+- **Compile Probes:** Copy `@(ReferencePath)` into test output `CompilationReferences` for Roslyn tests; runtime TPA assemblies can produce CS1701 under .NET 9 to .NET 10 roll-forward.
 - **Line Directive Implementation:** 
     - Use `SyntaxFactory.PreprocessingMessage()` instead of `SyntaxFactory.LineDirectiveTrivia()` for proper formatting of #line directives
     - Only add #line directives when actual rewrites occur to preserve unchanged files

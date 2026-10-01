@@ -42,4 +42,8 @@
         <Using Include="NUnit.Framework"/>
     </ItemGroup>
 
+    <Target Name="CopyCompilationReferences" AfterTargets="Build">
+        <Copy SourceFiles="@(ReferencePath)" DestinationFolder="$(OutDir)CompilationReferences" SkipUnchangedFiles="true" />
+    </Target>
+
 </Project>

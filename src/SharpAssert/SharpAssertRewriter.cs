@@ -60,7 +60,8 @@ public static class SharpAssertRewriter
                 nullableRestoreDirective,
                 SyntaxFactory.EndOfLine(NewLine),
                 lineDirective,
-                SyntaxFactory.EndOfLine(NewLine)));
+                SyntaxFactory.EndOfLine(NewLine))
+            .AddRange(rewrittenRoot.GetLeadingTrivia()));
 
         return rewrittenWithDirectives.ToFullString();
     }
@@ -956,22 +957,18 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
     {
         var trivia = originalNode.GetLeadingTrivia();
 
-        // Lambda expressions need newline before #line to ensure it's at start of line
-        if (IsInLambdaBody(originalNode))
-            trivia = trivia.Add(SyntaxFactory.EndOfLine(NewLine));
-
         return trivia
+            .Add(SyntaxFactory.EndOfLine(NewLine))
             .Add(SharpAssertRewriter.CreateLineDirective(lineNumber, absoluteFileName))
             .Add(SyntaxFactory.EndOfLine(NewLine));
     }
 
-    static bool IsInLambdaBody(InvocationExpressionSyntax node) =>
-        node.Parent is ParenthesizedLambdaExpressionSyntax or SimpleLambdaExpressionSyntax;
-
     SyntaxTriviaList CreateTrailingTrivia(InvocationExpressionSyntax originalNode) =>
         SyntaxFactory.TriviaList(
             SyntaxFactory.EndOfLine(NewLine),
-            SharpAssertRewriter.CreateDefaultLineDirective(),
+            SharpAssertRewriter.CreateLineDirective(
+                semanticModel.SyntaxTree.GetLineSpan(originalNode.Span).EndLinePosition.Line + LineNumberOffset,
+                absoluteFileName),
             SyntaxFactory.EndOfLine(NewLine))
         .AddRange(originalNode.GetTrailingTrivia());
 
