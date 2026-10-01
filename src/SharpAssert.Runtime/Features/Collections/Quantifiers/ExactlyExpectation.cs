@@ -5,6 +5,10 @@ using SharpAssert.Features.Shared;
 
 namespace SharpAssert.Features.Collections.Quantifiers;
 
+/// <summary>Checks that exactly the specified number of items satisfy an expectation.</summary>
+/// <typeparam name="T">The item type.</typeparam>
+/// <remarks>Every item is checked. Use separate expectations for concurrent checks.</remarks>
+/// <example><code>Assert(items.Exactly(2, item => item > 0));</code></example>
 public sealed class ExactlyExpectation<T> : Expectation
 {
     readonly IReadOnlyList<T> items;
@@ -18,6 +22,7 @@ public sealed class ExactlyExpectation<T> : Expectation
         this.expectationFactory = expectationFactory;
     }
 
+    /// <inheritdoc />
     public override EvaluationResult Evaluate(ExpectationContext context)
     {
         var passes = new List<(int Index, EvaluationResult Result)>();

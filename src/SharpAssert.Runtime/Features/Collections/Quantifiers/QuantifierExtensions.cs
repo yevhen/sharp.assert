@@ -5,6 +5,9 @@ using System.Linq.Expressions;
 
 namespace SharpAssert;
 
+/// <summary>Creates expectations for item counts and collection-wide conditions.</summary>
+/// <remarks>Each call takes a collection snapshot. Use separate expectations for concurrent checks.</remarks>
+/// <example><code>Assert(items.Each(item => item > 0));</code></example>
 public static class QuantifierExtensions
 {
     /// <summary>

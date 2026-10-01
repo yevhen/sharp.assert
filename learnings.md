@@ -149,7 +149,8 @@ This document is organized by topic to consolidate key learnings about the proje
 
 ## Development Process & Workflow Insights
 
-- Release warning-as-error builds fail on 25 existing CS1591 errors in collection quantifier APIs. Reproduce with `dotnet build src/SharpAssert.Benchmarks -c Release --no-incremental -warnaserror`; add the missing public API XML documentation in a separate task. Debug solution builds include analysis and pass without warnings.
+- Collection quantifier APIs need XML documentation in Release builds. Document record parameters and inherited overrides too; adding type documentation can expose further CS1591 warnings on overrides.
+- On macOS, an in-place `dotnet-install` host replacement caused SIGKILL despite a valid disk signature. An atomic replacement with identical signed bytes on a fresh inode restored execution.
 
 - **Multi-Layer Testing Strategy Benefits:** Unit (fast dev) → Integration (MSBuild behavior) → Package (real-world usage) → CI (clean environment)
 - **Timestamp-Based Dev Versions:** `1.0.0-dev20250812155111` pattern enables rapid iteration without version conflicts

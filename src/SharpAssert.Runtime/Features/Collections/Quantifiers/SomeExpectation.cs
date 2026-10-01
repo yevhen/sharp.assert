@@ -5,6 +5,10 @@ using SharpAssert.Features.Shared;
 
 namespace SharpAssert.Features.Collections.Quantifiers;
 
+/// <summary>Checks that at least one item satisfies an expectation.</summary>
+/// <typeparam name="T">The item type.</typeparam>
+/// <remarks>Every item is checked. Empty collections fail. Use separate expectations for concurrent checks.</remarks>
+/// <example><code>Assert(items.Some(item => item > 0));</code></example>
 public sealed class SomeExpectation<T> : Expectation
 {
     readonly IReadOnlyList<T> items;
@@ -16,6 +20,7 @@ public sealed class SomeExpectation<T> : Expectation
         this.expectationFactory = expectationFactory;
     }
 
+    /// <inheritdoc />
     public override EvaluationResult Evaluate(ExpectationContext context)
     {
         var failures = new List<(int Index, EvaluationResult Result)>();
