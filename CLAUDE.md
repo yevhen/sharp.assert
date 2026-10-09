@@ -375,6 +375,7 @@ async\method: Suffix with `Async` =\> `GetDataAsync()`
 
 # CRITICAL MEMORIES
 
+- Bo approved permanent NU5104 suppression in the runtime project for the existing prerelease comparison dependency. Do not suppress other package warnings.
 - Keep only `ExceptionResult<T>.operator T`; C# supports assignment to base exception types after this conversion, but a second `operator Exception` is ambiguous for `T = Exception`.
 - NUnit prints the public exception `Result` property. `AssertionEvaluationResult.ToString()` must stay bounded; `Format()` and structured properties retain complete diagnostics.
 - Run `scripts/test-nunit-output.sh` to verify real NUnit 4.6.1/adapter 6.3.0 console output. Its intentional failure project is not part of the normal test solution.

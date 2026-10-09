@@ -135,7 +135,7 @@ This document is organized by topic to consolidate key learnings about the proje
 
 ## Package Testing Isolation Techniques
 
-- **Stable Pack Warning:** `dotnet pack src/SharpAssert.Runtime -c Release --no-build -p:PackageVersion=1.6.0 -warnaserror` reports NU5104 for the existing `SharpAssert.CompareNETObjects 4.84.0-sharpassert.1` dependency. Only that prerelease fork version is published. A separate fork release must provide a stable version before this warning can be removed without suppression.
+- **Stable Pack Warning:** Bo approved permanent suppression of NU5104 in `SharpAssert.Runtime.csproj` for the known `SharpAssert.CompareNETObjects 4.84.0-sharpassert.1` dependency; keep all other package warnings enabled.
 - **Release Publishing:** A `v*` tag triggers `.github/workflows/publish.yml` to publish both NuGet packages with trusted publishing and create a GitHub release. Keep shared version and release notes in `Directory.Build.props`.
 - **CI Package Version:** `scripts/publish-local.sh` creates `1.0.0-local`; pass `SharpAssertPackageVersion=1.0.0-local` to isolated restore and build. Release validation must instead pack and test the exact release version.
 - **Package Test Version:** Use `$(Version)` for normal restore and `SharpAssertPackageVersion=1.0.0-local` for the local feed; an unavailable `1.0.0-local` can resolve to public 1.0.0 and pull PowerAssert with vulnerable .NET Core 1.1 packages. Treat NU1603 and transitive audit warnings as errors.

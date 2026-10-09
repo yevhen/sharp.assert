@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 1.6.1
+
+- Fixed ambiguous conversions from `ExceptionResult<Exception>`, including awaited `ThrowsAsync<Exception>`. Specific and base exception assignments remain supported. (#4)
+- Bounded NUnit's appended assertion result to `Passed` or `Failed`. Structured result access and formatted failure diagnostics remain available. (#4)
+
+## Earlier changes
+
 - Changed default `DateTimeOffset` equivalency to compare instants with tick precision. Use `Using<DateTimeOffset>((left, right) => left.EqualsExact(right))` to compare offsets too. (#3)
 - Restored evaluation of all independent `&&` checks without diagnostic replay. Kept `||` short-circuit evaluation and failure-only diagnostic construction. (#3)
 - Added native C# property patterns without expression trees or a fluent API. Root pattern failures report the source pattern and input type without reading properties again. (#3)

@@ -9,6 +9,7 @@
         
         <!-- Package metadata -->
         <PackageId>SharpAssert.Runtime</PackageId>
+        <NoWarn>$(NoWarn);NU5104</NoWarn>
         <Title>SharpAssert Runtime</Title>
         <Description>Core assertion library for SharpAssert</Description>
         <RootNamespace>SharpAssert</RootNamespace>
