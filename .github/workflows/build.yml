@@ -37,6 +37,9 @@ jobs:
     - name: Run Unit and Integration Tests
       run: dotnet test SharpAssert.sln --configuration Release --no-build --logger trx --collect:"XPlat Code Coverage"
     
+    - name: Check NUnit console failure output
+      run: ./scripts/test-nunit-output.sh
+
     - name: Create Local Package
       run: |
         chmod +x ./scripts/publish-local.sh

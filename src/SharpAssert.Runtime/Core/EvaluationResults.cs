@@ -55,6 +55,20 @@ public record AssertionEvaluationResult(AssertionContext Context, EvaluationResu
     public bool Passed => Result.BooleanValue == true;
 
     /// <summary>
+    /// Returns a bounded summary for test runners that display the exception result.
+    /// </summary>
+    /// <returns><c>Passed</c> or <c>Failed</c>.</returns>
+    /// <remarks>
+    /// This method does not render the result graph. Use <see cref="Format"/> for diagnostics
+    /// or inspect <see cref="Context"/> and <see cref="Result"/> for structured data.
+    /// It reads immutable state and is safe for concurrent calls.
+    /// </remarks>
+    /// <example>
+    /// <code>var summary = assertionEvaluationResult.ToString();</code>
+    /// </example>
+    public override string ToString() => Passed ? "Passed" : "Failed";
+
+    /// <summary>
     /// Gets the boolean result of the assertion.
     /// </summary>
     public override bool? BooleanValue => Result.BooleanValue;

@@ -92,6 +92,10 @@ This document is organized by topic to consolidate key learnings about the proje
 
 ## API Design & Dependencies
 
+- `ExceptionResult<T>` needs only `operator T`: C# then permits a base reference conversion, while a second `operator Exception` makes `T = Exception` ambiguous (CS0457).
+- NUnit appends an exception's public `Result` property with `ToString()`; bound the top-level result summary, not the structured graph or primary message.
+- `scripts/test-nunit-output.sh` checks an intentional failure outside the solution with NUnit 4.6.1 and adapter 6.3.0; a nonzero test exit alone is not enough to prove diagnostics.
+
 - DateTimeOffset equivalency needs a native `==` comparer: the dependency's built-in comparer compares local clock values and ignores sub-millisecond differences. Put explicit custom comparers before the default so `EqualsExact` can compare offsets.
 
 - Nullable equivalency selectors use generic overloads. The legacy non-generic signatures use nullable-oblivious annotations: `Expression<Func<T, object?>>` would cause CS8620 for existing `Expression<Func<T, object>>` variables. Keep nullable warnings enabled and test both forms. For a generic selector, unwrap only conversion nodes; a unary operation such as `-item.Id` is not a member selector.

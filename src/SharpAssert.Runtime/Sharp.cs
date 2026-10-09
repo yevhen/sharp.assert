@@ -309,7 +309,7 @@ public static class Sharp
     /// Assert(result.Exception.GetType() == typeof(ArgumentException));
     /// </code>
     /// </example>
-    public sealed class ExceptionResult<T> : Expectation where T: Exception
+    public sealed class ExceptionResult<T> : Expectation where T : Exception
     {
         readonly T? exception;
         readonly bool success;
@@ -325,6 +325,11 @@ public static class Sharp
         /// <summary>
         /// Implicitly converts an <see cref="ExceptionResult{T}"/> to the specific exception type.
         /// </summary>
+        /// <remarks>
+        /// Standard reference conversions also permit assignment to a base exception type.
+        /// When <typeparamref name="T"/> is <see cref="Exception"/>, the same operator applies.
+        /// The conversion reads the captured exception and does not run the action again.
+        /// </remarks>
         /// <param name="result">The exception result to convert.</param>
         /// <returns>The caught exception of type <typeparamref name="T"/>.</returns>
         /// <exception cref="InvalidOperationException">
@@ -333,21 +338,13 @@ public static class Sharp
         /// <example>
         /// <code>
         /// var result = Throws&lt;ArgumentException&gt;(() => throw new ArgumentException("test"));
-        /// ArgumentException ex = result; // Implicit conversion to ArgumentException
+        /// ArgumentException ex = result;
+        /// Exception general = result;
+        /// Exception exact = Throws&lt;Exception&gt;(() => throw new Exception("test"));
         /// Assert(ex.Message == "test");
         /// </code>
         /// </example>
         public static implicit operator T(ExceptionResult<T> result) => result.Exception;
-        
-        /// <summary>
-        /// Implicitly converts an <see cref="ExceptionResult{T}"/> to the base <see cref="Exception"/> type.
-        /// </summary>
-        /// <param name="result">The exception result to convert.</param>
-        /// <returns>The caught exception as a base <see cref="Exception"/>.</returns>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown if no exception was caught and the conversion is attempted.
-        /// </exception>
-        public static implicit operator Exception(ExceptionResult<T> result) => result.Exception;
 
         /// <summary>
         /// Gets the caught exception of the expected type.
@@ -402,7 +399,7 @@ public static class Sharp
         /// </code>
         /// </example>
         public string Message => Exception.Message;
-        
+
         /// <summary>
         /// Gets the data dictionary from the caught exception.
         /// </summary>
