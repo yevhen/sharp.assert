@@ -2,6 +2,15 @@
 
 Pytest-style assertions using native C# syntax. MSBuild compile-time rewriting provides rich diagnostics without special syntax.
 
+## Upgrade to 2.0
+
+Assertion `&&` now stops at the first false operand. This changes the 1.6 behavior
+that ran all independent operands. `||` keeps its C# short-circuit behavior.
+
+Use a separate `Assert` for each independent check. Keep guards and dependent
+checks in one C# expression. If you need all failures at once, keep the original
+framework's multiple-assertion API and its own assertions.
+
 ## Core Concept
 
 ```csharp
@@ -34,10 +43,12 @@ SharpAssert works with standard C# - no special syntax required:
 // Comparisons
 Assert(actual == expected);  // ==, !=, <, >, <=, >=
 
-// AND executes all independent checks. OR uses short-circuit evaluation.
-Assert(x > 0 && y < 100);   // &&, ||, !
+// Check independent conditions separately.
+Assert(x > 0);
+Assert(y < 100);
 
-// Use one property pattern for dependent checks.
+// Keep a guard with its dependent check.
+Assert(value != null && value.Id == 42);
 Assert(value is ExpectedType { Id: 42 });
 
 // LINQ
@@ -66,9 +77,9 @@ use `!` to negate it, or read `.Exception`, `.Message`, or `.Data` after an exce
 was caught. Rewritten inline checks report a missing exception at the assertion
 location and execute the action once.
 
-Assertion `&&` is not a null or type guard: both independent operands execute.
-Property patterns keep native C# matching semantics. Use a pattern for checks
-that depend on the input type or its non-null properties.
+Assertion `&&` keeps native C# null and type guards. Failure diagnostics use
+values from reached operands without running them again. Property patterns also
+keep native C# matching semantics.
 
 Equivalency compares `DateTimeOffset` values by instant. For strict offset
 comparison, use `config.Using<DateTimeOffset>((left, right) => left.EqualsExact(right))`.
@@ -134,11 +145,9 @@ Assert.That(coll, Has.Count.EqualTo(n))   → Assert(coll.Count() == n)
 Assert.Throws<T>(() => code)              → Assert(Throws<T>(() => code))
 Assert.ThrowsAsync<T>(() => asyncCode)    → Assert(await ThrowsAsync<T>(() => asyncCode))
 
-// Multiple assertions (all failures shown)
-Assert.Multiple(() => {                   → Assert(x == 5 && y == 10)
-    Assert.That(x, Is.EqualTo(5));          // Native && shows all failures
-    Assert.That(y, Is.EqualTo(10));
-});
+// Check independent conditions separately.
+Assert.That(x, Is.EqualTo(5))             → Assert(x == 5);
+Assert.That(y, Is.EqualTo(10))            → Assert(y == 10);
 ```
 
 ## FluentAssertions
@@ -239,12 +248,9 @@ act.Should().ThrowAsync<T>()              → Assert(await ThrowsAsync<T>(act))
 act.Should().Throw<T>().WithMessage(msg)  → var ex = Throws<T>(act);
                                             Assert(ex.Message.Contains(msg))
 
-// Multiple assertions (all failures shown)
-using (new AssertionScope())              → Assert(x == 5 && y == 10)
-{                                           // Native && shows all failures
-    x.Should().Be(5);
-    y.Should().Be(10);
-}
+// Check independent conditions separately.
+x.Should().Be(5)                         → Assert(x == 5);
+y.Should().Be(10)                        → Assert(y == 10);
 
 // Numerics
 val.Should().BePositive()                 → Assert(val > 0)
