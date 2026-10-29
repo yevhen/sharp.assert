@@ -77,6 +77,20 @@ use `!` to negate it, or read `.Exception`, `.Message`, or `.Data` after an exce
 was caught. Rewritten inline checks report a missing exception at the assertion
 location and execute the action once.
 
+Keep single-use delegates and property checks inside `Assert`. Do not introduce
+an `Action` and separate result variables just to check one exception. For several
+properties, bind the returned `ExceptionResult<T>` or its message inside one assert:
+
+```csharp
+Assert(Throws<InvalidOperationException>(() => Validate()).Message is var message
+    && message.Contains("region")
+    && message.Contains("country"));
+```
+
+These conditions describe one captured exception, not independent operations.
+The action runs once. Keep a result in a local variable only if later operations
+need the captured exception.
+
 Assertion `&&` keeps native C# null and type guards. Failure diagnostics use
 values from reached operands without running them again. Property patterns also
 keep native C# matching semantics.
@@ -245,8 +259,7 @@ obj.Should().BeEquivalentTo(exp, o=>o.ComparingRecordsByValue())
 act.Should().Throw<T>()                   → Assert(Throws<T>(act))
 act.Should().NotThrow()                   → Assert(!Throws<Exception>(act))
 act.Should().ThrowAsync<T>()              → Assert(await ThrowsAsync<T>(act))
-act.Should().Throw<T>().WithMessage(msg)  → var ex = Throws<T>(act);
-                                            Assert(ex.Message.Contains(msg))
+act.Should().Throw<T>().WithMessage(msg)  → Assert(Throws<T>(act).Message.Contains(msg))
 
 // Check independent conditions separately.
 x.Should().Be(5)                         → Assert(x == 5);

@@ -31,7 +31,7 @@ SharpAssert uses **MSBuild source rewriting** to automatically transform your as
 ## Features
 
 - **[Detailed Expression Analysis](#complex-expression-analysis)** - See exactly why your assertions failed
-- **[Multiple Assertions](#multiple-assertions)** - `&&` shows ALL failures, not just the first one
+- **[Native Short-Circuit Checks](#multiple-conditions)** - Standard C# operators with focused failure diagnostics
 - **[Exception Testing](#exception-testing)** - `Throws<T>` and `ThrowsAsync<T>` with detailed exception diagnostics
 - **[String Diffs](#string-comparisons)** - Character-level inline diffs for strings (powered by DiffPlex)
 - **[String Pattern Matching](#string-pattern-matching)** - Wildcard patterns and occurrence counting
@@ -313,14 +313,22 @@ Assert(Throws<ArgumentException>(() => throw new ArgumentException("invalid")));
 // Negative assertion - expects no exception
 Assert(!Throws<ArgumentException>(() => { /* no exception */ }));
 
-// Access exception properties
-var ex = Throws<ArgumentNullException>(() => throw new ArgumentNullException("param"));
-Assert(ex.Message.Contains("param"));
+// Read exception properties inside the assertion.
+Assert(Throws<ArgumentNullException>(() => throw new ArgumentNullException("param")).Message.Contains("param"));
+
+// Check one captured message without running the action again.
+Assert(Throws<InvalidOperationException>(() => Validate()).Message is var message
+    && message.Contains("region")
+    && message.Contains("country"));
 
 // Async version
 Assert(await ThrowsAsync<InvalidOperationException>(() =>
     Task.Run(() => throw new InvalidOperationException())));
 ```
+
+Keep single-use delegates and exception checks inside `Assert`. Do not add an
+`Action` variable and a separate result just to assert one property. Compound
+conditions on one captured exception are valid; the action runs once.
 
 ### Custom Expectations
 
