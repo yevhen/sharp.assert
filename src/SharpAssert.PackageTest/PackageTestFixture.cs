@@ -94,6 +94,32 @@ public class PackageTestFixture
     }
 
     [Test]
+    public void Should_show_enum_names_from_package()
+    {
+        var calls = 0;
+        Func<ProcessingStatus> read = () => { calls++; return ProcessingStatus.Running; };
+        Action assertion = () => Assert(read() == ProcessingStatus.Completed && false);
+
+        var error = assertion.Should().Throw<SharpAssertionException>().Which;
+
+        error.Message.Should().Contain("Left:  Running").And.Contain("Right: Completed");
+        calls.Should().Be(1);
+    }
+
+    [Test]
+    public void Should_keep_numeric_enum_casts_from_package()
+    {
+        var calls = 0;
+        Func<ProcessingStatus> read = () => { calls++; return ProcessingStatus.Running; };
+        Action assertion = () => Assert((int)read() == 2 && true);
+
+        var error = assertion.Should().Throw<SharpAssertionException>().Which;
+
+        error.Message.Should().Contain("Left:  1").And.Contain("Right: 2");
+        calls.Should().Be(1);
+    }
+
+    [Test]
     public void Should_compile_nullable_selectors_from_package()
     {
         var actual = new Item(42);
@@ -137,6 +163,8 @@ public class PackageTestFixture
         ex.Message.Should().Contain("nullValue != null");
         ex.Message.Should().Contain("null");
     }
+
+    enum ProcessingStatus { Running = 1, Completed = 2 }
 
     record Item(int Id, string? Name = null);
 }

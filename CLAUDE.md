@@ -379,6 +379,7 @@ async\method: Suffix with `Async` =\> `GetDataAsync()`
 - Keep only `ExceptionResult<T>.operator T`; C# supports assignment to base exception types after this conversion, but a second `operator Exception` is ambiguous for `T = Exception`.
 - NUnit prints the public exception `Result` property. `AssertionEvaluationResult.ToString()` must stay bounded; `Format()` and structured properties retain complete diagnostics.
 - Keep native C# short-circuit evaluation for assertion `&&` and `||`. Do not replace `&&` with `&`. Do not run skipped conditions to build diagnostics. Check complete failure messages, including indentation, through the public assertion API.
+- C# lowers enum comparisons to numeric operands. Restore enum types for diagnostic values only. `ExprNode.IsExplicitNumericConversion` keeps explicit numeric casts numeric; it does not change the `ExprNode` constructor. Do not read operands again or change the comparison result.
 - Run `scripts/test-nunit-output.sh` to verify real NUnit 4.6.1/adapter 6.3.0 console output. Its intentional failure project is not part of the normal test solution.
 
 - NEVER use underscores for private/internal members

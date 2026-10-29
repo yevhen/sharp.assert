@@ -67,13 +67,46 @@ abstract class ExpressionAnalyzer : ExpressionVisitor
 
         var exprText = context.ExprNode.Text;
 
-        var leftOperand = new AssertionOperand(leftValue, binaryExpr.Left.Type);
-        var rightOperand = new AssertionOperand(rightValue, binaryExpr.Right.Type);
+        var enumType = GetComparisonEnumType(binaryExpr, context.ExprNode);
+        var leftOperand = CreateOperand(leftValue, binaryExpr.Left.Type, enumType);
+        var rightOperand = CreateOperand(rightValue, binaryExpr.Right.Type, enumType);
         var comparison = ComparerService.GetComparisonResult(leftOperand, rightOperand);
 
         var resultValue = EvaluateBinaryExpression(binaryExpr.NodeType, leftValue, rightValue);
 
         return new BinaryComparisonEvaluationResult(exprText, binaryExpr.NodeType, comparison, resultValue);
+    }
+
+    static Type? GetComparisonEnumType(BinaryExpression expression, ExprNode source)
+    {
+        if (expression.NodeType is not (Equal or NotEqual) ||
+            source.Left?.IsExplicitNumericConversion == true || source.Right?.IsExplicitNumericConversion == true)
+            return null;
+
+        return GetEnumType(expression.Left) ?? GetEnumType(expression.Right);
+    }
+
+    static Type? GetEnumType(Expression expression)
+    {
+        var type = expression is UnaryExpression { NodeType: ExpressionType.Convert or ConvertChecked, Method: null } conversion
+            ? conversion.Operand.Type
+            : expression.Type;
+        type = Nullable.GetUnderlyingType(type) ?? type;
+        return type.IsEnum ? type : null;
+    }
+
+    static AssertionOperand CreateOperand(object? value, Type expressionType, Type? enumType)
+    {
+        if (enumType is null)
+            return new AssertionOperand(value, expressionType);
+
+        var enumValue = value is null or EvaluationUnavailable || value.GetType() == enumType
+            ? value
+            : Enum.ToObject(enumType, value);
+        var operandType = Nullable.GetUnderlyingType(expressionType) is null
+            ? enumType
+            : typeof(Nullable<>).MakeGenericType(enumType);
+        return new AssertionOperand(enumValue, operandType);
     }
 
     static EvaluationResult AnalyzeLogicalBinary(BinaryExpression binaryExpr, Dictionary<Expression, object?> cache, AssertionContext context)

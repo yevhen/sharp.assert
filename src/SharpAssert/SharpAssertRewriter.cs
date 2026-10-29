@@ -759,7 +759,7 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         ]);
     }
 
-    static ExpressionSyntax GenerateExprNodeSyntax(ExpressionSyntax expression)
+    ExpressionSyntax GenerateExprNodeSyntax(ExpressionSyntax expression)
     {
         var unwrapped = expression;
         while (unwrapped is ParenthesizedExpressionSyntax parenthesized)
@@ -774,8 +774,31 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         if (unwrapped is InvocationExpressionSyntax invocationExpr)
             return CreateMethodCallExprNodeObjectCreation(invocationExpr, expression);
 
-        // Generate simple ExprNode for all other expressions (variables, arithmetic, etc.)
-        return CreateSimpleExprNode(expression);
+        var node = CreateSimpleExprNode(expression);
+        if (!IsExplicitNumericConversion(expression))
+            return node;
+
+        var assignment = SyntaxFactory.AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+            SyntaxFactory.IdentifierName("IsExplicitNumericConversion"),
+            SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression));
+        return node.WithInitializer(SyntaxFactory.InitializerExpression(SyntaxKind.ObjectInitializerExpression,
+            SyntaxFactory.SingletonSeparatedList<ExpressionSyntax>(assignment)));
+    }
+
+    bool IsExplicitNumericConversion(ExpressionSyntax expression)
+    {
+        while (expression is ParenthesizedExpressionSyntax or CheckedExpressionSyntax)
+            expression = expression is ParenthesizedExpressionSyntax group
+                ? group.Expression
+                : ((CheckedExpressionSyntax)expression).Expression;
+
+        if (expression is not CastExpressionSyntax cast || semanticModel.GetTypeInfo(cast.Type).Type is not { } type)
+            return false;
+
+        if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T, TypeArguments: [var underlying] })
+            type = underlying;
+
+        return IsNumeric(type);
     }
 
     static bool IsBinaryComparisonExpression(BinaryExpressionSyntax binaryExpr) =>
@@ -790,7 +813,7 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
         binaryExpr.OperatorToken.IsKind(SyntaxKind.AmpersandToken) ||
         binaryExpr.OperatorToken.IsKind(SyntaxKind.BarToken);
 
-    static ObjectCreationExpressionSyntax CreateExprNodeObjectCreation(BinaryExpressionSyntax binaryExpr, ExpressionSyntax originalExpression)
+    ObjectCreationExpressionSyntax CreateExprNodeObjectCreation(BinaryExpressionSyntax binaryExpr, ExpressionSyntax originalExpression)
     {
         var text = originalExpression.ToString();
         var leftNode = GenerateExprNodeSyntax(binaryExpr.Left);
@@ -822,7 +845,7 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
                 default);
     }
 
-    static ObjectCreationExpressionSyntax CreateUnaryExprNodeObjectCreation(PrefixUnaryExpressionSyntax unaryExpr, ExpressionSyntax originalExpression)
+    ObjectCreationExpressionSyntax CreateUnaryExprNodeObjectCreation(PrefixUnaryExpressionSyntax unaryExpr, ExpressionSyntax originalExpression)
     {
         var text = originalExpression.ToString();
         var operandNode = GenerateExprNodeSyntax(unaryExpr.Operand);
@@ -848,7 +871,7 @@ class SharpAssertSyntaxRewriter(SemanticModel semanticModel, string absoluteFile
                 default);
     }
 
-    static ObjectCreationExpressionSyntax CreateMethodCallExprNodeObjectCreation(InvocationExpressionSyntax invocationExpr, ExpressionSyntax originalExpression)
+    ObjectCreationExpressionSyntax CreateMethodCallExprNodeObjectCreation(InvocationExpressionSyntax invocationExpr, ExpressionSyntax originalExpression)
     {
         var text = originalExpression.ToString();
         var receiverNode = invocationExpr.Expression is MemberAccessExpressionSyntax memberAccess

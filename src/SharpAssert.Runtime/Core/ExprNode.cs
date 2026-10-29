@@ -44,4 +44,17 @@ public record ExprNode(
     ExprNode? Right = null,
     ExprNode? Operand = null,
     ExprNode[]? Arguments = null
-);
+)
+{
+    /// <summary>
+    /// Gets whether the source explicitly converts this operand to a numeric type.
+    /// </summary>
+    /// <remarks>
+    /// Keeps numeric values in diagnostics when C# also inserts enum conversions.
+    /// This metadata does not read the operand value.
+    /// </remarks>
+    /// <example>
+    /// <code>new ExprNode("(int)status") { IsExplicitNumericConversion = true };</code>
+    /// </example>
+    public bool IsExplicitNumericConversion { get; init; }
+}

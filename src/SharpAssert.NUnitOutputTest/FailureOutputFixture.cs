@@ -9,10 +9,12 @@ public class FailureOutputFixture
     [Test]
     public void Should_emit_compound_failure()
     {
-        var left = 1;
-        var right = 2;
+        var status = Status.Running;
+        var total = 1;
         Func<bool> notReached = () => throw new InvalidOperationException("Not reached");
 
-        Assert(left == right && right == 3 && left == 0 && notReached(), "Primary diagnostics stay visible");
+        Assert(status == Status.Completed && total == 3 && total == 0 && notReached(), "Primary diagnostics stay visible");
     }
+
+    enum Status { Running = 1, Completed = 2 }
 }

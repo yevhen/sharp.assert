@@ -56,7 +56,7 @@ This document is organized by topic to consolidate key learnings about the proje
   Right: {value}
 - **Logical Operator Message:** Show the decisive AND condition or successful OR branch. Failed OR groups show both failed alternatives; true AND groups remain visible under negation. Do not render repeated expression prefixes or binary-tree labels.
 - **Complete Message Tests:** `AssertRendersExactly` ignores indentation. `CompoundFailureMessageFixture` checks the complete public exception message, including indentation, long chains, mixed groups, and negation.
-- **Enum Diagnostic Follow-up:** `Assert(progress.Status == Status.Completed && ...)` can still show underlying integer operands through the expression-tree fallback. Preserve enum type metadata without running getters again; keep explicit numeric casts numeric.
+- **Enum Operand Metadata:** C# lowers enum equality to numeric operands. Rebuild diagnostic enum values with `Enum.ToObject` from the existing values, including nullable and unsigned values; keep the boolean result based on the original operands. The rewriter marks explicit numeric casts with `ExprNode.IsExplicitNumericConversion`, including aliases and checked/nullable casts, without changing the constructor signature.
 - **Readability:** Private helper methods are used extensively to keep the formatting logic clean and maintainable.
 
 ## MSBuild Source Rewriter

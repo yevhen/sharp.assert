@@ -107,6 +107,10 @@ Assert(value is ExpectedType { Id: 42 });
 A compound assertion does not replace `Assert.Multiple` or an assertion scope.
 Use an explicit multiple-assertion construct when all independent checks must run.
 
+Enum comparisons show member names, including nullable enums and combined flags.
+Explicit numeric casts such as `(int)status` still show numbers. Unnamed enum
+values also remain numeric. Diagnostics do not read the operands again.
+
 Property patterns use native C# matching, including nested properties, relational
 patterns, and `and`/`or` patterns. A failed root pattern reports the source pattern
 and the actual input type (or null). Diagnostics do not read the properties again.
