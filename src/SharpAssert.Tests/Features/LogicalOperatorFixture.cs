@@ -30,7 +30,7 @@ public class LogicalOperatorFixture : TestBase
         }
 
         [Test]
-        public void Should_evaluate_both_AND_operands_when_left_fails()
+        public void Should_skip_right_AND_operand_when_left_fails()
         {
             var left = false;
             var right = false;
@@ -39,9 +39,9 @@ public class LogicalOperatorFixture : TestBase
                 "left && right",
                 LogicalOperator.AndAlso,
                 Value("left", false),
-                Value("right", false),
+                null,
                 value: false,
-                shortCircuited: false,
+                shortCircuited: true,
                 nodeType: ExpressionType.AndAlso);
 
             AssertFails(() => Assert(left && right), expected);
@@ -56,9 +56,9 @@ public class LogicalOperatorFixture : TestBase
             AssertFails(() => Assert(next() == 0 && next() == 2),
                 Logical("next() == 0 && next() == 2", LogicalOperator.AndAlso,
                     BinaryComparison("next() == 0", Equal, Comparison(1, 0)),
-                    BinaryComparison("next() == 2", Equal, Comparison(2, 2), true),
-                    false, false, ExpressionType.AndAlso));
-            NUnit.Framework.Assert.That(calls, Is.EqualTo(2));
+                    null,
+                    false, true, ExpressionType.AndAlso));
+            NUnit.Framework.Assert.That(calls, Is.EqualTo(1));
         }
 
         [Test]
@@ -107,7 +107,7 @@ public class LogicalOperatorFixture : TestBase
             Action assertion = () => SharpInternal.Assert(condition, source, "checks", "Checks.cs", 1);
 
             NUnit.Framework.Assert.Throws<SharpAssertionException>(() => assertion());
-            NUnit.Framework.Assert.That(calls, Is.EqualTo(2));
+            NUnit.Framework.Assert.That(calls, Is.EqualTo(1));
         }
 
         [Test]
@@ -168,9 +168,9 @@ public class LogicalOperatorFixture : TestBase
                 "x == 5 && y == 10",
                 LogicalOperator.AndAlso,
                 BinaryComparison("x == 5", Equal, Comparison(3, 5), false),
-                BinaryComparison("y == 10", Equal, Comparison(12, 10), false),
+                null,
                 false,
-                false,
+                true,
                 ExpressionType.AndAlso);
 
             AssertFails(() => Assert(x == 5 && y == 10), expected);
@@ -200,30 +200,22 @@ public class LogicalOperatorFixture : TestBase
                 false,
                 ExpressionType.AndAlso);
 
-            AssertRendersExactly(result,
-                "a && b",
-                "Left: True",
-                "Right: False",
-                "&&: Right operand was false");
+            AssertRendersExactly(result, "b: False");
         }
 
         [Test]
-        public void Should_render_AND_both_failed()
+        public void Should_render_only_the_first_failed_AND_condition()
         {
             var result = Logical(
                 "a && b",
                 LogicalOperator.AndAlso,
                 Value("a", false),
-                Value("b", false),
+                null,
                 false,
-                false,
+                true,
                 ExpressionType.AndAlso);
 
-            AssertRendersExactly(result,
-                "a && b",
-                "Left: False",
-                "Right: False",
-                "&&: Both operands were false");
+            AssertRendersExactly(result, "a: False");
         }
 
         [Test]
@@ -232,10 +224,7 @@ public class LogicalOperatorFixture : TestBase
             var result = Logical("a && b", LogicalOperator.AndAlso,
                 Value("a", false), null, false, true, ExpressionType.AndAlso);
 
-            AssertRendersExactly(result,
-                "a && b",
-                "Left: False",
-                "&&: Left operand was false");
+            AssertRendersExactly(result, "a: False");
         }
 
         [Test]
@@ -251,10 +240,9 @@ public class LogicalOperatorFixture : TestBase
                 ExpressionType.OrElse);
 
             AssertRendersExactly(result,
-                "a || b",
-                "Left: False",
-                "Right: False",
-                "||: Both operands were false");
+                "No alternative was true:",
+                "a: False",
+                "b: False");
         }
 
         [Test]
@@ -267,38 +255,27 @@ public class LogicalOperatorFixture : TestBase
                 true,
                 false);
 
-            AssertRendersExactly(result,
-                "!a",
-                "Operand: True",
-                "!: Operand was True");
+            AssertRendersExactly(result, "a was True");
         }
 
         [Test]
         public void Should_render_nested_failure()
         {
-            // (x == 5) && (y == 10) - both fail
             var result = Logical(
                 "x == 5 && y == 10",
                 LogicalOperator.AndAlso,
                 BinaryComparison("x == 5", Equal, Comparison(3, 5), false),
-                BinaryComparison("y == 10", Equal, Comparison(12, 10), false),
+                null,
                 false,
-                false,
+                true,
                 ExpressionType.AndAlso);
 
             AssertRendersExactly(result,
-                "x == 5 && y == 10",
-                "Left: x == 5",
+                "x == 5",
                 "Left:  3",
-                "Right: 5",
-                "Right: y == 10",
-                "Left:  12",
-                "Right: 10",
-                "&&: Both operands were false");
+                "Right: 5");
         }
     }
-
-    static bool ThrowException() => throw new InvalidOperationException();
 
     static LogicalEvaluationResult Logical(string expr, LogicalOperator op, EvaluationResult left,
         EvaluationResult? right, bool value, bool shortCircuited, ExpressionType nodeType) =>

@@ -24,7 +24,7 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Eager AND Benchmark:** On .NET 10.0.9, the final Release logical success benchmark changed from 67 ns/424 B to 65 ns/424 B; primitive comparison stayed at 9 ns/0 B. Benchmark builds used `GenerateDocumentationFile=false` because of the separate CS1591 defect.
 - **Boolean Identifier Fast Path:** A rewritten `Assert(actual)` where `actual` is a bool variable needs only its value and name, not an expression tree; Release success dropped from ~2,813 ns/2,096 B to ~4 ns/0 B on .NET 10 roll-forward.
 - **Failure-Only Metadata:** Built-in comparisons with a message, bool properties, argumentless non-LINQ methods, single-argument instance calls (including `Contains`), and typed `Expectation` expressions can skip expression-tree construction; retain the old path for logical operations and static/multi-argument calls until their operand snapshots cover every diagnostic.
-- **Failure Snapshot Semantics:** When analyzing a method call, capture receiver and argument values during the first invocation and pass the same per-assertion cache to LINQ/SequenceEqual formatters; otherwise formatting re-runs side-effectful arguments. `&&` evaluates both checks once; `||` keeps short-circuit evaluation.
+- **Failure Snapshot Semantics:** When analyzing a method call, capture receiver and argument values during the first invocation and pass the same per-assertion cache to LINQ/SequenceEqual formatters; otherwise formatting re-runs side-effectful arguments. `&&` and `||` keep C# short-circuit evaluation; only reached checks run.
 - **Array SequenceEqual Capture:** `array.SequenceEqual(...)` can bind to `MemoryExtensions.SequenceEqual(ReadOnlySpan<T>, ...)`; capture the array expressions before the implicit span conversion and build sequence diagnostics from those arrays to avoid invoking argument factories twice.
 - **Captured Boolean Analysis:** Wrap typed subexpressions with a per-assertion `Record` call, strip the wrappers and seed the analyzer cache only on failure; this keeps operand order and defers expression-tree construction. Exclude ref-like operands, value-type receivers, constant-folded and custom comparisons until their semantics are verified.
 - **Implicit Using Symbols:** The per-file rewriter misses SDK-generated `global using` directives unless the MSBuild task supplies the project's `.GlobalUsings.g.cs`; missing `System` caused delegate calls to remain on the old path.
@@ -41,8 +41,8 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Logical Operators (`&&`, `||`, `!`):**
     - These require special handling separate from binary comparisons.
     - `&&` maps to `ExpressionType.AndAlso`, `||` to `ExpressionType.OrElse`, and `!` to `ExpressionType.Not`.
-    - **Evaluation:** Assertion `&&` evaluates both independent checks; `||` keeps short-circuit evaluation. Captured `&` nodes map back to `AndAlso` for diagnostics. Do not change operators inside user predicates.
-    - **Other Routes:** Apply eager AND to async and dynamic assertion thunks too; neither route uses the expression analyzer. Keep OR short-circuit evaluation.
+    - **Evaluation:** Assertion `&&` and `||` keep native short-circuit evaluation. Capture the original operators and stop analysis before a skipped branch; its capture slots have no values. Do not change operators inside user predicates.
+    - **Other Routes:** Keep the original operators in async, dynamic, local-function, and pattern assertions too; these routes do not all use the expression analyzer.
     - **Negation:** Use the analyzed operand result for `!`; a second value evaluation repeats calls and can change the assertion result.
     - The `!` operator is a `UnaryExpression` and requires its own handling path.
 
@@ -54,7 +54,9 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Binary Comparison Message:** For failed binary comparisons, the message is augmented with the evaluated operands:
   Left: {value}
   Right: {value}
-- **Logical Operator Message:** For failed logical operations, the message shows the truthiness of the operands to provide context (e.g., "Left operand was false" for a short-circuited `&&`).
+- **Logical Operator Message:** Show the decisive AND condition or successful OR branch. Failed OR groups show both failed alternatives; true AND groups remain visible under negation. Do not render repeated expression prefixes or binary-tree labels.
+- **Complete Message Tests:** `AssertRendersExactly` ignores indentation. `CompoundFailureMessageFixture` checks the complete public exception message, including indentation, long chains, mixed groups, and negation.
+- **Enum Diagnostic Follow-up:** `Assert(progress.Status == Status.Completed && ...)` can still show underlying integer operands through the expression-tree fallback. Preserve enum type metadata without running getters again; keep explicit numeric casts numeric.
 - **Readability:** Private helper methods are used extensively to keep the formatting logic clean and maintainable.
 
 ## MSBuild Source Rewriter
@@ -156,6 +158,8 @@ This document is organized by topic to consolidate key learnings about the proje
 - **Wildcard Version Matching:** `Version="1.0.0-dev*"` enables flexible local development while maintaining precise version control in production
 
 ## Development Process & Workflow Insights
+
+- `dotnet format analyzers SharpAssert.sln --verify-no-changes --no-restore --severity warn` reports existing NUnit2007/NUnit2009 warnings at `AssertDiscriminationFixture.cs:23` for its intentional NUnit discrimination probe. Track that probe separately; do not suppress these warnings for other tests.
 
 - Collection quantifier APIs need XML documentation in Release builds. Document record parameters and inherited overrides too; adding type documentation can expose further CS1591 warnings on overrides.
 - On macOS, an in-place `dotnet-install` host replacement caused SIGKILL despite a valid disk signature. An atomic replacement with identical signed bytes on a fresh inode restored execution.

@@ -4,11 +4,11 @@ using static SharpAssert.Sharp;
 namespace SharpAssert;
 
 [TestFixture]
-public class EagerLogicalPathsFixture
+public class LogicalPathsFixture
 {
-    [TestCase(false)]
-    [TestCase(true)]
-    public void Should_evaluate_dynamic_AND_operands_once(bool first)
+    [TestCase(false, 0)]
+    [TestCase(true, 1)]
+    public void Should_preserve_dynamic_AND_short_circuit(bool first, int expectedCalls)
     {
         dynamic left = first;
         var calls = 0;
@@ -17,7 +17,7 @@ public class EagerLogicalPathsFixture
         Action assertion = () => Assert(left && right());
 
         assertion.Should().Throw<SharpAssertionException>();
-        calls.Should().Be(1);
+        calls.Should().Be(expectedCalls);
     }
 
     [Test]
@@ -29,17 +29,18 @@ public class EagerLogicalPathsFixture
         Assert(left || right());
     }
 
-    [Test]
-    public async Task Should_evaluate_awaited_AND_operands_once_in_source_order()
+    [TestCase(false, new[] { 1 })]
+    [TestCase(true, new[] { 1, 2 })]
+    public async Task Should_preserve_awaited_AND_short_circuit(bool firstValue, int[] expectedCalls)
     {
         var calls = new List<int>();
-        Func<Task<bool>> first = () => { calls.Add(1); return Task.FromResult(false); };
+        Func<Task<bool>> first = () => { calls.Add(1); return Task.FromResult(firstValue); };
         Func<Task<bool>> second = () => { calls.Add(2); return Task.FromResult(false); };
 
         Func<Task> assertion = async () => Assert(await first() && await second());
 
         await assertion.Should().ThrowAsync<SharpAssertionException>();
-        calls.Should().Equal(1, 2);
+        calls.Should().Equal(expectedCalls);
     }
 
     [Test]

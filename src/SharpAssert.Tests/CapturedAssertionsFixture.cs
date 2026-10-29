@@ -20,7 +20,7 @@ public class CapturedAssertionsFixture
     }
 
     [Test]
-    public void Should_evaluate_local_function_AND_after_failure()
+    public void Should_skip_local_function_AND_after_failure()
     {
         var calls = 0;
         int Next() => ++calls;
@@ -28,11 +28,11 @@ public class CapturedAssertionsFixture
         Action assertion = () => Assert(Next() == 0 && Next() == 0);
 
         assertion.Should().Throw<SharpAssertionException>();
-        calls.Should().Be(2);
+        calls.Should().Be(1);
     }
 
     [Test]
-    public void Should_evaluate_nested_AND_checks_once_and_keep_OR_short_circuit()
+    public void Should_skip_nested_AND_checks_after_failure()
     {
         var calls = new List<int>();
         Func<bool> first = () => { calls.Add(1); return false; };
@@ -42,8 +42,8 @@ public class CapturedAssertionsFixture
 
         Action assertion = () => Assert(first() && (second() || skipped()) && third());
 
-        assertion.Should().Throw<SharpAssertionException>().Which.Message.Should().Contain("third()");
-        calls.Should().Equal(1, 2, 3);
+        assertion.Should().Throw<SharpAssertionException>().Which.Message.Should().EndWith("first(): False");
+        calls.Should().Equal(1);
     }
 
     [Test]
@@ -101,7 +101,7 @@ public class CapturedAssertionsFixture
 
         exception.Should().NotBeNull();
         exception!.Result!.Context.Message.Should().Be("Mismatch");
-        calls.Should().Equal("left", "right", "message");
+        calls.Should().Equal("left", "message");
     }
 
     [Test]

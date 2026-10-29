@@ -11,7 +11,8 @@ public class FailureOutputFixture
     {
         var left = 1;
         var right = 2;
+        Func<bool> notReached = () => throw new InvalidOperationException("Not reached");
 
-        Assert(left == right && right == 3, "Primary diagnostics stay visible");
+        Assert(left == right && right == 3 && left == 0 && notReached(), "Primary diagnostics stay visible");
     }
 }

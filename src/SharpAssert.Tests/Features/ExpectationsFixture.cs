@@ -309,10 +309,7 @@ public class ExpectationsFixture : TestBase
                 true,
                 false);
 
-            AssertRendersExactly(result,
-                "a.Not()",
-                "Operand: True",
-                "!: Operand was True");
+            AssertRendersExactly(result, "a was True");
         }
 
         [Test]

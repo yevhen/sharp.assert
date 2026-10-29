@@ -71,15 +71,26 @@ public class PackageTestFixture
     }
 
     [Test]
-    public void Should_evaluate_all_independent_AND_checks_from_package()
+    public void Should_preserve_AND_short_circuit_from_package()
     {
         var calls = 0;
         Func<bool> check = () => { calls++; return false; };
 
         Action assertion = () => Assert(check() && check());
 
-        assertion.Should().Throw<SharpAssertionException>();
-        calls.Should().Be(2);
+        assertion.Should().Throw<SharpAssertionException>().Which.Message.Should().EndWith("  check(): False");
+        calls.Should().Be(1);
+    }
+
+    [Test]
+    public void Should_keep_null_guards_from_package()
+    {
+        string? text = null;
+        Action assertion = () => Assert(text != null && text.Length == 3);
+
+        var error = assertion.Should().Throw<SharpAssertionException>().Which;
+
+        error.Result!.Render().Should().OnlyContain(line => !line.Text.Contains("text.Length"));
     }
 
     [Test]

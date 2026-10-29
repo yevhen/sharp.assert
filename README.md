@@ -76,9 +76,11 @@ public void Should_be_equal()
 
 ## Features in Detail
 
-### Multiple Assertions
+### Multiple Conditions
 
-When multiple conditions fail, SharpAssert shows ALL failures at once - no short-circuit evaluation:
+SharpAssert keeps C# short-circuit evaluation. `&&` stops at the first false
+condition. `||` stops at the first true condition. Each reached condition runs once,
+and failure diagnostics do not run it again.
 
 ```csharp
 var x = 3;
@@ -86,43 +88,24 @@ var y = 7;
 
 Assert(x == 5 && y == 10);
 // Assertion failed: x == 5 && y == 10
-// Left: x == 5
-//   Left:  3
-//   Right: 5
-// Right: y == 10
-//   Left:  7
-//   Right: 10
-// &&: Both operands were false
+//   x == 5
+//     Left:  3
+//     Right: 5
 ```
 
-This replaces verbose patterns from other frameworks with native C# syntax:
+The failure shows the condition that stopped an AND expression. A failed OR
+expression shows why each reached alternative failed. Diagnostics keep logical
+groups and do not report skipped conditions as false.
+
+Null and type guards keep their C# behavior:
 
 ```csharp
-// NUnit
-Assert.Multiple(() =>
-{
-    Assert.That(x, Is.EqualTo(5));
-    Assert.That(y, Is.EqualTo(10));
-});
-
-// FluentAssertions
-using (new AssertionScope())
-{
-    x.Should().Be(5);
-    y.Should().Be(10);
-}
-
-// SharpAssert - just use &&
-Assert(x == 5 && y == 10);
-```
-
-`&&` executes every independent check once. `||` uses short-circuit evaluation.
-Do not use assertion `&&` as a null or type guard for its next operand. Use one
-property pattern for dependent checks:
-
-```csharp
+Assert(value != null && value.Id == 42);
 Assert(value is ExpectedType { Id: 42 });
 ```
+
+A compound assertion does not replace `Assert.Multiple` or an assertion scope.
+Use an explicit multiple-assertion construct when all independent checks must run.
 
 Property patterns use native C# matching, including nested properties, relational
 patterns, and `and`/`or` patterns. A failed root pattern reports the source pattern

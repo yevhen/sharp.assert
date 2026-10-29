@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Breaking change:** Restored C# short-circuit evaluation for assertion `&&` operators, including async, dynamic, local-function, and pattern expressions. Conditions after the first false operand no longer run. Null and type guards keep their native behavior.
+- Simplified compound failure messages to show the condition that stopped an AND expression or the failed alternatives of an OR expression. Removed repeated expression prefixes and logical `Left`/`Right` labels. Kept diagnostic values and logical groups without running conditions again.
+
 ## 1.6.1
 
 - Fixed ambiguous conversions from `ExceptionResult<Exception>`, including awaited `ThrowsAsync<Exception>`. Specific and base exception assignments remain supported. (#4)

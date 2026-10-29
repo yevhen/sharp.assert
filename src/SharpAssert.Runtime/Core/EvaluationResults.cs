@@ -147,55 +147,24 @@ record LogicalEvaluationResult(
 
     public override IReadOnlyList<RenderedLine> Render()
     {
-        var lines = new List<RenderedLine>();
+        if (Operator == LogicalOperator.AndAlso && !Value)
+            return RenderCondition(Left.BooleanValue != true ? Left : Right!);
 
-        if (!string.IsNullOrEmpty(ExpressionText))
-            lines.Add(new RenderedLine(0, ExpressionText));
+        if (Operator == LogicalOperator.OrElse && Value)
+            return RenderCondition(Left.BooleanValue == true ? Left : Right!);
 
-        lines.AddRange(RenderLabeled(Left, "Left"));
-
-        if (ShortCircuited == false && Right is not null)
-            lines.AddRange(RenderLabeled(Right, "Right"));
-
-        lines.Add(new RenderedLine(0, GetLogicalExplanation()));
-
+        var summary = Operator == LogicalOperator.AndAlso
+            ? "All conditions were true:"
+            : "No alternative was true:";
+        var lines = new List<RenderedLine> { new(0, summary) };
+        lines.AddRange(RenderCondition(Left).Select(line => line with { IndentLevel = line.IndentLevel + 1 }));
+        lines.AddRange(RenderCondition(Right!).Select(line => line with { IndentLevel = line.IndentLevel + 1 }));
         return lines;
     }
 
-    IReadOnlyList<RenderedLine> RenderLabeled(EvaluationResult child, string label)
-    {
-        var childLines = child.Render();
-        if (childLines.Count == 0)
-            return [];
-
-        var lines = new List<RenderedLine>
-        {
-            new(0, $"{label}: {childLines[0].Text}")
-        };
-
-        for (var i = 1; i < childLines.Count; i++)
-            lines.Add(new RenderedLine(childLines[i].IndentLevel, childLines[i].Text));
-
-        return lines;
-    }
-
-    string GetLogicalExplanation()
-    {
-        var leftFailed = Left.BooleanValue != true;
-        var rightFailed = Right?.BooleanValue != true;
-
-        return Operator switch
-        {
-            LogicalOperator.AndAlso when ShortCircuited => "&&: Left operand was false",
-            LogicalOperator.AndAlso when !leftFailed && !rightFailed => "&&: Both operands were true",
-            LogicalOperator.AndAlso when leftFailed && rightFailed => "&&: Both operands were false",
-            LogicalOperator.AndAlso when leftFailed => "&&: Left operand was false",
-            LogicalOperator.AndAlso => "&&: Right operand was false",
-            LogicalOperator.OrElse when Value && ShortCircuited => "||: Left operand was true",
-            LogicalOperator.OrElse when Value => "||: Right operand was true",
-            _ => "||: Both operands were false"
-        };
-    }
+    static IReadOnlyList<RenderedLine> RenderCondition(EvaluationResult condition) => condition is ValueEvaluationResult value
+        ? [new RenderedLine(0, $"{value.ExpressionText}: {ValueFormatter.Format(value.Value)}")]
+        : condition.Render();
 }
 
 record UnaryEvaluationResult(
@@ -210,30 +179,16 @@ record UnaryEvaluationResult(
 
     public override IReadOnlyList<RenderedLine> Render()
     {
-        var lines = new List<RenderedLine>();
-
-        if (ExpressionText is { Length: > 0 })
-            lines.Add(new RenderedLine(0, ExpressionText));
-
-        lines.AddRange(RenderLabeled(Operand, "Operand"));
-        lines.Add(new RenderedLine(0, $"!: Operand was {FormatValue(OperandValue)}"));
-
-        return lines;
-    }
-
-    IReadOnlyList<RenderedLine> RenderLabeled(EvaluationResult child, string label)
-    {
-        var childLines = child.Render();
-        if (childLines.Count == 0)
-            return [];
-
         var lines = new List<RenderedLine>
         {
-            new(0, $"{label}: {childLines[0].Text}")
+            new(0, $"{Operand.ExpressionText} was {FormatValue(OperandValue)}")
         };
 
-        for (var i = 1; i < childLines.Count; i++)
-            lines.Add(new RenderedLine(childLines[i].IndentLevel, childLines[i].Text));
+        var operandLines = Operand.Render();
+        var details = operandLines.FirstOrDefault()?.Text == FormatValue(OperandValue)
+            ? operandLines.Skip(1)
+            : operandLines;
+        lines.AddRange(details.Select(line => line with { IndentLevel = line.IndentLevel + 1 }));
 
         return lines;
     }

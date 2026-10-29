@@ -5,7 +5,7 @@ mkdir -p TestResults/nunit-output
 output=TestResults/nunit-output/console.log
 dotnet build src/SharpAssert.NUnitOutputTest -c Release -warnaserror
 status=0
-dotnet test src/SharpAssert.NUnitOutputTest -c Release --no-build --logger 'console;verbosity=normal' > "$output" 2>&1 || status=$?
+dotnet test src/SharpAssert.NUnitOutputTest -c Release --no-build --blame-hang-timeout 30s --logger 'console;verbosity=normal' > "$output" 2>&1 || status=$?
 [[ "$status" == 1 ]]
 grep -q 'Failed: *1' "$output"
 grep -q 'Primary diagnostics stay visible' "$output"
@@ -14,4 +14,6 @@ grep -q 'Right: 2' "$output"
 [[ "$(grep -c 'Result:' "$output")" == 1 ]]
 grep -Eq '^[[:space:]]*Result: Failed[[:space:]]*$' "$output"
 ! grep -Eq 'AssertionEvaluationResult \{|Context =|ExprNode =|LogicalEvaluationResult \{' "$output"
-echo 'NUnit console output retains diagnostics and a bounded Result line'
+! grep -Eq 'Left: left|Right: right|&&:|InvalidOperationException' "$output"
+[[ "$(grep -c 'Assertion failed:' "$output")" == 1 ]]
+echo 'NUnit output shows the failed condition and a bounded Result line'

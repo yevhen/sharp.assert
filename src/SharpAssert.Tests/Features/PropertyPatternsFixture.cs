@@ -134,17 +134,18 @@ public class PropertyPatternsFixture
         RewrittenSource.LoadCheck(source).Should().Throw<SharpAssertionException>();
     }
 
-    [Test]
-    public void Should_evaluate_both_independent_pattern_checks_once()
+    [TestCase(0, 1)]
+    [TestCase(1, 2)]
+    public void Should_preserve_short_circuit_between_patterns(int value, int expectedCalls)
     {
-        var source = """
+        var source = $$"""
             using System;
             using SharpAssert;
             using static SharpAssert.Sharp;
             public class Sample
             {
                 static int calls;
-                public sealed class Expected { public int Id => 0; }
+                public sealed class Expected { public int Id => {{value}}; }
                 static object Input() { calls++; return new Expected(); }
                 public static void Check()
                 {
@@ -154,7 +155,7 @@ public class PropertyPatternsFixture
                     }
                     catch (SharpAssertionException)
                     {
-                        if (calls != 2) throw new Exception("A check was skipped or repeated");
+                        if (calls != {{expectedCalls}}) throw new Exception("The call count is incorrect");
                         throw;
                     }
                 }
