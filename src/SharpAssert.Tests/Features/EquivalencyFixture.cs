@@ -78,6 +78,75 @@ public class EquivalencyFixture : TestBase
         }
 
         [Test]
+        public void Should_fail_when_unordered_get_only_objects_differ_after_first_item()
+        {
+            var actual = new[] { new Money(1, "USD"), new Money(2, "EUR") };
+            var expected = new[] { new Money(1, "USD"), new Money(3, "UAH") };
+
+            var action = () => Assert(actual.IsEquivalentTo(expected, config => config.WithoutStrictOrdering()));
+            action.Should().Throw<SharpAssertionException>();
+        }
+
+        [Test]
+        public void Should_fail_when_unordered_objects_differ_only_in_nested_member()
+        {
+            var actual = new[] { Married("Anna"), Married("Kate") };
+            var expected = new[] { Married("Anna"), Married("Mary") };
+
+            var action = () => Assert(actual.IsEquivalentTo(expected, config => config.WithoutStrictOrdering()));
+            action.Should().Throw<SharpAssertionException>();
+        }
+
+        [Test]
+        public void Should_pass_when_unordered_get_only_objects_are_shuffled()
+        {
+            var actual = new[] { new Money(1, "USD"), new Money(2, "EUR") };
+            var expected = new[] { new Money(2, "EUR"), new Money(1, "USD") };
+
+            AssertPasses(() => Assert(actual.IsEquivalentTo(expected, config => config.WithoutStrictOrdering())));
+        }
+
+        [Test]
+        public void Should_fail_when_unordered_collection_has_an_extra_item()
+        {
+            var actual = new[] { new Money(1, "USD"), new Money(2, "EUR") };
+            var expected = new[] { new Money(2, "EUR") };
+
+            var action = () => Assert(actual.IsEquivalentTo(expected, config => config.WithoutStrictOrdering()));
+            action.Should().Throw<SharpAssertionException>();
+        }
+
+        [Test]
+        public void Should_fail_when_unordered_collection_misses_an_item()
+        {
+            var actual = new[] { new Money(2, "EUR") };
+            var expected = new[] { new Money(1, "USD"), new Money(2, "EUR") };
+
+            var action = () => Assert(actual.IsEquivalentTo(expected, config => config.WithoutStrictOrdering()));
+            action.Should().Throw<SharpAssertionException>();
+        }
+
+        [Test]
+        public void Should_keep_string_characters_in_order_when_collection_order_is_ignored()
+        {
+            var actual = new Person { Name = "abc" };
+            var expected = new Person { Name = "cba" };
+
+            var action = () => Assert(actual.IsEquivalentTo(expected, config => config.WithoutStrictOrdering()));
+            action.Should().Throw<SharpAssertionException>();
+        }
+
+        [Test]
+        public void Should_fail_when_strict_ordering_follows_unordered_configuration()
+        {
+            var actual = new[] { new Money(1, "USD"), new Money(2, "EUR") };
+            var expected = new[] { new Money(2, "EUR"), new Money(1, "USD") };
+
+            var action = () => Assert(actual.IsEquivalentTo(expected, config => config.WithoutStrictOrdering().WithStrictOrdering()));
+            action.Should().Throw<SharpAssertionException>();
+        }
+
+        [Test]
         public void Should_fail_when_collection_order_differs_by_default()
         {
             var actual = new Team { Name = "A", Members = ["Alice", "Bob", "Charlie"] };
@@ -374,11 +443,26 @@ public class EquivalencyFixture : TestBase
                 config.ComparingRecordsByValue()));
             action.Should().Throw<SharpAssertionException>();
         }
+
+        static PersonWithSpouse Married(string spouse) =>
+            new() { Name = "John", Age = 30, Spouse = new PersonWithSpouse { Name = spouse, Age = 30 } };
     }
 
     [TestFixture]
     class FormattingTests
     {
+        [Test]
+        public void Should_render_member_differences_of_unmatched_unordered_items()
+        {
+            var actual = new[] { new Money(1, "USD"), new Money(2, "EUR") };
+            var expected = new[] { new Money(1, "USD"), new Money(3, "UAH") };
+
+            var expectation = actual.IsEquivalentTo(expected, config => config.WithoutStrictOrdering());
+            var result = expectation.Evaluate(TestContext("test"));
+
+            Rendered(result).Should().Contain("[1].Amount: expected \"3\", got \"2\"");
+        }
+
         [Test]
         public void Should_render_property_differences_clearly()
         {

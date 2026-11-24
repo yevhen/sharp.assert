@@ -100,6 +100,7 @@ This document is organized by topic to consolidate key learnings about the proje
 - `scripts/test-nunit-output.sh` checks an intentional failure outside the solution with NUnit 4.6.1 and adapter 6.3.0; a nonzero test exit alone is not enough to prove diagnostics.
 
 - DateTimeOffset equivalency needs a native `==` comparer: the dependency's built-in comparer compares local clock values and ignores sub-millisecond differences. Put explicit custom comparers before the default so `EqualsExact` can compare offsets.
+- Unordered equivalency must not use the dependency's `IgnoreCollectionOrder` matching: it keys items by settable simple properties only, so get-only objects all get the type name as key and only the first pair is compared. Pair items by full deep comparison instead.
 
 - Nullable equivalency selectors use generic overloads. The legacy non-generic signatures use nullable-oblivious annotations: `Expression<Func<T, object?>>` would cause CS8620 for existing `Expression<Func<T, object>>` variables. Keep nullable warnings enabled and test both forms. For a generic selector, unwrap only conversion nodes; a unary operation such as `-item.Id` is not a member selector.
 
