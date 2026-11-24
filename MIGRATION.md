@@ -170,7 +170,7 @@ Required imports:
 ```csharp
 using static SharpAssert.Sharp;          // For Assert(), Throws<T>()
 using SharpAssert;                        // For custom expectations (IsEquivalentTo, etc.)
-using SharpAssert.Features.Collections;  // For IsInAscendingOrder(), AllUnique()
+using SharpAssert.Features.Collections;  // For IsInAscendingOrder(), AllUnique(), IsSequence(), HasSameItems()
 using SharpAssert.Features.Strings;      // For Matches(), occurrence counting
 using SharpAssert.Features.Proximity;    // For BeCloseTo(), BeApproximately()
 ```
@@ -204,6 +204,8 @@ coll.Should().BeEmpty()                   → Assert(!coll.Any())
 coll.Should().NotBeEmpty()                → Assert(coll.Any())
 coll.Should().HaveCount(n)                → Assert(coll.Count() == n)
 coll.Should().Equal(expected)             → Assert(coll.SequenceEqual(expected))
+coll.Should().Equal(1, 2, 3)              → Assert(coll.IsSequence(1, 2, 3))
+coll.Should().BeEquivalentTo(expected)    → Assert(coll.HasSameItems(expected))   // simple items, any order
 coll.Should().BeInAscendingOrder()        → Assert(coll.IsInAscendingOrder())
 coll.Should().BeInDescendingOrder()       → Assert(coll.IsInDescendingOrder())
 coll.Should().OnlyHaveUniqueItems()       → Assert(coll.AllUnique())

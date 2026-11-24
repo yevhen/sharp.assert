@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added `IsSequence(params T[])` to check a collection against items listed inline, in order, and `HasSameItems` to check the same items in any order with duplicates counted. Failures show the differing index, or the missing and extra items.
+
 ## 2.0.0
 
 - **Breaking change:** Restored C# short-circuit evaluation for assertion `&&` operators, including async, dynamic, local-function, and pattern expressions. Conditions after the first false operand no longer run. Null and type guards keep their native behavior.

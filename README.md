@@ -168,6 +168,17 @@ Assert(actual.SequenceEqual(expected));
 //   Actual:   3
 ```
 
+List the expected items inline, in order or in any order:
+
+```csharp
+using SharpAssert.Features.Collections;
+
+Assert(ids.IsSequence(1, 2, 3));      // same items, same order
+Assert(ids.HasSameItems(3, 1, 2));    // same items, any order, duplicates counted
+Assert(names.HasSameItems(expected, StringComparer.OrdinalIgnoreCase));
+// Expected the same items as [3, 1, 2], but found [1, 2, 4]: missing [3], extra [4].
+```
+
 ### String Pattern Matching
 
 Wildcard patterns with `*` (any sequence) and `?` (single character):
