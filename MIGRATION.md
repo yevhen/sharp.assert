@@ -220,6 +220,8 @@ coll.Should().Satisfy(p1, p2, p3)         → Assert(coll.Satisfies(p1, p2, p3))
 
 // Objects - Basic
 obj.Should().BeEquivalentTo(exp)          → Assert(obj.IsEquivalentTo(exp))
+obj.Should().BeOfType<T>()                → Assert(obj.IsExactly<T>())
+obj.Should().BeAssignableTo<T>()          → Assert(obj is T)
 obj.Should().BeEquivalentTo(exp, o=>o.Excluding(x=>x.Id))
                                           → Assert(obj.IsEquivalentTo(exp, c=>c.Excluding(x=>x.Id)))
 obj.Should().BeEquivalentTo(exp, o=>o.Including(x=>x.Name))
@@ -262,6 +264,7 @@ act.Should().Throw<T>()                   → Assert(Throws<T>(act))
 act.Should().NotThrow()                   → Assert(!Throws<Exception>(act))
 act.Should().ThrowAsync<T>()              → Assert(await ThrowsAsync<T>(act))
 act.Should().Throw<T>().WithMessage(msg)  → Assert(Throws<T>(act).Message.Contains(msg))
+act.Should().ThrowExactly<T>()            → Assert(Throws<T>(act).Exception.IsExactly<T>())
 
 // Check independent conditions separately.
 x.Should().Be(5)                         → Assert(x == 5);

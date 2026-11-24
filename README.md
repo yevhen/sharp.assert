@@ -337,6 +337,15 @@ Assert(await ThrowsAsync<InvalidOperationException>(() =>
     Task.Run(() => throw new InvalidOperationException())));
 ```
 
+`Throws<T>` also accepts subclasses of `T`. To require the exact type, check it with
+`IsExactly<T>()`, which works on any value:
+
+```csharp
+Assert(Throws<ArgumentException>(() => Parse(text)).Exception.IsExactly<ArgumentException>());
+Assert(chart.IsExactly<TextChart>());
+// Expected type TextChart, but found ImageChart.
+```
+
 Keep single-use delegates and exception checks inside `Assert`. Do not add an
 `Action` variable and a separate result just to assert one property. Compound
 conditions on one captured exception are valid; the action runs once.
