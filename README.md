@@ -38,6 +38,7 @@ SharpAssert uses **MSBuild source rewriting** to automatically transform your as
 - **[Collection Comparison](#collection-comparisons)** - First mismatch, missing/extra elements detection
 - **[Collection Ordering](#collection-ordering)** - Ascending/descending order validation
 - **[Collection Uniqueness](#collection-uniqueness)** - Duplicate detection with key selectors
+- **[Collection Quantifiers](#collection-quantifiers)** - `Each`, `Some`, `None`, `One`, `Exactly` with per-item diagnostics
 - **[Object Deep Diff](#object-deep-comparison)** - Property-level differences for objects/records (powered by Compare-Net-Objects)
 - **[Object Equivalency](#object-equivalency)** - Structural comparison with property exclusion/inclusion
 - **[LINQ Operations](#linq-operations)** - Enhanced diagnostics for Contains/Any/All operations
@@ -240,6 +241,21 @@ Assert(users.AllUnique(u => u.Email));
 // Custom equality comparer
 Assert(items.AllUnique(StringComparer.OrdinalIgnoreCase));
 ```
+
+### Collection Quantifiers
+
+Check how many items match a condition. Failures list the items that broke it:
+
+```csharp
+Assert(orders.Each(o => o.Total > 0));        // every item; passes on an empty collection
+Assert(orders.Some(o => o.IsPaid));           // at least one
+Assert(orders.None(o => o.IsCancelled));      // no item
+Assert(orders.One(o => o.IsDraft));           // exactly one
+Assert(orders.Exactly(2, o => o.IsUrgent));   // also AtLeast and AtMost
+```
+
+`Each` passes on an empty collection, like LINQ `All`. Add `Assert(orders.Any())` when
+the collection must not be empty.
 
 ### Object Deep Comparison
 

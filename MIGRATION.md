@@ -211,7 +211,9 @@ coll.Should().BeInDescendingOrder()       → Assert(coll.IsInDescendingOrder())
 coll.Should().OnlyHaveUniqueItems()       → Assert(coll.AllUnique())
 coll.Should().OnlyHaveUniqueItems(x=>x.K) → Assert(coll.AllUnique(x => x.K))
 coll.Should().ContainSingle()             → Assert(coll.Count() == 1)
-coll.Should().AllSatisfy(pred)            → Assert(coll.All(pred))
+coll.Should().ContainSingle(pred)         → Assert(coll.One(pred))
+coll.Should().AllSatisfy(pred)            → Assert(coll.Any()); Assert(coll.Each(pred))   // All/Each pass on an empty collection
+coll.Should().OnlyContain(pred)           → Assert(coll.Any()); Assert(coll.Each(pred))
 coll.Should().ContainInOrder(seq)         → Assert(coll.ContainsInOrder(seq))
 coll.Should().ContainInConsecutiveOrder(s)→ Assert(coll.ContainsInConsecutiveOrder(s))
 coll.Should().BeSubsetOf(superset)        → Assert(coll.IsSubsetOf(superset))
@@ -263,7 +265,7 @@ obj.Should().BeEquivalentTo(exp, o=>o.ComparingRecordsByValue())
 act.Should().Throw<T>()                   → Assert(Throws<T>(act))
 act.Should().NotThrow()                   → Assert(!Throws<Exception>(act))
 act.Should().ThrowAsync<T>()              → Assert(await ThrowsAsync<T>(act))
-act.Should().Throw<T>().WithMessage(msg)  → Assert(Throws<T>(act).Message.Contains(msg))
+act.Should().Throw<T>().WithMessage(msg)  → Assert(Throws<T>(act).Message.Matches(msg))   // * wildcards, full match
 act.Should().ThrowExactly<T>()            → Assert(Throws<T>(act).Exception.IsExactly<T>())
 
 // Check independent conditions separately.

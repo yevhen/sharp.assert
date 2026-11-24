@@ -4,6 +4,7 @@
 
 - Added `IsSequence(params T[])` to check a collection against items listed inline, in order, and `HasSameItems` to check the same items in any order with duplicates counted. Failures show the differing index, or the missing and extra items.
 - Added `IsExactly<T>()` to check the exact runtime type of any value, including a caught exception.
+- Documented the collection quantifiers in the README. The migration guide now maps `AllSatisfy`, `OnlyContain`, `ContainSingle(pred)`, `WithMessage`, `ThrowExactly` and `BeOfType` to checks with the same meaning.
 
 ## 2.0.0
 
