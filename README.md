@@ -38,6 +38,7 @@ SharpAssert uses **MSBuild source rewriting** to automatically transform your as
 - **[Collection Comparison](#collection-comparisons)** - First mismatch, missing/extra elements detection
 - **[Collection Ordering](#collection-ordering)** - Ascending/descending order validation
 - **[Collection Uniqueness](#collection-uniqueness)** - Duplicate detection with key selectors
+- **[Collection Quantifiers](#collection-quantifiers)** - `Each`, `Some`, `None`, `One`, `Exactly` with per-item diagnostics
 - **[Object Deep Diff](#object-deep-comparison)** - Property-level differences for objects/records (powered by Compare-Net-Objects)
 - **[Object Equivalency](#object-equivalency)** - Structural comparison with property exclusion/inclusion
 - **[LINQ Operations](#linq-operations)** - Enhanced diagnostics for Contains/Any/All operations
@@ -168,6 +169,17 @@ Assert(actual.SequenceEqual(expected));
 //   Actual:   3
 ```
 
+List the expected items inline, in order or in any order:
+
+```csharp
+using SharpAssert.Features.Collections;
+
+Assert(ids.IsSequence(1, 2, 3));      // same items, same order
+Assert(ids.HasSameItems(3, 1, 2));    // same items, any order, duplicates counted
+Assert(names.HasSameItems(expected, StringComparer.OrdinalIgnoreCase));
+// Expected the same items as [3, 1, 2], but found [1, 2, 4]: missing [3], extra [4].
+```
+
 ### String Pattern Matching
 
 Wildcard patterns with `*` (any sequence) and `?` (single character):
@@ -229,6 +241,21 @@ Assert(users.AllUnique(u => u.Email));
 // Custom equality comparer
 Assert(items.AllUnique(StringComparer.OrdinalIgnoreCase));
 ```
+
+### Collection Quantifiers
+
+Check how many items match a condition. Failures list the items that broke it:
+
+```csharp
+Assert(orders.Each(o => o.Total > 0));        // every item; passes on an empty collection
+Assert(orders.Some(o => o.IsPaid));           // at least one
+Assert(orders.None(o => o.IsCancelled));      // no item
+Assert(orders.One(o => o.IsDraft));           // exactly one
+Assert(orders.Exactly(2, o => o.IsUrgent));   // also AtLeast and AtMost
+```
+
+`Each` passes on an empty collection, like LINQ `All`. Add `Assert(orders.Any())` when
+the collection must not be empty.
 
 ### Object Deep Comparison
 
@@ -324,6 +351,15 @@ Assert(Throws<InvalidOperationException>(() => Validate()).Message is var messag
 // Async version
 Assert(await ThrowsAsync<InvalidOperationException>(() =>
     Task.Run(() => throw new InvalidOperationException())));
+```
+
+`Throws<T>` also accepts subclasses of `T`. To require the exact type, check it with
+`IsExactly<T>()`, which works on any value:
+
+```csharp
+Assert(Throws<ArgumentException>(() => Parse(text)).Exception.IsExactly<ArgumentException>());
+Assert(chart.IsExactly<TextChart>());
+// Expected type TextChart, but found ImageChart.
 ```
 
 Keep single-use delegates and exception checks inside `Assert`. Do not add an

@@ -1,5 +1,5 @@
 // ABOUTME: Extension methods for collection validation expectations (ordering, uniqueness, set operations).
-// ABOUTME: Provides IsInAscendingOrder/IsInDescendingOrder, AllUnique, ContainsInOrder, subset/superset APIs.
+// ABOUTME: Provides IsInAscendingOrder/IsInDescendingOrder, AllUnique, ContainsInOrder, IsSequence, HasSameItems, subset/superset APIs.
 
 using System;
 using System.Collections.Generic;
@@ -279,6 +279,70 @@ public static class CollectionExtensions
     /// <summary>Validates that collection elements can satisfy predicates with unique 1:1 matching.</summary>
     public static SatisfiesExpectation<T> Satisfies<T>(this IEnumerable<T> collection, params Func<T, bool>[] predicates) =>
         new SatisfiesExpectation<T>(collection, predicates);
+
+    /// <summary>Checks that the collection has exactly the given items in the given order.</summary>
+    /// <example><code>Assert(ids.IsSequence(1, 2, 3));</code></example>
+    public static Expectation IsSequence<T>(this IEnumerable<T> collection, params T[] expected) =>
+        Expectation.From(
+            () => collection.SequenceEqual(expected),
+            () =>
+            {
+                var actual = collection.ToList();
+                var reason = actual.Count == expected.Length
+                    ? DifferingItem(actual, expected)
+                    : $"{actual.Count} items instead of {expected.Length}";
+                return [$"Expected sequence {FormatSequence(expected.ToList())}, but found {FormatSequence(actual)}: {reason}."];
+            }
+        );
+
+    static string DifferingItem<T>(List<T> actual, T[] expected)
+    {
+        var index = Enumerable.Range(0, actual.Count).First(i => !EqualityComparer<T>.Default.Equals(actual[i], expected[i]));
+        return $"item at index {index} is {ValueFormatter.Format(actual[index])} instead of {ValueFormatter.Format(expected[index])}";
+    }
+
+    /// <summary>Checks that the collection has the same items as <paramref name="expected"/> in any order. Duplicates are counted.</summary>
+    /// <example><code>Assert(ids.HasSameItems(3, 1, 2));</code></example>
+    public static Expectation HasSameItems<T>(this IEnumerable<T> collection, params T[] expected) =>
+        CheckSameItems(collection, expected, EqualityComparer<T>.Default);
+
+    /// <summary>Checks that the collection has the same items as <paramref name="expected"/> in any order. Duplicates are counted.</summary>
+    public static Expectation HasSameItems<T>(this IEnumerable<T> collection, IEnumerable<T> expected) =>
+        CheckSameItems(collection, expected, EqualityComparer<T>.Default);
+
+    /// <summary>Checks that the collection has the same items as <paramref name="expected"/> in any order, using <paramref name="comparer"/>.</summary>
+    public static Expectation HasSameItems<T>(this IEnumerable<T> collection, IEnumerable<T> expected, IEqualityComparer<T> comparer) =>
+        CheckSameItems(collection, expected, comparer);
+
+    static Expectation CheckSameItems<T>(IEnumerable<T> collection, IEnumerable<T> expected, IEqualityComparer<T> comparer) =>
+        Expectation.From(
+            () => Difference(collection, expected, comparer) is { Missing.Count: 0, Extra.Count: 0 },
+            () =>
+            {
+                var (missing, extra) = Difference(collection, expected, comparer);
+                var parts = new List<string>();
+                if (missing.Count > 0) parts.Add($"missing {FormatSequence(missing)}");
+                if (extra.Count > 0) parts.Add($"extra {FormatSequence(extra)}");
+                return [$"Expected the same items as {FormatSequence(expected.ToList())}, but found {FormatSequence(collection.ToList())}: {string.Join(", ", parts)}."];
+            }
+        );
+
+    static (List<T> Missing, List<T> Extra) Difference<T>(IEnumerable<T> collection, IEnumerable<T> expected, IEqualityComparer<T> comparer)
+    {
+        var missing = expected.ToList();
+        var extra = new List<T>();
+
+        foreach (var item in collection)
+        {
+            var index = missing.FindIndex(each => comparer.Equals(each, item));
+            if (index >= 0)
+                missing.RemoveAt(index);
+            else
+                extra.Add(item);
+        }
+
+        return (missing, extra);
+    }
 
     static string FormatSequence<T>(List<T> items)
     {
