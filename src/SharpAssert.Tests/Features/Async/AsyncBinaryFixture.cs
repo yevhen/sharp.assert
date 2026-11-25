@@ -37,6 +37,30 @@ public class AsyncBinaryFixture : TestBase
         }
 
         [Test]
+        public async Task Should_compare_different_number_types_by_value()
+        {
+            async Task<long> NextId() { await Task.Yield(); return 101L; }
+
+            Assert(await NextId() == 101);
+        }
+
+        [Test]
+        public async Task Should_order_different_number_types_by_value()
+        {
+            async Task<long> NextId() { await Task.Yield(); return 101L; }
+
+            Assert(await NextId() > 100);
+        }
+
+        [Test]
+        public async Task Should_compare_objects_with_their_equals()
+        {
+            async Task<Point> Origin() { await Task.Yield(); return new Point(0, 0); }
+
+            Assert(await Origin() == new Point(0, 0));
+        }
+
+        [Test]
         public async Task Should_evaluate_in_source_order()
         {
             var evaluationOrder = new List<string>();
@@ -86,4 +110,13 @@ public class AsyncBinaryFixture : TestBase
 
     static BinaryComparison.DefaultComparisonResult Comparison(object? left, object? right) =>
         new(Operand(left), Operand(right));
+
+    class Point(int x, int y)
+    {
+        public int X { get; } = x;
+        public int Y { get; } = y;
+
+        public override bool Equals(object? other) => other is Point point && point.X == X && point.Y == Y;
+        public override int GetHashCode() => HashCode.Combine(X, Y);
+    }
 }

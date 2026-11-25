@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fixed awaited comparisons of numbers with different types, such as `Assert(await GetLongAsync() == 101)`. Equality failed with two equal values in the message, and `<`, `>` threw `ArgumentException`. Numbers now compare by value, as in compiled C#; other values still compare with `Equals`.
+
 ## 2.0.0
 
 - **Breaking change:** Restored C# short-circuit evaluation for assertion `&&` operators, including async, dynamic, local-function, and pattern expressions. Conditions after the first false operand no longer run. Null and type guards keep their native behavior.
