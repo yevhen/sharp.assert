@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fixed `WithoutStrictOrdering()` comparing only the first item of collections whose items have no settable simple properties or differ only in nested members. Items are now paired by full equivalency, and a failure shows the member differences of the items left without a pair. Tests that passed with such differing items now fail.
+
 ## 2.0.0
 
 - **Breaking change:** Restored C# short-circuit evaluation for assertion `&&` operators, including async, dynamic, local-function, and pattern expressions. Conditions after the first false operand no longer run. Null and type guards keep their native behavior.

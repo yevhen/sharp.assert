@@ -163,6 +163,7 @@ public sealed class EquivalencyConfig<T>
     public EquivalencyConfig<T> WithoutStrictOrdering()
     {
         ComparisonConfig.IgnoreCollectionOrder = true;
+        ComparisonConfig.CustomComparers.Add(new UnorderedCollectionComparer());
         return this;
     }
 
@@ -188,6 +189,7 @@ public sealed class EquivalencyConfig<T>
     public EquivalencyConfig<T> WithStrictOrdering()
     {
         ComparisonConfig.IgnoreCollectionOrder = false;
+        ComparisonConfig.CustomComparers.RemoveAll(comparer => comparer is UnorderedCollectionComparer);
         return this;
     }
 
