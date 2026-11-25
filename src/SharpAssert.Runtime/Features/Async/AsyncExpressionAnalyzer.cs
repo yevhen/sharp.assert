@@ -7,7 +7,15 @@ namespace SharpAssert.Features.Async;
 
 class AsyncExpressionAnalyzer
 {
-    static bool EvaluateBinaryComparison(BinaryOp op, object? leftValue, object? rightValue) => op switch
+    static bool EvaluateBinaryComparison(BinaryOp op, object? leftValue, object? rightValue) =>
+        IsNumber(leftValue) && IsNumber(rightValue)
+            ? NativeOperators.Evaluate(op, leftValue, rightValue)
+            : EvaluateWithEquals(op, leftValue, rightValue);
+
+    static bool IsNumber(object? value) =>
+        value is sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal;
+
+    static bool EvaluateWithEquals(BinaryOp op, object? leftValue, object? rightValue) => op switch
     {
         BinaryOp.Eq => Equals(leftValue, rightValue),
         BinaryOp.Ne => !Equals(leftValue, rightValue),
